@@ -100,6 +100,9 @@ def main():
         step='make prepare and UAPI headers'
         run(command+['prepare'])
         run(command+['headers_install'])
+        # A directory-only Kbuild does not visit SELinux's host header generator.
+        # Build its real target rather than supplying fabricated flask headers.
+        run(command+['-j2','security/selinux/'])
         result['kbuild']='TESTED (make prepare; actual object build follows)'
         step='real ARM64 object compilation'
         targets=['drivers/kernelsu/']; objects=['drivers/kernelsu/kernelsu.o']

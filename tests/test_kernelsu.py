@@ -12,12 +12,13 @@ from jsonschema import Draft202012Validator
 from kernelforge.kernelsu import integrate, IntegrationError, ROOT
 from kernelforge.build import run_build, BuildError
 from test_build import git
+from kernelforge.filesystem import retry_windows
 
 
 class KernelSUIntegrationTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
+        self.addCleanup(lambda: retry_windows(self.tmp.cleanup))
         self.base = Path(self.tmp.name)
         self.repo = self.base/'upstream'; self.repo.mkdir()
         git(self.repo,'init','-b','main')

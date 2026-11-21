@@ -16,6 +16,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 from ..toolchain import _version_tuple
+from ..filesystem import atomic_replace
 from .archive import ArchiveError, extract
 from .download import DownloadError, download
 from .locking import FileLock, LockTimeout
@@ -413,14 +414,14 @@ class ToolchainManager:
             if path.exists():
                 quarantine.mkdir(parents=True, exist_ok=True)
                 try:
-                    os.replace(path, quarantine / f"{index}-{path.name}")
+                    atomic_replace(path, quarantine / f"{index}-{path.name}")
                 except OSError:
                     shutil.rmtree(path, ignore_errors=True) if path.is_dir() else path.unlink(missing_ok=True)
 
     def _recover_install(self, key: str, install: Path) -> None:
         backups = sorted(install.parent.glob(f".{key}.old-*"), key=lambda path: path.stat().st_mtime, reverse=True) if install.parent.exists() else []
         if not install.exists() and backups:
-            os.replace(backups.pop(0), install)
+            atomic_replace(backups.pop(0), install)
         for backup in backups:
             shutil.rmtree(backup, ignore_errors=True)
 
@@ -454,27 +455,27 @@ class ToolchainManager:
             audit["version"] = details["version"]; audit["version_check"] = "passed"; audit["binary_host_arch"] = details["binary_host_arch"]; audit["host_arch_check"] = details["host_arch_check"]; audit["detected_target_arch"] = details["detected_target_arch"]; audit["target_arch_check"] = details["target_arch_check"]
             install.parent.mkdir(parents=True, exist_ok=True); metadata_path.parent.mkdir(parents=True, exist_ok=True); archive.parent.mkdir(parents=True, exist_ok=True)
             # Publish archive first; metadata and install are committed under the cache lock.
-            os.replace(staged_archive, archive)
+            atomic_replace(staged_archive, archive)
             backup = install.with_name(f".{install.name}.old-{uuid.uuid4().hex}")
             if install.exists():
-                os.replace(install, backup)
+                atomic_replace(install, backup)
             temp_meta = None
             try:
-                os.replace(extracted, install)
+                atomic_replace(extracted, install)
                 metadata = {"schema_version": self.METADATA_VERSION, "key": key, "kind": spec["kind"], "name": spec["name"], "version": details["version"],
                             "host_arch": audit["host_arch"], "target_arch": spec["target_arch"], "source_type": audit["source_type"], "source": _safe_source(source_url),
                             "expected_sha256": expected, "actual_sha256": actual, "verified_at": audit["verified_at"], "archive_format": _archive_format, "adapter_version": spec.get("adapter_version", "1"),
                             "installed_tree_sha256": installed_digest, "executables": details["executables"], "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")}
                 temp_meta = metadata_path.with_name(f".{metadata_path.name}.{uuid.uuid4().hex}.tmp")
                 temp_meta.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-                os.replace(temp_meta, metadata_path)
+                atomic_replace(temp_meta, metadata_path)
             except BaseException:
                 if temp_meta is not None:
                     temp_meta.unlink(missing_ok=True)
                 if install.exists():
                     shutil.rmtree(install, ignore_errors=True)
                 if backup.exists():
-                    os.replace(backup, install)
+                    atomic_replace(backup, install)
                 raise
             if backup.exists():
                 shutil.rmtree(backup, ignore_errors=True)

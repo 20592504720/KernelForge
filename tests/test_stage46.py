@@ -13,8 +13,32 @@ from kernelforge import compatibility
 from kernelforge.objects import inspect_object
 from kernelforge.workspace import Workspace, default_path
 from kernelforge.source import _run_git, SourceError
+from kernelforge.filesystem import retry_windows
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class WindowsSharingTests(unittest.TestCase):
+    def error(self):
+        error=PermissionError('sharing violation'); error.winerror=32
+        return error
+
+    def test_transient_sharing_violation_retries(self):
+        with patch('kernelforge.filesystem.time.sleep'):
+            operation=unittest.mock.Mock(side_effect=[self.error(),'done'])
+            self.assertEqual(retry_windows(operation),'done')
+            self.assertEqual(operation.call_count,2)
+
+    def test_permanent_failure_is_bounded(self):
+        with patch('kernelforge.filesystem.time.sleep'):
+            operation=unittest.mock.Mock(side_effect=self.error())
+            with self.assertRaises(PermissionError): retry_windows(operation,attempts=3)
+            self.assertEqual(operation.call_count,3)
+
+    def test_non_windows_permission_error_is_not_retried(self):
+        operation=unittest.mock.Mock(side_effect=PermissionError('denied'))
+        with self.assertRaises(PermissionError): retry_windows(operation)
+        self.assertEqual(operation.call_count,1)
 
 
 class WorkspaceTests(unittest.TestCase):

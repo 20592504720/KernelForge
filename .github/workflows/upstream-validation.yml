@@ -43,7 +43,7 @@ jobs:
         run: |
           args=(--provider "$PROVIDER" --workspace "$RUNNER_TEMP/source-validation")
           if [ "$WITH_SUSFS" = true ]; then args+=(--susfs); fi
-          if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline); fi
+          if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline --full-kernel); fi
           python scripts/validate_upstreams.py "${args[@]}"
       - name: Print verification reports
         if: always()

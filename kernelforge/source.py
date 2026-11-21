@@ -8,6 +8,7 @@ import stat
 import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
+from .filesystem import retry_windows
 
 
 class SourceError(RuntimeError):
@@ -19,7 +20,8 @@ def remove_checkout(path: Path) -> None:
     def writable_retry(function, name, _error):
         os.chmod(name, stat.S_IWRITE | stat.S_IREAD)
         function(name)
-    shutil.rmtree(path, onerror=writable_retry)
+    if path.exists():
+        retry_windows(lambda: shutil.rmtree(path, onerror=writable_retry))
 
 
 _FULL_SHA = re.compile(r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
