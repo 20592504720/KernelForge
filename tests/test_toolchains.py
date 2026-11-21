@@ -90,10 +90,6 @@ def make_tar() -> bytes:
 MANAGER_HTTP_SERVER = FixtureServer(make_zip())
 
 
-def tearDownModule():
-    MANAGER_HTTP_SERVER.close()
-
-
 class ToolchainVersionTests(unittest.TestCase):
     def test_clang_version_parse(self):
         self.assertEqual(_version_tuple("Android clang version 18.1.2 (based on LLVM)"), (18, 1, 2))
@@ -360,20 +356,23 @@ class ManagerCacheTests(ManagerFixture):
     def test_missing_cache_metadata_is_quarantined_and_reacquired(self):
         self.manager.prepare(self.spec())
         metadata = next((self.root / "cache/metadata").glob("*.json")); metadata.unlink()
-        second = self.manager.prepare(self.spec())
+        with self.assertLogs("kernelforge.toolchains.manager", level="WARNING"):
+            second = self.manager.prepare(self.spec())
         self.assertFalse(second["audit"]["cache_used"])
         self.assertEqual(self.server.requests, 2)
 
     def test_bad_cache_metadata_is_quarantined_and_reacquired(self):
         self.manager.prepare(self.spec())
         metadata = next((self.root / "cache/metadata").glob("*.json")); metadata.write_text("{")
-        self.manager.prepare(self.spec())
+        with self.assertLogs("kernelforge.toolchains.manager", level="WARNING"):
+            self.manager.prepare(self.spec())
         self.assertEqual(self.server.requests, 2)
 
     def test_changed_cached_archive_is_reacquired(self):
         self.manager.prepare(self.spec())
         archive = next((self.root / "cache/downloads").glob("*.archive")); archive.write_bytes(b"tampered")
-        result = self.manager.prepare(self.spec())
+        with self.assertLogs("kernelforge.toolchains.manager", level="WARNING"):
+            result = self.manager.prepare(self.spec())
         self.assertFalse(result["audit"]["cache_used"])
         self.assertEqual(self.server.requests, 2)
 
@@ -381,7 +380,8 @@ class ManagerCacheTests(ManagerFixture):
         self.manager.prepare(self.spec())
         compiler = next((self.root / "cache/install").glob("*/pkg/bin/clang"))
         compiler.write_text("tampered compiler")
-        result = self.manager.prepare(self.spec())
+        with self.assertLogs("kernelforge.toolchains.manager", level="WARNING"):
+            result = self.manager.prepare(self.spec())
         self.assertFalse(result["audit"]["cache_used"])
         self.assertEqual(self.server.requests, 2)
 
