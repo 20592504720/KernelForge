@@ -52,6 +52,9 @@ def _run_git(args: list[str], cwd: Path | None = None, timeout: int = 300) -> st
     if result.returncode:
         # Do not echo remotes: they may embed credentials supplied by a caller.
         detail = result.stderr.strip().splitlines()
+        if args[0] == 'apply':
+            detail = [line for line in detail if line.startswith('error:')] or detail
+            raise SourceError(f"git apply failed (exit {result.returncode}): {'; '.join(detail)}")
         raise SourceError(f"git {args[0]} failed (exit {result.returncode}): {detail[-1] if detail else 'no diagnostic'}")
     return result.stdout.strip()
 

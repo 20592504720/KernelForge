@@ -44,7 +44,9 @@ def main():
         if _run_git(['rev-parse','HEAD'],cwd=source)!=kernel_lock['commit_sha']:
             raise ValueError('GKI source Commit mismatch')
         result['kernel_commit']=kernel_lock['commit_sha']
-        command=['make','ARCH=arm64','LLVM=1']
+        # Target code uses LLVM; host helpers in this ACK revision require the
+        # GNU host compiler rather than the runner's newer Clang diagnostics.
+        command=['make','ARCH=arm64','LLVM=1','HOSTCC=gcc','HOSTCXX=g++']
         def run(argv):
             process=subprocess.run(argv,cwd=source,capture_output=True,text=True,timeout=600,check=False)
             with (output/'source-check.log').open('a',encoding='utf-8') as stream:
