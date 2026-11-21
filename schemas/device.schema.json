@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "id", "manufacturer", "model", "status"],
+  "properties": {
+    "schema_version": { "const": 1 }, "id": { "type": "string", "minLength": 1 },
+    "manufacturer": { "type": "string", "minLength": 1 }, "model": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["unverified", "validated"] },
+    "soc": { "type": ["string", "null"] }, "architecture": { "enum": ["aarch64", "x86_64"] },
+    "kernel": { "enum": ["5.10", "5.15", "6.1", "6.6", "6.12"] },
+    "source": { "type": "object", "additionalProperties": false, "properties": { "repository": { "type": "string", "format": "uri" }, "ref": { "type": "string" } } },
+    "build": { "type": "object", "additionalProperties": false, "properties": { "mode": { "enum": ["gki", "vendor"] }, "defconfig": { "type": "string" }, "toolchain": { "type": "string" } } }
+  }
+}

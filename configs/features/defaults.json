@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "kernelsu": { "enabled": false, "variant": null },
+  "susfs": { "enabled": false },
+  "tcp_congestion": [],
+  "zram_algorithms": []
+}

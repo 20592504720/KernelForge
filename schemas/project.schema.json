@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kernelforge.invalid/schemas/project.schema.json",
+  "title": "KernelForge project defaults",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project", "build", "features"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 1 },
+    "project": { "const": "KernelForge" },
+    "build": {
+      "type": "object", "additionalProperties": false,
+      "required": ["jobs", "reproducible"],
+      "properties": {
+        "jobs": { "type": "integer", "minimum": 1 },
+        "reproducible": { "type": "boolean" }
+      }
+    },
+    "features": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kernelsu", "susfs", "tcp_congestion", "zram_algorithms"],
+      "properties": {
+        "kernelsu": {
+          "type": "object", "additionalProperties": false,
+          "required": ["enabled", "variant"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "variant": { "type": ["string", "null"], "enum": ["official", "next", "resukisu", null] }
+          }
+        },
+        "susfs": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } },
+        "tcp_congestion": { "type": "array", "uniqueItems": true, "items": { "enum": ["bbr", "bbr2", "bbr3", "westwood", "cubic"] } },
+        "zram_algorithms": { "type": "array", "uniqueItems": true, "items": { "enum": ["lz4", "lz4hc", "zstd", "lzo", "lzo-rle", "842"] } }
+      }
+    }
+  }
+}

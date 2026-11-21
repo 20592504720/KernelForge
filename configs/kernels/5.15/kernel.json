@@ -1,0 +1,1 @@
+{"schema_version":1,"kernel":"5.15","architectures":["aarch64"],"toolchain":{"family":"clang","version_policy":"must be pinned by build profile"},"build":{"default_mode":"gki","make_args":[]},"features":{"kernelsu_variants":[],"patch_manifest":"patches/5.15/manifest.json"}}

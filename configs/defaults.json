@@ -1,0 +1,15 @@
+{
+  "$schema": "../../schemas/project.schema.json",
+  "schema_version": 1,
+  "project": "KernelForge",
+  "build": {
+    "jobs": 2,
+    "reproducible": true
+  },
+  "features": {
+    "kernelsu": { "enabled": false, "variant": null },
+    "susfs": { "enabled": false },
+    "tcp_congestion": [],
+    "zram_algorithms": []
+  }
+}

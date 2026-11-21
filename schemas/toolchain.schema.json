@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "selection", "download", "cache"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "selection": { "enum": ["profile-required"] },
+    "download": { "type": "object", "additionalProperties": false, "required": ["enabled", "require_sha256"], "properties": { "enabled": { "type": "boolean" }, "require_sha256": { "type": "boolean" } } },
+    "cache": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } }
+  }
+}
