@@ -15,7 +15,7 @@
   "reason": "Only include-context differences: exec lacks GENKSYMS/dma-buf context; namespace lacks trace/hooks/blk.h. All upstream +/- code lines retained.",
   "verification": {
     "applicability": "TESTED on 27 exact Git blob targets",
-    "object_compilation": "UNTESTED",
+    "object_compilation": "TESTED: exact official/BakaSU baselines; ARM64 objects and relocatable link; run 44896399426",
     "boot": "UNTESTED",
     "root": "UNTESTED"
   },

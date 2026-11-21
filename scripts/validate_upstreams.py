@@ -135,7 +135,7 @@ def main():
                               'boot':'UNTESTED','root':'UNTESTED'}
         if args.susfs:
             result['susfs']['compile_compatibility']='TESTED (objects and relocatable link only)'
-        result['kernel_compile_reason']='Full Image build not requested; host resources recorded separately'
+        result['kernel_compile_reason']=('Full Image build requested' if args.full_kernel else 'Full Image build not requested; host resources recorded separately')
         if args.full_kernel:
             step='complete Image build'
             run(command+['-j2','Image'],timeout=3600)
@@ -148,6 +148,7 @@ def main():
                 raise ValueError('Image artifact copy SHA256 mismatch')
             result['image']['artifact']='Image'
             result['kernel_compile']='TESTED'
+            result['kernel_compile_reason']='Image and vmlinux linked successfully; copied Image SHA256 verified'
             result['acceptance']['full_vmlinux']='TESTED'
         result['status']='success'
     except Exception as exc:
