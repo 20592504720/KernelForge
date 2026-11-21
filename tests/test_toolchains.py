@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import atexit
 import io
 import json
 import os
@@ -57,14 +58,17 @@ class FixtureServer:
                 pass
 
         self.server = HTTPServer(("127.0.0.1", 0), Handler)
-        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread = threading.Thread(target=self.server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True)
         self.thread.start()
         self.base = f"http://127.0.0.1:{self.server.server_port}"
 
     def close(self):
-        self.server.shutdown()
+        if self.thread.is_alive():
+            self.server.shutdown()
+            self.thread.join(timeout=2)
         self.server.server_close()
-        self.thread.join(timeout=2)
+        if self.thread.is_alive():
+            raise RuntimeError("fixture HTTP server thread did not stop")
 
 
 def make_zip() -> bytes:
@@ -88,6 +92,7 @@ def make_tar() -> bytes:
 
 
 MANAGER_HTTP_SERVER = FixtureServer(make_zip())
+atexit.register(MANAGER_HTTP_SERVER.close)
 
 
 class ToolchainVersionTests(unittest.TestCase):
