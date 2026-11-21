@@ -14,7 +14,9 @@ permissions:
   contents: read
 jobs:
   sources:
-    runs-on: ubuntu-latest
+    # ACK 6.1 host libbpf requires the older libc strchr contract. Keep the
+    # validation host stable while continuing to resolve latest upstream code.
+    runs-on: ubuntu-22.04
     timeout-minutes: 35
     strategy:
       fail-fast: false
