@@ -10,7 +10,7 @@ The platform covers source pinning, distinct GKI and Vendor adapters, managed to
 
 Configuration profiles exist for Linux 5.10, 5.15, 6.1, 6.6, and 6.12. Profiles are scaffolding, not evidence that a particular patch, feature, or toolchain works on that kernel.
 
-GKI support is planned for Kleaf/Bazel and legacy build systems through separate adapters. Vendor builds will use device-specific source, defconfig, toolchain, commands, and artifact paths. KernelSU Official, KernelSU-Next, ReSukiSU, SUSFS, TCP congestion options, and ZRAM algorithms are future integrations and are not yet installed or compatibility-tested.
+GKI support is planned for Kleaf/Bazel and legacy build systems through separate adapters. Vendor builds will use device-specific source, defconfig, toolchain, commands, and artifact paths. Pinned official legacy KernelSU and BakaSU source integration is available. KernelSU-Next, ReSukiSU, SUSFS, TCP congestion options and ZRAM remain future integrations.
 
 ## Repository map
 
@@ -60,6 +60,8 @@ Use `python -m kernelforge toolchain list --cache-dir .cache/toolchains` to insp
 - **IMPLEMENTED:** JSON/schema validation, patch-manifest structure/hash validation, source ref checkout with resolved SHA recording, independent GKI/Vendor plans, local and managed LLVM/GCC profile preparation, secure downloads, mandatory archive SHA256 verification, safe extraction, atomic cache installation, cache metadata/maintenance, portable locks, isolated toolchain environments, timeout/log/failure reports and real artifact hashing.
 - **TESTED:** local HTTP download and interruption handling, SHA256 success/failure, zip/tar extraction and traversal rejection, cache corruption and reuse, concurrent requests, mode behavior, GKI/Vendor environment delivery, failure reports, plus existing regression suite (see `docs/STATUS.md`).
 - **PLACEHOLDER:** kernel build and release workflow entry points; no kernel build occurs.
-- **NOT_IMPLEMENTED:** verified upstream-specific GKI/vendor source profiles, KernelSU/SUSFS integration, patch application, device-ready configurations, Android kernel build verification. No real large Clang/GCC distribution was downloaded during automated tests; those tests exercise actual local HTTP and archive handling with fixture payloads.
+- **NOT_IMPLEMENTED:** verified upstream-specific GKI/vendor source profiles, SUSFS integration, patch application, device-ready configurations, Android kernel build verification. No real large Clang/GCC distribution was downloaded during automated tests; those tests exercise actual local HTTP and archive handling with fixture payloads.
 
 See `docs/ROADMAP.md` for sequencing and evidence requirements.
+
+Stage 4 adds opt-in shared KernelSU integration with pinned official v0.9.5 and BakaSU providers. Source integration is IMPLEMENTED and fixture TESTED; kernel compilation/boot remain UNTESTED. See [KernelSU providers](docs/KERNELSU.md).

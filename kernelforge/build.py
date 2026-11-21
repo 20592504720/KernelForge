@@ -17,6 +17,7 @@ from . import __version__
 from .source import checkout
 from .toolchain import check_tools
 from .toolchains import ToolchainManager, ToolchainManagerError
+from .kernelsu import integrate, IntegrationError
 
 LOG = logging.getLogger(__name__)
 SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
@@ -154,6 +155,7 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         "build_type": mode, "source": {"repository": config.get("source", {}).get("repository"), "requested_ref": config.get("source", {}).get("ref"), "commit_sha": None},
         "toolchain": {}, "build": {"argv": [], "targets": [], "environment_keys": [], "started_at": started_at, "ended_at": None, "duration_seconds": None, "exit_status": None, "timed_out": False},
         "artifacts": [], "log_file": "build.log", "error": None,
+        "kernelsu": {"status": "SKIP", "provider": None},
     }
     log_path = output_dir / "build.log"
     managed_prepared = None
@@ -166,6 +168,11 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         source_dir = workspace / "source"
         source_sha = checkout(config["source"]["repository"], config["source"]["ref"], source_dir, timeout=config["source"].get("timeout_seconds", 300))
         report["source"]["commit_sha"] = source_sha
+        try:
+            report["kernelsu"] = integrate(config.get("kernelsu", {"enabled": False}), source_dir, output_dir, mode=mode)
+        except IntegrationError as exc:
+            report["kernelsu"] = exc.report
+            raise BuildError(f"KernelSU integration failed: {exc}") from exc
         plan = ADAPTERS[mode].plan(source_dir, output_dir, config)
         if plan.required_tools:
             report["toolchain"].update(check_tools(plan.required_tools))

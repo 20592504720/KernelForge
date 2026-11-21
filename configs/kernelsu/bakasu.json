@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "provider": "bakasu",
+  "project": "BakaSU",
+  "repository": "https://github.com/Baka-SU/BakaSU.git",
+  "upstream": "https://github.com/tiann/KernelSU.git",
+  "ref_type": "commit",
+  "ref": "7b65bde0710b5e7c6f755545cb15a4abd417f3a8",
+  "expected_commit": "7b65bde0710b5e7c6f755545cb15a4abd417f3a8",
+  "method": "builtin-link-v1",
+  "architecture": "arm64",
+  "config_file": ".config",
+  "compatibility": {
+    "kernel_families": [
+      "5.10",
+      "5.15",
+      "6.1",
+      "6.6",
+      "6.12"
+    ],
+    "build_modes": [
+      "gki"
+    ],
+    "required_configs": []
+  }
+}

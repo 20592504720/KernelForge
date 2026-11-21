@@ -1,0 +1,27 @@
+{
+  "enabled": true,
+  "provider": "official",
+  "project": "KernelSU v0.9.5 (legacy built-in)",
+  "repository": "https://github.com/tiann/KernelSU.git",
+  "upstream": "https://github.com/tiann/KernelSU.git",
+  "ref_type": "commit",
+  "ref": "b766b98513b5a7eb33bc1c4a76b5702bf1288f07",
+  "expected_commit": "b766b98513b5a7eb33bc1c4a76b5702bf1288f07",
+  "method": "builtin-link-v1",
+  "architecture": "arm64",
+  "config_file": ".config",
+  "compatibility": {
+    "kernel_families": [
+      "5.10",
+      "5.15",
+      "6.1",
+      "6.6",
+      "6.12"
+    ],
+    "build_modes": [
+      "gki",
+      "vendor"
+    ],
+    "required_configs": []
+  }
+}

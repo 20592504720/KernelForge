@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import os
 import shutil
+import stat
 import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -11,6 +12,14 @@ from urllib.parse import urlsplit
 
 class SourceError(RuntimeError):
     pass
+
+
+def remove_checkout(path: Path) -> None:
+    """Remove a checkout owned by the caller, including Windows readonly Git objects."""
+    def writable_retry(function, name, _error):
+        os.chmod(name, stat.S_IWRITE | stat.S_IREAD)
+        function(name)
+    shutil.rmtree(path, onerror=writable_retry)
 
 
 _FULL_SHA = re.compile(r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
@@ -95,5 +104,5 @@ def checkout(repository: str, ref: str, destination: Path, *, timeout: int = 300
     except BaseException:
         # Remove only a directory this call created. A caller-provided empty directory is retained.
         if not existed and destination.exists() and destination.parent == parent:
-            shutil.rmtree(destination, ignore_errors=True)
+            remove_checkout(destination)
         raise

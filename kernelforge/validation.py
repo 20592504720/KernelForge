@@ -45,6 +45,16 @@ def validate_configs(root: Path) -> list[str]:
     problems.extend(errors)
     if not errors:
         problems.extend(_schema_errors(data, toolchain_schema, toolchain_defaults.relative_to(root)))
+    build_schema_path = root / "schemas/build.schema.json"
+    if (root / "configs/kernelsu").exists():
+        build_schema, errors = _read_json(build_schema_path)
+        problems.extend(errors)
+        if not errors:
+            for path in sorted((root / "configs/kernelsu").glob("*.json")):
+                data, errors = _read_json(path)
+                problems.extend(errors)
+                if not errors:
+                    problems.extend(_schema_errors(data, build_schema["$defs"]["kernelsu"], path.relative_to(root)))
     paths = sorted((root / "configs/kernels").glob("*/kernel.json"))
     expected = {"5.10", "5.15", "6.1", "6.6", "6.12"}
     actual = {path.parent.name for path in paths}
