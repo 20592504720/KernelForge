@@ -16,6 +16,7 @@ from typing import Protocol
 from . import __version__
 from .source import checkout
 from .toolchain import check_tools
+from .toolchains import ToolchainManager, ToolchainManagerError
 
 LOG = logging.getLogger(__name__)
 SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
@@ -100,11 +101,15 @@ def _safe_argv(argv: list[str]) -> list[str]:
     return safe
 
 
-def _safe_environment(config_env: dict[str, str]) -> dict[str, str]:
+def _safe_environment(config_env: dict[str, str], overlay: dict[str, str] | None = None) -> dict[str, str]:
     inherited = {k: v for k, v in os.environ.items() if not SENSITIVE.search(k)}
     for key, value in config_env.items():
         if SENSITIVE.search(key):
             raise BuildError(f"refusing secret-like environment key in build profile: {key}")
+        inherited[key] = str(value)
+    for key, value in (overlay or {}).items():
+        if SENSITIVE.search(key):
+            raise BuildError(f"refusing secret-like environment key in managed toolchain profile: {key}")
         inherited[key] = str(value)
     return inherited
 
@@ -151,20 +156,51 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         "artifacts": [], "log_file": "build.log", "error": None,
     }
     log_path = output_dir / "build.log"
+    managed_prepared = None
+    manager = None
     try:
         if mode not in ADAPTERS:
             raise BuildError(f"unsupported build mode: {mode}")
-        report["toolchain"] = check_tools(config["toolchain"]["required"])
+        legacy_requirements = config["toolchain"].get("required", [])
+        report["toolchain"] = check_tools(legacy_requirements) if legacy_requirements else {}
         source_dir = workspace / "source"
         source_sha = checkout(config["source"]["repository"], config["source"]["ref"], source_dir, timeout=config["source"].get("timeout_seconds", 300))
         report["source"]["commit_sha"] = source_sha
         plan = ADAPTERS[mode].plan(source_dir, output_dir, config)
-        report["toolchain"].update(check_tools(plan.required_tools))
+        if plan.required_tools:
+            report["toolchain"].update(check_tools(plan.required_tools))
+        managed_environment = {}
+        profile = config["build"][mode].get("toolchain_profile")
+        if profile:
+            manager_config = config["toolchain"]
+            defaults_path = Path(__file__).resolve().parents[1] / "configs" / "toolchains" / "defaults.json"
+            try:
+                defaults = json.loads(defaults_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise BuildError(f"cannot read toolchain defaults at {defaults_path}: {exc}") from exc
+            cache_settings = defaults.get("cache", {})
+            download_settings = defaults.get("download", {})
+            cache_dir = Path(profile.get("cache_dir", manager_config.get("cache_dir", cache_settings.get("directory", ".cache/toolchains"))))
+            if not cache_dir.is_absolute():
+                cache_dir = workspace / cache_dir
+            toolchain_mode = manager_config.get("mode", defaults.get("mode", "AUTO"))
+            if not download_settings.get("enabled", True) and toolchain_mode == "AUTO":
+                toolchain_mode = "LOCAL_ONLY"
+            manager = ToolchainManager(cache_dir, mode=toolchain_mode, lock_timeout=manager_config.get("lock_timeout_seconds", cache_settings.get("lock_timeout_seconds", 120)))
+            try:
+                prepared = manager.prepare(profile, lease=True)
+                managed_prepared = prepared
+            except ToolchainManagerError as exc:
+                report["toolchain"]["managed"] = exc.audit
+                raise BuildError(f"toolchain preparation failed during {exc.phase}: {exc}") from exc
+            managed_environment = prepared["environment"]
+            report["toolchain"]["managed"] = prepared["audit"]
         report["build"]["argv"] = _safe_argv(plan.argv)
         report["build"]["targets"] = plan.targets
         report["build"]["environment_keys"] = sorted(plan.environment)
         timeout = config["build"].get("timeout_seconds", 3600)
-        safe_env = _safe_environment(plan.environment)
+        safe_env = _safe_environment(plan.environment, managed_environment)
+        report["build"]["toolchain_environment"] = {"keys": sorted(managed_environment), "root": report.get("toolchain", {}).get("managed", {}).get("install_path")}
         with log_path.open("w", encoding="utf-8") as log:
             log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
             try:
@@ -181,6 +217,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             raise BuildError("build succeeded but no configured artifact files were produced")
         report["build"]["status"] = "success"
     except Exception as exc:
+        if manager and managed_prepared:
+            manager.release(managed_prepared)
         report["build"]["status"] = "failure"
         report["error"] = f"{type(exc).__name__}: {exc}"
         if not log_path.exists():
@@ -190,6 +228,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         if isinstance(exc, BuildError):
             raise
         raise BuildError(str(exc)) from exc
+    if manager and managed_prepared:
+        manager.release(managed_prepared)
     _finish_report(report, monotonic_start)
     _write_report(output_dir, report)
     LOG.info("Build succeeded; %d artifact(s)", len(report["artifacts"]))

@@ -1,17 +1,465 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "type":"object","additionalProperties":false,
-  "required":["schema_version","source","build","toolchain","artifacts"],
-  "properties":{
-    "schema_version":{"const":1},
-    "source":{"type":"object","additionalProperties":false,"required":["repository","ref"],"properties":{"repository":{"type":"string","format":"uri"},"ref":{"type":"string","minLength":1},"timeout_seconds":{"type":"integer","minimum":1,"maximum":3600}}},
-    "device":{"type":"object","additionalProperties":false,"required":["id"],"properties":{"id":{"type":"string","minLength":1}}},
-    "kernel_version":{"enum":["5.10","5.15","6.1","6.6","6.12"]},
-    "defconfig":{"type":"string"},
-    "environment":{"type":"object","additionalProperties":{"type":"string"},"propertyNames":{"pattern":"^[A-Z_][A-Z0-9_]*$"}},
-    "toolchain":{"type":"object","additionalProperties":false,"required":["required"],"properties":{"required":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["name"],"properties":{"name":{"type":"string","minLength":1},"minimum":{"type":"string","pattern":"^\\d+(?:\\.\\d+)*$"}}}}}},
-    "build":{"type":"object","additionalProperties":false,"required":["mode","jobs","gki","vendor"],"properties":{"mode":{"enum":["gki","vendor"]},"jobs":{"type":"integer","minimum":1},"timeout_seconds":{"type":"integer","minimum":1,"maximum":86400},"gki":{"$ref":"#/$defs/adapter"},"vendor":{"$ref":"#/$defs/adapter"}}},
-    "artifacts":{"type":"object","additionalProperties":false,"required":["paths"],"properties":{"paths":{"type":"array","items":{"type":"string","minLength":1}},"require_at_least_one":{"type":"boolean","default":true}}}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "build",
+    "toolchain",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "ref"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "format": "uri"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "kernel_version": {
+      "enum": [
+        "5.10",
+        "5.15",
+        "6.1",
+        "6.6",
+        "6.12"
+      ]
+    },
+    "defconfig": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "pattern": "^[A-Z_][A-Z0-9_]*$"
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required"
+      ],
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minimum": {
+                "type": "string",
+                "pattern": "^\\d+(?:\\.\\d+)*$"
+              }
+            }
+          }
+        },
+        "mode": {
+          "enum": [
+            "AUTO",
+            "LOCAL_ONLY",
+            "DOWNLOAD_ONLY"
+          ]
+        },
+        "cache_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lock_timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3600
+        }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "jobs",
+        "gki",
+        "vendor"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "gki",
+            "vendor"
+          ]
+        },
+        "jobs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        },
+        "gki": {
+          "$ref": "#/$defs/adapter"
+        },
+        "vendor": {
+          "$ref": "#/$defs/adapter"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paths"
+      ],
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "require_at_least_one": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
   },
-  "$defs":{"tool":{"type":"object","additionalProperties":false,"required":["name"],"properties":{"name":{"type":"string","minLength":1},"path":{"type":"string"},"minimum":{"type":"string","pattern":"^\\d+(?:\\.\\d+)*$"},"version_args":{"type":"string"}}},"adapter":{"type":"object","additionalProperties":false,"required":["argv"],"properties":{"system":{"enum":["kleaf","build-sh"]},"argv":{"type":"array","minItems":1,"items":{"type":"string"}},"directory":{"type":"string"},"environment":{"type":"object","additionalProperties":{"type":"string"},"propertyNames":{"pattern":"^[A-Z_][A-Z0-9_]*$"}},"targets":{"type":"array","items":{"type":"string"}},"artifacts":{"type":"array","items":{"type":"string"}},"required_tools":{"type":"array","items":{"$ref":"#/$defs/tool"}}}}}
+  "$defs": {
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string"
+        },
+        "minimum": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d+)*$"
+        },
+        "version_args": {
+          "type": "string"
+        }
+      }
+    },
+    "toolchainProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "name",
+        "target_arch",
+        "executables"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "llvm",
+            "gcc"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d+)*$"
+        },
+        "minimum_version": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d+)*$"
+        },
+        "maximum_version": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d+)*$"
+        },
+        "source_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "host_arch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_arch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "local_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "local_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cache_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "download_timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3600
+        },
+        "version_timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 300
+        },
+        "lock_timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3600
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "expected_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "archive_format": {
+          "enum": [
+            "zip",
+            "tar",
+            "tar.gz",
+            "tgz",
+            "tar.xz",
+            "tar.bz2"
+          ]
+        },
+        "layout_root": {
+          "type": "string"
+        },
+        "adapter_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version_executable": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version_args": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "target_query_args": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "executables": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[A-Z_][A-Z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "cross_compile": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z_][A-Z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "local_path"
+                ]
+              },
+              {
+                "required": [
+                  "local_root"
+                ]
+              }
+            ]
+          },
+          "then": {},
+          "else": {
+            "required": [
+              "source_type",
+              "url",
+              "sha256"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "source_type": {
+                      "enum": [
+                        "archive",
+                        "llvm-release",
+                        "gcc-release"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source_type"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "archive_format"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "argv"
+      ],
+      "properties": {
+        "system": {
+          "enum": [
+            "kleaf",
+            "build-sh"
+          ]
+        },
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "directory": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "pattern": "^[A-Z_][A-Z0-9_]*$"
+          }
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tool"
+          }
+        },
+        "toolchain_profile": {
+          "$ref": "#/$defs/toolchainProfile"
+        }
+      }
+    }
+  }
 }

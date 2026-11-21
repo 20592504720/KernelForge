@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .validation import validate_configs, validate_manifests
 from .build import BuildError, run_build
+from .toolchains import ToolchainManager, ToolchainManagerError
 import json
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,16 @@ def build_parser() -> argparse.ArgumentParser:
     build.add_argument("--config", required=True, type=Path)
     build.add_argument("--workspace", type=Path, default=Path(".kernel-work"))
     build.add_argument("--output", type=Path, default=Path("artifacts"))
+    toolchain = sub.add_parser("toolchain", help="inspect or clean the verified toolchain cache")
+    tool_sub = toolchain.add_subparsers(dest="toolchain_command", required=True)
+    cache_list = tool_sub.add_parser("list", help="list cached toolchains and integrity state")
+    cache_list.add_argument("--cache-dir", type=Path, default=Path(".cache/toolchains"))
+    cache_clean = tool_sub.add_parser("clean", help="remove matching cached toolchains")
+    cache_clean.add_argument("--cache-dir", type=Path, default=Path(".cache/toolchains"))
+    cache_clean.add_argument("--kind", choices=["llvm", "gcc"])
+    cache_clean.add_argument("--name")
+    cache_clean.add_argument("--version")
+    cache_clean.add_argument("--damaged-only", action="store_true")
     return parser
 
 
@@ -43,6 +54,18 @@ def main(argv: list[str] | None = None) -> int:
         logging.info("JSON Schema and YAML validation dependencies are available")
         logging.info("Kernel build toolchains are not inspected by this stage-one doctor")
         return 0
+    if args.command == "toolchain":
+        try:
+            manager = ToolchainManager(args.cache_dir)
+            if args.toolchain_command == "list":
+                print(json.dumps(manager.list_cache(), indent=2, sort_keys=True))
+                return 0
+            removed = manager.clean_cache(kind=args.kind, name=args.name, version=args.version, damaged_only=args.damaged_only)
+            print(json.dumps({"removed": removed}, indent=2))
+            return 0
+        except ToolchainManagerError as exc:
+            logging.error("Toolchain cache operation failed: %s", exc)
+            return 1
     if args.command == "build":
         try:
             config = json.loads(args.config.read_text(encoding="utf-8"))

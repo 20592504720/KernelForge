@@ -1,11 +1,80 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object", "additionalProperties": false,
-  "required": ["schema_version", "selection", "download", "cache"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "selection",
+    "download",
+    "cache",
+    "mode"
+  ],
   "properties": {
-    "schema_version": { "const": 1 },
-    "selection": { "enum": ["profile-required"] },
-    "download": { "type": "object", "additionalProperties": false, "required": ["enabled", "require_sha256"], "properties": { "enabled": { "type": "boolean" }, "require_sha256": { "type": "boolean" } } },
-    "cache": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } }
+    "schema_version": {
+      "const": 1
+    },
+    "selection": {
+      "enum": [
+        "profile-required"
+      ]
+    },
+    "mode": {
+      "enum": [
+        "AUTO",
+        "LOCAL_ONLY",
+        "DOWNLOAD_ONLY"
+      ]
+    },
+    "download": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "require_sha256",
+        "timeout_seconds",
+        "retries"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "require_sha256": {
+          "type": "boolean"
+        },
+        "timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3600
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        }
+      }
+    },
+    "cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "directory",
+        "lock_timeout_seconds"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lock_timeout_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3600
+        }
+      }
+    }
   }
 }

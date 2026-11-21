@@ -12,6 +12,23 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_toolchain_defaults_validate_against_schema(self):
+        schema = json.loads((ROOT / "schemas/toolchain.schema.json").read_text())
+        data = json.loads((ROOT / "configs/toolchains/defaults.json").read_text())
+        Draft202012Validator(schema).validate(data)
+
+    def test_build_toolchain_profile_requires_trusted_sha_and_executable_layout(self):
+        schema = json.loads((ROOT / "schemas/build.schema.json").read_text())
+        config = {"schema_version": 1, "source": {"repository": "https://example.invalid/kernel.git", "ref": "deadbeef"},
+                  "toolchain": {"required": []}, "build": {"mode": "gki", "jobs": 1,
+                  "gki": {"system": "kleaf", "argv": ["bazel"], "toolchain_profile": {
+                      "kind": "llvm", "name": "fixture", "target_arch": "aarch64", "executables": {"CC": "bin/clang"},
+                      "source_type": "custom", "url": "https://example.invalid/clang.zip", "sha256": "a" * 64, "archive_format": "zip"}},
+                  "vendor": {"argv": ["make"]}}, "artifacts": {"paths": []}}
+        Draft202012Validator(schema).validate(config)
+        config["build"]["gki"]["toolchain_profile"]["sha256"] = "bad"
+        self.assertTrue(list(Draft202012Validator(schema).iter_errors(config)))
+
     def test_all_kernel_configs_validate(self):
         schema = json.loads((ROOT / "schemas/kernel.schema.json").read_text())
         validator = Draft202012Validator(schema)

@@ -30,6 +30,9 @@ def validate_configs(root: Path) -> list[str]:
     project_schema_path = root / "schemas/project.schema.json"
     project_schema, errors = _read_json(project_schema_path)
     problems.extend(errors)
+    toolchain_schema_path = root / "schemas/toolchain.schema.json"
+    toolchain_schema, errors = _read_json(toolchain_schema_path)
+    problems.extend(errors)
     if problems:
         return problems
     for data_path, selected_schema in [(root / "configs/defaults.json", project_schema)]:
@@ -37,6 +40,11 @@ def validate_configs(root: Path) -> list[str]:
         problems.extend(errors)
         if not errors:
             problems.extend(_schema_errors(data, selected_schema, data_path.relative_to(root)))
+    toolchain_defaults = root / "configs/toolchains/defaults.json"
+    data, errors = _read_json(toolchain_defaults)
+    problems.extend(errors)
+    if not errors:
+        problems.extend(_schema_errors(data, toolchain_schema, toolchain_defaults.relative_to(root)))
     paths = sorted((root / "configs/kernels").glob("*/kernel.json"))
     expected = {"5.10", "5.15", "6.1", "6.6", "6.12"}
     actual = {path.parent.name for path in paths}

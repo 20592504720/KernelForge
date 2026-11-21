@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "selection": "profile-required",
-  "download": { "enabled": false, "require_sha256": true },
-  "cache": { "enabled": true }
+  "mode": "AUTO",
+  "download": { "enabled": true, "require_sha256": true, "timeout_seconds": 60, "retries": 2 },
+  "cache": { "enabled": true, "directory": ".cache/toolchains", "lock_timeout_seconds": 120 }
 }
