@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from kernelforge import compatibility
-from kernelforge.objects import inspect_object
+from kernelforge.objects import inspect_object, archive_members
 from kernelforge.workspace import Workspace, default_path
 from kernelforge.source import _run_git, SourceError
 from kernelforge.filesystem import retry_windows
@@ -71,6 +71,16 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'another location'):
             workspace.initialize()
 
+    def test_temporary_paths_and_cli_overrides(self):
+        from kernelforge.cli import build_parser
+        from kernelforge.build import _safe_environment
+        with patch.dict(os.environ,{'KERNELFORGE_HOME':str(self.home)}):
+            self.assertEqual(_safe_environment({})['TMP'],str(self.home.resolve()/'temp'))
+            default=build_parser().parse_args(['build','--config','config.json'])
+            self.assertEqual(default.workspace,self.home.resolve()/'builds/default')
+            explicit=build_parser().parse_args(['build','--config','config.json','--workspace','explicit'])
+            self.assertEqual(explicit.workspace,Path('explicit'))
+
 
 class ObjectTests(unittest.TestCase):
     def setUp(self):
@@ -108,6 +118,15 @@ class ObjectTests(unittest.TestCase):
                     self.assertEqual(inspect_object(self.path,self.root)['format'],'LLVM ARM64 bitcode')
                 else:
                     with self.assertRaises(ValueError): inspect_object(self.path,self.root)
+
+    def test_kbuild_archive_enumerates_real_members(self):
+        self.elf(); archive=self.root/'built-in.a'; archive.write_bytes(b'!<thin>\n')
+        with patch('kernelforge.objects.subprocess.check_output',return_value='test.o\n'):
+            self.assertEqual(archive_members(archive,self.root),[self.path.resolve()])
+        with patch('kernelforge.objects.subprocess.check_output',return_value='../outside.o\n'):
+            with self.assertRaises(ValueError): archive_members(archive,self.root)
+        with patch('kernelforge.objects.subprocess.check_output',return_value=''):
+            with self.assertRaises(ValueError): archive_members(archive,self.root)
 
 
 class CompatibilityTests(unittest.TestCase):

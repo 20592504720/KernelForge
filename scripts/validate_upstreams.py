@@ -17,7 +17,7 @@ from kernelforge import development
 from kernelforge.kernelsu import integrate
 from kernelforge.source import checkout, _run_git
 from kernelforge.versions import resolve
-from kernelforge.objects import inspect_object
+from kernelforge.objects import inspect_object, archive_members
 
 BASELINE={'official':'2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4',
           'bakasu':'7b65bde0710b5e7c6f755545cb15a4abd417f3a8',
@@ -105,7 +105,7 @@ def main():
         run(command+['-j2','security/selinux/'])
         result['kbuild']='TESTED (make prepare; actual object build follows)'
         step='real ARM64 object compilation'
-        targets=['drivers/kernelsu/']; objects=['drivers/kernelsu/kernelsu.o']
+        targets=['drivers/kernelsu/']; objects=[]
         if args.susfs:
             selected=result['susfs'].get('compatibility_patch')
             patch=(ROOT/'patches/compat/susfs'/selected['file']) if selected else work/'upstreams/susfs/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch'
@@ -113,6 +113,7 @@ def main():
             targets+=sorted({str(Path(name).with_suffix('.o')) for name in changed}|{'fs/susfs.o'})
             objects+=targets[1:]
         run(command+['-j2']+targets,timeout=1200)
+        objects=[str(path.relative_to(source)) for path in archive_members(source/'drivers/kernelsu/built-in.a',source)]+objects
         result['objects']=[inspect_object(source/name,source) for name in objects]
         result['object_compilation']='TESTED'
         step='relocatable integration link'

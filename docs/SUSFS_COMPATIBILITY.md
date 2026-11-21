@@ -28,7 +28,9 @@ The independent Linux workflow runs official/BakaSU × SUSFS off/on, both with
 the exact baseline and with `latest_branch`. Each job locks versions once,
 checks real source SHA, integrates, resolves final Kconfig, runs `make prepare`
 and `headers_install`, then actually compiles KernelSU and every kernel C file
-changed by SUSFS, including `fs/susfs.o`. ELF64/ARM64 relocatable objects and
+changed by SUSFS, including `fs/susfs.o`. KSU objects are enumerated from its
+actual Kbuild `built-in.a`, rather than assuming a composite `kernelsu.o` exists.
+ELF64/ARM64 objects, or LLVM-validated ARM64 bitcode when LTO is enabled, and
 their hashes are checked. A relocatable aggregate is linked separately; it does
 not establish full vmlinux symbol resolution. No dry run counts as compilation.
 Complete logs, configuration and locks are uploaded even on failure.
@@ -36,7 +38,8 @@ Complete logs, configuration and locks are uploaded even on failure.
 `python scripts/validate_upstreams.py --provider bakasu --susfs
 --pinned-baseline --workspace <new-Linux-directory>` reproduces the fixed
 combination. Omit `--pinned-baseline` to resolve latest branches; use
-`--full-kernel` explicitly for an additional Image build. Fresh workspaces are
+`--full-kernel` explicitly for an additional Image build (the fixed-baseline CI
+jobs request this). Fresh workspaces are
 required to avoid reusing partially integrated trees. BakaSU's existing KSU-side
 SUSFS implementation is detected and not patched twice. Device boot and Root
 remain **UNTESTED**. See the final stage report for actual CI outcomes.

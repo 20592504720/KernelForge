@@ -5,6 +5,15 @@ Set `KERNELFORGE_HOME` to your existing workspace root, then run
 manifests remain outside this repository. With this variable unset, existing
 CLI defaults continue to work. Explicit build and cache paths take precedence.
 
+From the `project` directory, the current PowerShell session can use
+`$env:KERNELFORGE_HOME = (Resolve-Path ..).Path`. Persist it for future processes
+with `[Environment]::SetEnvironmentVariable('KERNELFORGE_HOME', $env:KERNELFORGE_HOME, 'User')`.
+Already running applications retain their previous environment until restarted.
+Build subprocesses and the Windows test runner use the workspace `temp` folder;
+the global Windows TEMP setting is not changed. Windows sharing violations are
+retried for a bounded interval during atomic cache publication and owned Git
+checkout cleanup. Permanent failures still propagate.
+
 The root contains `project`, `sources`, `toolchains`, `cache`, `builds`,
 `artifacts`, `logs`, `reports`, `temp`, `manifests`, and `backups`.
 `project` contains this Git checkout. Configurations in Git use relative paths;

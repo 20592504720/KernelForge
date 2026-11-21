@@ -16,6 +16,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from kernelforge.workspace import Workspace
+workspace=Workspace.configured()
+if workspace:
+    os.environ.update(workspace.temporary_environment())
+    import tempfile
+    tempfile.tempdir=None
 
 suite = unittest.defaultTestLoader.discover(
     str(ROOT / "tests"), pattern="test*.py"

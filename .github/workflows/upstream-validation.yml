@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
-      - run: sudo apt-get update && sudo apt-get install -y flex bison libelf-dev libssl-dev clang lld llvm rsync
+      - run: sudo apt-get update && sudo apt-get install -y flex bison libelf-dev libssl-dev clang lld llvm rsync dwarves
       - run: clang --version && llvm-nm --version && ld.lld --version
       - name: Validate real sources
         env:

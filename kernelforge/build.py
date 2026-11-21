@@ -106,6 +106,9 @@ def _safe_argv(argv: list[str]) -> list[str]:
 
 def _safe_environment(config_env: dict[str, str], overlay: dict[str, str] | None = None) -> dict[str, str]:
     inherited = {k: v for k, v in os.environ.items() if not SENSITIVE.search(k)}
+    home=Workspace.configured()
+    if home:
+        inherited.update(home.temporary_environment())
     for key, value in config_env.items():
         if SENSITIVE.search(key):
             raise BuildError(f"refusing secret-like environment key in build profile: {key}")

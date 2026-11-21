@@ -32,6 +32,11 @@ class Workspace:
                 'linux_kernel_build_status':'UNTESTED',
                 'note':'Windows/NTFS development paths are not a verified Linux kernel build filesystem'}
 
+    def temporary_environment(self):
+        folder=self.path('temp')
+        folder.mkdir(parents=True,exist_ok=True)
+        return {key:str(folder) for key in ('TEMP','TMP','TMPDIR')}
+
     def initialize(self):
         for kind in KINDS:
             self.path(kind).mkdir(parents=True,exist_ok=True)

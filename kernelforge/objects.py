@@ -6,6 +6,26 @@ import re
 from pathlib import Path
 
 
+def archive_members(path, root):
+    path,root=Path(path).resolve(),Path(root).resolve()
+    if root not in path.parents or not path.is_file() or path.read_bytes()[:8] not in (b'!<arch>\n',b'!<thin>\n'):
+        raise ValueError(f'missing or invalid Kbuild archive: {path}')
+    names=subprocess.check_output(['llvm-ar','t',str(path)],cwd=root,text=True).splitlines()
+    if not names:
+        raise ValueError('Kbuild archive contains no compiled objects')
+    # Thin archive member names are emitted relative to the build root.
+    objects=[]
+    for name in names:
+        target=(root/name).resolve()
+        if not target.is_file():
+            target=(path.parent/name).resolve()
+        if root not in target.parents or target.suffix!='.o' or not target.is_file():
+            raise ValueError(f'unsafe or missing Kbuild archive member: {name}')
+        if target not in objects:
+            objects.append(target)
+    return objects
+
+
 def inspect_object(path, root):
     path, root = Path(path).resolve(), Path(root).resolve()
     if root not in path.parents or not path.is_file():
