@@ -28,4 +28,10 @@ jobs:
       - run: python -m compileall -q kernelforge scripts tests
       - run: python -m kernelforge validate
       - run: python -c "import yaml; [yaml.safe_load(open(p, encoding='utf-8')) for p in ['.github/workflows/validate.yml', '.github/workflows/build.yml', '.github/workflows/release.yml']]"
-      - run: python -m unittest discover -s tests -v
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: python -m unittest discover -s tests -v
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
+        run: python -m unittest discover -s tests -v
