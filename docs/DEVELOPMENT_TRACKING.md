@@ -50,4 +50,6 @@ TESTED with local fixtures: all four policies, annotated tags, missing refs/netw
 
 UNTESTED until actual runner evidence exists: each real provider/SUSFS/GKI combination, real Kconfig resolution and Kbuild preparation. Full kernel/KernelSU object compilation, boot and runtime Root remain UNTESTED even when source validation passes.
 
-Local limitations: this Windows machine has no installed WSL distribution or kernel build toolchain. GitLab source checkout succeeded; GitHub Git and android.googlesource.com access failed. Local real-source failure reports are retained under E:/内核构建/stage45-local-validation/report. Network failures do not fall back to another version.
+Local limitations: this Windows machine has no installed WSL distribution or kernel build toolchain. Initial GitHub/Android network attempts failed; a subsequent real run resolved all three upstreams but GKI checkout failed on the Windows-reserved include/soc/arc/aux.h path. Local real-source failure reports are retained under E:/鍐呮牳鏋勫缓/stage45-local-validation/report. Network failures do not fall back to another version.
+
+Observed real-source results and remaining blockers are recorded in [STAGE45_REPORT.md](STAGE45_REPORT.md).
