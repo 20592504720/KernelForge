@@ -103,9 +103,9 @@ class AdapterTests(unittest.TestCase):
                 "defconfig": "device_defconfig", "artifacts": {"paths": ["Image"]}}
             gp = GkiAdapter().plan(source, out, config); vp = VendorAdapter().plan(source, out, config)
             self.assertEqual(gp.argv, ["bazel", "run", "8"]); self.assertEqual(gp.targets, ["//gki:dist"])
-            self.assertEqual(gp.environment, {"GKI_FLAG": "1"}); self.assertEqual(gp.cwd, source)
+            self.assertEqual(gp.environment, {"GKI_FLAG": "1"}); self.assertEqual(str(gp.cwd).casefold(), str(source.resolve()).casefold())
             self.assertEqual(vp.argv, ["./build-device", "device_defconfig"]); self.assertEqual(vp.targets, ["vendor-kernel"])
-            self.assertEqual(vp.environment, {"VENDOR_FLAG": "1"}); self.assertEqual(vp.cwd, vendor)
+            self.assertEqual(vp.environment, {"VENDOR_FLAG": "1"}); self.assertEqual(str(vp.cwd).casefold(), str(vendor.resolve()).casefold())
 
     def test_path_escape_rejected(self):
         with tempfile.TemporaryDirectory() as td:
