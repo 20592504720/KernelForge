@@ -95,6 +95,9 @@ class SusfsTests(unittest.TestCase):
         r=self.run_patch(); self.assertEqual(r['state'],'PROVIDER_AND_KERNEL_PATCHES_APPLIED')
         self.assertEqual((self.kernel/'target.c').read_text(),'new\n')
         self.assertTrue((self.kernel/'fs/susfs.c').exists())
+        self.assertEqual(len(r['applied']),2)
+        self.assertEqual({entry['target'] for entry in r['applied']},{'kernel','provider'})
+        self.assertTrue(all('sha256' in entry for entry in r['copied']))
 
     def test_nested_kernel_repo_does_not_silently_skip_patches(self):
         _run_git(['init', str(self.root)])
@@ -140,6 +143,7 @@ class SusfsTests(unittest.TestCase):
         self.spec['allow_bakasu_inline']=True
         r=self.run_patch('bakasu'); self.assertTrue(r['provider_patch_skipped'])
         self.assertEqual(r['state'],'EXTRA_KERNEL_PATCHES_APPLIED')
+        self.assertEqual([p['target'] for p in r['applied']],['kernel'])
 
     def test_baka_missing_hook_layout_rejected(self):
         with self.assertRaisesRegex(ValueError,'INCOMPATIBLE'):

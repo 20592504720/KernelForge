@@ -44,6 +44,13 @@ are `manifests/stage46-migration-plan.json`,
 remain intact. This scan covers known KernelForge task paths, not unrelated
 system directories.
 
+A follow-up directory/Git-config scan also identified an interrupted test
+fixture in the C-drive temporary directory (28 files, 28,108 bytes). It was
+copied and hash-verified into workspace `backups`, retaining the original.
+`manifests/stage46-supplemental-verified.json` records this extra copy. The total
+is **1,361 files / 294,488,302 bytes**, with **902,341 bytes** of C-drive cleanup
+candidates. No cleanup has been authorized or performed.
+
 ## Windows and Linux isolation
 
 Windows is suitable for repository development, configuration and downloads.

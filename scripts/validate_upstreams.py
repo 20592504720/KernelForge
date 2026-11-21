@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import hashlib
+from datetime import datetime, timezone
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from kernelforge import development
+from kernelforge import __version__
 from kernelforge.kernelsu import integrate
 from kernelforge.source import checkout, _run_git
 from kernelforge.versions import resolve
@@ -37,6 +39,8 @@ def main():
     result={'provider':args.provider,'status':'failure','kconfig':'UNTESTED','kbuild':'UNTESTED','kernel_compile':'UNTESTED','boot':'UNTESTED','root':'UNTESTED'}
     result.update(object_compilation='UNTESTED',susfs_enabled=args.susfs,
                   version_policy='pinned' if args.pinned_baseline else 'latest_branch',objects=[])
+    started=datetime.now(timezone.utc)
+    result.update(kernelforge_version=__version__,started_at=started.isoformat(),toolchain={})
     step='version resolution'
     try:
         profile=ROOT/'configs/kernelsu'/('official-development.json' if args.provider=='official' else 'bakasu-development.json')
@@ -81,6 +85,7 @@ def main():
         step='toolchain inventory'
         for tool in ('clang','ld.lld','llvm-nm','gcc'):
             run([tool,'--version'])
+            result['toolchain'][tool]=subprocess.check_output([tool,'--version'],text=True).splitlines()[0]
         step='initial Kconfig'
         run(command+['gki_defconfig'])
         symbols=['KSU','SECURITY_SELINUX','ARM64','KALLSYMS','KALLSYMS_ALL','TRACEPOINTS','KPROBES','EXT4_FS']
@@ -125,6 +130,11 @@ def main():
         result['unresolved_root_hooks']=unresolved
         if unresolved:
             raise ValueError(f'unresolved KernelSU/SUSFS hooks after relocatable link: {unresolved}')
+        result['acceptance']={'source':'TESTED','kconfig':'TESTED','prepare':'TESTED',
+                              'objects':'TESTED','relocatable_link':'TESTED','full_vmlinux':'UNTESTED',
+                              'boot':'UNTESTED','root':'UNTESTED'}
+        if args.susfs:
+            result['susfs']['compile_compatibility']='TESTED (objects and relocatable link only)'
         result['kernel_compile_reason']='Full Image build not requested; host resources recorded separately'
         if args.full_kernel:
             step='complete Image build'
@@ -133,13 +143,20 @@ def main():
             if not image.is_file() or not image.stat().st_size:
                 raise ValueError('Image build returned without a nonempty Image')
             result['image']={'path':str(image.relative_to(work)),'bytes':image.stat().st_size,'sha256':hashlib.sha256(image.read_bytes()).hexdigest()}
+            shutil.copyfile(image,output/'Image')
+            if hashlib.sha256((output/'Image').read_bytes()).hexdigest()!=result['image']['sha256']:
+                raise ValueError('Image artifact copy SHA256 mismatch')
+            result['image']['artifact']='Image'
             result['kernel_compile']='TESTED'
+            result['acceptance']['full_vmlinux']='TESTED'
         result['status']='success'
     except Exception as exc:
         result['failure_step']=step
         result['failure_reason']=str(exc)
         print(str(exc),file=sys.stderr)
     finally:
+        ended=datetime.now(timezone.utc)
+        result.update(ended_at=ended.isoformat(),duration_seconds=(ended-started).total_seconds())
         (output/'real-source-report.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     return 0 if result['status']=='success' else 1
 

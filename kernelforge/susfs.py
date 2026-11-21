@@ -168,5 +168,8 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
                 path.write_bytes(content)
         raise
     return {'state': 'EXTRA_KERNEL_PATCHES_APPLIED' if baka else 'PROVIDER_AND_KERNEL_PATCHES_APPLIED',
-            'status': 'IMPLEMENTED', 'version': current['version'], 'applied': current['patches'],
+            'status': 'IMPLEMENTED', 'version': current['version'],
+            'applied': [{'target':'kernel' if tree==root else 'provider','file':patch.name,'sha256':digest(patch)} for tree,patch in patches],
+            'upstream_inventory':current['patches'],
+            'copied': [{'file':str(dest.relative_to(root)),'sha256':digest(dest)} for _,dest in copies],
             'provider_patch_skipped': baka, 'compatibility_patch':compatibility, 'compile_compatibility': 'UNTESTED'}
