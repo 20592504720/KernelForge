@@ -96,4 +96,19 @@ def validate_manifests(root: Path) -> list[str]:
             digest = hashlib.sha256(patch_path.read_bytes()).hexdigest()
             if digest != entry["sha256"]:
                 problems.append(f"{path.relative_to(root)}: SHA256 mismatch for {patch_path.relative_to(root)}")
+    catalog = root / 'patches/compat/susfs/manifest.json'
+    if catalog.exists():
+        data, errors = _read_json(catalog)
+        problems.extend(errors)
+        compat_schema, errors = _read_json(root / 'schemas/susfs-compat.schema.json')
+        problems.extend(errors)
+        if data is not None and not errors:
+            issues = _schema_errors(data, compat_schema, catalog.relative_to(root))
+            problems.extend(issues)
+            if not issues:
+                patch = (catalog.parent / data['file']).resolve()
+                if catalog.parent.resolve() not in patch.parents or not patch.is_file():
+                    problems.append('unsafe or missing SUSFS compatibility patch')
+                elif hashlib.sha256(patch.read_bytes()).hexdigest() != data['sha256']:
+                    problems.append('SUSFS compatibility patch SHA256 mismatch')
     return problems

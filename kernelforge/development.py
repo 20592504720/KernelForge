@@ -69,8 +69,13 @@ def integrate_locked(config, manifest, source, output, *, mode, integrator):
     kernel = _inside(source, spec.get('kernel_directory', '.'))
     if enabled_susfs:
         upstream = Path(manifest['upstreams']['susfs']['source_path'])
+        def selected(meta):
+            manifest['upstreams']['susfs']['compatibility_patch']=meta
+            temporary=output/'versions.lock.tmp'
+            temporary.write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
+            os.replace(temporary,output/'versions.lock.json')
         record = susfs.integrate(kernel, staged, upstream, config['susfs'], spec['provider'],
-                                {key: manifest['upstreams']['susfs'][key] for key in ('version', 'patches')})
+                                {key: manifest['upstreams']['susfs'][key] for key in ('version', 'patches')},on_selection=selected)
     def transfer(repository, commit, destination, **_kwargs):
         if repository != lock['repository'] or commit != lock['commit_sha'] or destination.exists():
             raise ValueError('locked source transfer identity mismatch')

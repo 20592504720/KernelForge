@@ -1,0 +1,6 @@
+*.patch text eol=lf -whitespace
+*.py text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+tests/fixtures/susfs-context/**/*.c text eol=lf -whitespace

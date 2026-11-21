@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
+import shutil
+import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -13,26 +17,45 @@ from kernelforge import development
 from kernelforge.kernelsu import integrate
 from kernelforge.source import checkout, _run_git
 from kernelforge.versions import resolve
+from kernelforge.objects import inspect_object
+
+BASELINE={'official':'2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4',
+          'bakasu':'7b65bde0710b5e7c6f755545cb15a4abd417f3a8',
+          'susfs':'756abbf2d81557e36664fc67dffaee26d3dfc57c',
+          'kernel':'498f91c17b0822a09aede17d26a63bf8c6813725'}
 
 
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--provider',choices=['official','bakasu'],required=True)
     parser.add_argument('--susfs',action='store_true')
+    parser.add_argument('--pinned-baseline',action='store_true')
+    parser.add_argument('--full-kernel',action='store_true')
     parser.add_argument('--workspace',type=Path,required=True)
     args=parser.parse_args()
     work=args.workspace.resolve(); output=work/'report'; output.mkdir(parents=True,exist_ok=True)
     result={'provider':args.provider,'status':'failure','kconfig':'UNTESTED','kbuild':'UNTESTED','kernel_compile':'UNTESTED','boot':'UNTESTED','root':'UNTESTED'}
+    result.update(object_compilation='UNTESTED',susfs_enabled=args.susfs,
+                  version_policy='pinned' if args.pinned_baseline else 'latest_branch',objects=[])
+    step='version resolution'
     try:
         profile=ROOT/'configs/kernelsu'/('official-development.json' if args.provider=='official' else 'bakasu-development.json')
-        config={'kernelsu':json.loads(profile.read_text())}
+        config={'kernelsu':json.loads(profile.read_text(encoding='utf-8'))}
+        if args.pinned_baseline:
+            config['kernelsu'].update(version_policy='pinned',ref_type='commit',ref=BASELINE[args.provider],expected_commit=BASELINE[args.provider])
         if args.susfs:
             config['susfs']={'enabled':True,'repository':'https://gitlab.com/simonpunk/susfs4ksu.git','version_policy':'latest_branch','android_gki':'android14-6.1','allow_bakasu_inline':True}
+            if args.pinned_baseline:
+                config['susfs'].update(version_policy='pinned',ref_type='commit',ref=BASELINE['susfs'],expected_commit=BASELINE['susfs'])
         lock=development.prepare(config,work,output)
-        kernel_lock=resolve({'repository':'https://github.com/aosp-mirror/kernel_common.git','version_policy':'latest_branch','branch':'android14-6.1','method':'GKI ARM64 source validation'})
+        kernel_spec={'repository':'https://github.com/aosp-mirror/kernel_common.git','version_policy':'latest_branch','branch':'android14-6.1','method':'GKI ARM64 source validation'}
+        if args.pinned_baseline:
+            kernel_spec.update(version_policy='pinned',ref_type='commit',ref=BASELINE['kernel'],expected_commit=BASELINE['kernel'])
+        kernel_lock=resolve(kernel_spec)
         lock['upstreams']['kernel']=kernel_lock
         (output/'versions.lock.json').write_text(json.dumps(lock,indent=2)+'\n',encoding='utf-8')
         source=work/'source'
+        step='GKI checkout'
         # Shallow source fetch avoids cloning the entire ACK history. Verify tree
         # connectivity and exact HEAD before any integration.
         source.mkdir()
@@ -47,29 +70,69 @@ def main():
         # Target code uses LLVM; host helpers in this ACK revision require the
         # GNU host compiler rather than the runner's newer Clang diagnostics.
         command=['make','ARCH=arm64','LLVM=1','HOSTCC=gcc','HOSTCXX=g++']
-        def run(argv):
-            process=subprocess.run(argv,cwd=source,capture_output=True,text=True,timeout=600,check=False)
+        def run(argv,timeout=900):
             with (output/'source-check.log').open('a',encoding='utf-8') as stream:
-                stream.write('$ '+' '.join(argv)+'\n'+process.stdout+process.stderr)
+                stream.write('$ '+' '.join(argv)+'\n'); stream.flush()
+                process=subprocess.run(argv,cwd=source,stdout=stream,stderr=subprocess.STDOUT,timeout=timeout,check=False)
             if process.returncode:
-                raise ValueError(f'real source command failed: {argv[0]} (exit {process.returncode})')
+                raise ValueError(f'{step} failed (exit {process.returncode}); see source-check.log')
+        result['host']={'cpus':os.cpu_count(),'free_bytes':shutil.disk_usage(work).free,
+                        'memory':Path('/proc/meminfo').read_text() if Path('/proc/meminfo').exists() else 'unknown'}
+        step='toolchain inventory'
+        for tool in ('clang','ld.lld','llvm-nm','gcc'):
+            run([tool,'--version'])
+        step='initial Kconfig'
         run(command+['gki_defconfig'])
         symbols=['KSU','SECURITY_SELINUX','ARM64','KALLSYMS','KALLSYMS_ALL','TRACEPOINTS','KPROBES','EXT4_FS']
         symbols+=['KSU_SUSFS','THREAD_INFO_IN_TASK'] if args.susfs else (['KSU_TRACEPOINT_HOOK'] if args.provider=='bakasu' else [])
         for symbol in symbols:
             run(['scripts/config','--enable',symbol])
+        step='KernelSU and SUSFS integration'
         result['integration'],result['susfs']=development.integrate_locked(config,lock,source,output,mode='gki',integrator=integrate)
+        step='final Kconfig'
         run(command+['olddefconfig'])
         final=(source/'.config').read_text().splitlines()
         for symbol in symbols:
             if f'CONFIG_{symbol}=y' not in final:
                 raise ValueError(f'final Kconfig dropped CONFIG_{symbol}=y')
         result['kconfig']='TESTED'
+        shutil.copyfile(source/'.config',output/'kernel.config')
+        step='make prepare and UAPI headers'
         run(command+['prepare'])
-        run(command+['-n','drivers/kernelsu/'])
-        result['kbuild']='TESTED (prepare and dry run; no KernelSU object compilation claim)'
+        run(command+['headers_install'])
+        result['kbuild']='TESTED (make prepare; actual object build follows)'
+        step='real ARM64 object compilation'
+        targets=['drivers/kernelsu/']; objects=['drivers/kernelsu/kernelsu.o']
+        if args.susfs:
+            selected=result['susfs'].get('compatibility_patch')
+            patch=(ROOT/'patches/compat/susfs'/selected['file']) if selected else work/'upstreams/susfs/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch'
+            changed=re.findall(r'^\+\+\+ b/(.+\.c)$',patch.read_text(encoding='utf-8'),re.M)
+            targets+=sorted({str(Path(name).with_suffix('.o')) for name in changed}|{'fs/susfs.o'})
+            objects+=targets[1:]
+        run(command+['-j2']+targets,timeout=1200)
+        result['objects']=[inspect_object(source/name,source) for name in objects]
+        result['object_compilation']='TESTED'
+        step='relocatable integration link'
+        run(['ld.lld','-r','-o','integration-check.o']+objects)
+        result['relocatable_link']=inspect_object(source/'integration-check.o',source)
+        undefined=subprocess.check_output(['llvm-nm','--undefined-only','integration-check.o'],cwd=source,text=True)
+        (output/'undefined-symbols.txt').write_text(undefined,encoding='utf-8')
+        unresolved=sorted(set(re.findall(r'\b(?:__)?(?:ksu|susfs)_\w+',undefined)))
+        result['unresolved_root_hooks']=unresolved
+        if unresolved:
+            raise ValueError(f'unresolved KernelSU/SUSFS hooks after relocatable link: {unresolved}')
+        result['kernel_compile_reason']='Full Image build not requested; host resources recorded separately'
+        if args.full_kernel:
+            step='complete Image build'
+            run(command+['-j2','Image'],timeout=3600)
+            image=source/'arch/arm64/boot/Image'
+            if not image.is_file() or not image.stat().st_size:
+                raise ValueError('Image build returned without a nonempty Image')
+            result['image']={'path':str(image.relative_to(work)),'bytes':image.stat().st_size,'sha256':hashlib.sha256(image.read_bytes()).hexdigest()}
+            result['kernel_compile']='TESTED'
         result['status']='success'
     except Exception as exc:
+        result['failure_step']=step
         result['failure_reason']=str(exc)
         print(str(exc),file=sys.stderr)
     finally:

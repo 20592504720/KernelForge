@@ -27,7 +27,7 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m compileall -q kernelforge scripts tests
       - run: python -m kernelforge validate
-      - run: python -c "import yaml; [yaml.safe_load(open(p, encoding='utf-8')) for p in ['.github/workflows/validate.yml', '.github/workflows/build.yml', '.github/workflows/release.yml']]"
+      - run: python -c "import yaml; from pathlib import Path; [yaml.safe_load(p.read_text(encoding='utf-8')) for p in Path('.github/workflows').glob('*.yml')]"
       - name: Run tests (Windows)
         if: runner.os == 'Windows'
         shell: cmd

@@ -67,3 +67,6 @@ See `docs/ROADMAP.md` for sequencing and evidence requirements.
 Stage 4 adds opt-in shared KernelSU integration with pinned official v0.9.5 and BakaSU providers. Source integration is IMPLEMENTED and fixture TESTED; kernel compilation/boot remain UNTESTED. See [KernelSU providers](docs/KERNELSU.md).
 
 Stage 4.5 adds opt-in development tracking, immutable build locks, modern Kbuild policies and narrow SUSFS transactions. See [development tracking](docs/DEVELOPMENT_TRACKING.md) for configuration, real-source validation and limits.
+
+
+Stage 4.6 adds portable workspace paths and an exact-baseline SUSFS context adapter. See [workspace migration](docs/WORKSPACE_MIGRATION.md) and [SUSFS compatibility](docs/SUSFS_COMPATIBILITY.md). Real object compilation is validated separately by the Linux upstream workflow; source integration alone is not compilation, boot or Root acceptance.

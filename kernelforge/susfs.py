@@ -89,7 +89,7 @@ def _check(root, patch, reverse=False):
         return False
 
 
-def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_name: str, locked_inventory: dict):
+def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_name: str, locked_inventory: dict, on_selection=None):
     """Check all patch applicability before mutation; restore bytes on failure.
 
     BakaSU supplies its KSU-side SUSFS code, so its official-KSU patch is never
@@ -108,6 +108,10 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
     patch_root = upstream / 'kernel_patches'
     kernel_patch = patch_root / f'50_add_susfs_in_gki-{android}.patch'
     provider_patch = patch_root / 'KernelSU/10_enable_susfs_for_ksu.patch'
+    from .compatibility import select
+    kernel_patch,compatibility=select(root,provider,upstream,kernel_patch)
+    if on_selection:
+        on_selection(compatibility)
     has_ksu = bool(re.search(r'^config KSU_SUSFS$', kconfig, re.M))
     if baka and (not has_ksu or not (provider / 'kernel/tools/susfs_compat.mk').is_file()):
         raise ValueError('INCOMPATIBLE: BakaSU SUSFS code/compatibility hooks missing')
@@ -128,7 +132,7 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
               (patch_root / 'include/linux/susfs_def.h', root / 'include/linux/susfs_def.h')]
     already = all(_check(tree, patch, True) for tree, patch in patches)
     if already and all(dest.is_file() and digest(src) == digest(dest) for src, dest in copies):
-        return {'state': 'ALREADY_INTEGRATED', 'status': 'TESTED', 'version': current['version'], 'applied': [], 'provider_patch_skipped': baka}
+        return {'state': 'ALREADY_INTEGRATED', 'status': 'TESTED', 'version': current['version'], 'applied': [], 'provider_patch_skipped': baka, 'compatibility_patch':compatibility, 'compile_compatibility':'UNTESTED'}
     if any(dest.exists() for _, dest in copies):
         raise ValueError('INCOMPATIBLE: partial/different SUSFS payload already present; refusing overwrite')
     for tree, patch in patches:
@@ -165,4 +169,4 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
         raise
     return {'state': 'EXTRA_KERNEL_PATCHES_APPLIED' if baka else 'PROVIDER_AND_KERNEL_PATCHES_APPLIED',
             'status': 'IMPLEMENTED', 'version': current['version'], 'applied': current['patches'],
-            'provider_patch_skipped': baka, 'compile_compatibility': 'UNTESTED'}
+            'provider_patch_skipped': baka, 'compatibility_patch':compatibility, 'compile_compatibility': 'UNTESTED'}

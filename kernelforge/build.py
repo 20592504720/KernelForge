@@ -19,6 +19,7 @@ from .toolchain import check_tools
 from .toolchains import ToolchainManager, ToolchainManagerError
 from .kernelsu import integrate, IntegrationError
 from . import development
+from .workspace import Workspace
 
 LOG = logging.getLogger(__name__)
 SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
@@ -197,6 +198,9 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             cache_settings = defaults.get("cache", {})
             download_settings = defaults.get("download", {})
             cache_dir = Path(profile.get("cache_dir", manager_config.get("cache_dir", cache_settings.get("directory", ".cache/toolchains"))))
+            home = Workspace.configured()
+            if home and 'cache_dir' not in profile and 'cache_dir' not in manager_config:
+                cache_dir = home.path('cache', 'toolchains')
             if not cache_dir.is_absolute():
                 cache_dir = workspace / cache_dir
             toolchain_mode = manager_config.get("mode", defaults.get("mode", "AUTO"))

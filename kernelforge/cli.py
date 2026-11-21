@@ -10,6 +10,7 @@ from pathlib import Path
 from .validation import validate_configs, validate_manifests
 from .build import BuildError, run_build
 from .toolchains import ToolchainManager, ToolchainManagerError
+from .workspace import Workspace, default_path
 import json
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,16 +24,18 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("validate-config", help="validate JSON configuration and references")
     sub.add_parser("validate-patches", help="validate patch manifests and local file hashes")
     sub.add_parser("doctor", help="inspect the local validation environment")
+    workspace = sub.add_parser('workspace', help='show or initialize KERNELFORGE_HOME paths')
+    workspace.add_argument('--init', action='store_true')
     build = sub.add_parser("build", help="run a configured kernel build")
     build.add_argument("--config", required=True, type=Path)
-    build.add_argument("--workspace", type=Path, default=Path(".kernel-work"))
-    build.add_argument("--output", type=Path, default=Path("artifacts"))
+    build.add_argument("--workspace", type=Path, default=default_path('builds','.kernel-work','default'))
+    build.add_argument("--output", type=Path, default=default_path('artifacts','artifacts','default'))
     toolchain = sub.add_parser("toolchain", help="inspect or clean the verified toolchain cache")
     tool_sub = toolchain.add_subparsers(dest="toolchain_command", required=True)
     cache_list = tool_sub.add_parser("list", help="list cached toolchains and integrity state")
-    cache_list.add_argument("--cache-dir", type=Path, default=Path(".cache/toolchains"))
+    cache_list.add_argument("--cache-dir", type=Path, default=default_path('cache','.cache/toolchains','toolchains'))
     cache_clean = tool_sub.add_parser("clean", help="remove matching cached toolchains")
-    cache_clean.add_argument("--cache-dir", type=Path, default=Path(".cache/toolchains"))
+    cache_clean.add_argument("--cache-dir", type=Path, default=default_path('cache','.cache/toolchains','toolchains'))
     cache_clean.add_argument("--kind", choices=["llvm", "gcc"])
     cache_clean.add_argument("--name")
     cache_clean.add_argument("--version")
@@ -43,6 +46,15 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(levelname)s: %(message)s")
+    if args.command == 'workspace':
+        selected = Workspace.configured()
+        if selected is None:
+            logging.error('KERNELFORGE_HOME is not set')
+            return 2
+        if args.init:
+            selected.initialize()
+        print(json.dumps(selected.manifest(), ensure_ascii=False, indent=2))
+        return 0
     if args.command == "doctor":
         logging.info("Python %s on %s", platform.python_version(), platform.platform())
         try:
