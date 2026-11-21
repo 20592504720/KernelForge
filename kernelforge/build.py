@@ -15,6 +15,7 @@ from typing import Protocol
 
 from . import __version__
 from .source import checkout
+from .patch_manager import apply_series
 from .toolchain import check_tools
 from .toolchains import ToolchainManager, ToolchainManagerError
 from .kernelsu import integrate, IntegrationError
@@ -178,6 +179,15 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         source_dir = workspace / "source"
         source_sha = checkout(config["source"]["repository"], config["source"]["ref"], source_dir, timeout=config["source"].get("timeout_seconds", 300))
         report["source"]["commit_sha"] = source_sha
+        if config.get("patch_series"):
+            try:
+                report["patch_series"] = apply_series(
+                    source_dir, config["patch_series"], Path(__file__).resolve().parents[1] / "patches",
+                    kernel_commit=source_sha,
+                )
+            except (ValueError, RuntimeError, OSError) as exc:
+                report["patch_series"] = {"state": "FAILED", "error": str(exc)}
+                raise BuildError(str(exc)) from exc
         try:
             if versions is not None:
                 report['kernelsu'], report['susfs'] = development.integrate_locked(config, versions, source_dir, output_dir, mode=mode, integrator=integrate)

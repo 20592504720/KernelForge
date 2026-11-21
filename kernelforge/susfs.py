@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from .patch_manager import rollback_files
 import re
 from pathlib import Path
 
@@ -142,31 +143,24 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
             except RuntimeError as exc:
                 raise ValueError(f'INCOMPATIBLE: SUSFS patch conflict: {patch.name}: {exc}') from exc
             raise ValueError(f'INCOMPATIBLE: SUSFS patch conflict: {patch.name}')
-    snapshots = {}
+    targets = []
     for tree, patch in patches:
         for relative in touched(patch):
             path = tree / relative
             if path.is_symlink() or tree.resolve() not in path.resolve().parents or not path.is_file():
                 raise ValueError('unsafe or missing SUSFS patch target')
-            snapshots[path] = path.read_bytes()
+            targets.append(path)
     for _, dest in copies:
         if dest.parent.is_symlink() or root.resolve() not in dest.resolve().parents:
             raise ValueError('unsafe SUSFS copy destination')
-        snapshots[dest] = None
-    try:
+        targets.append(dest)
+    with rollback_files(targets):
         for tree, patch in patches:
             _apply(tree, patch)
         for src, dest in copies:
             dest.write_bytes(src.read_bytes())
         if not all(_check(tree, patch, True) for tree, patch in patches):
             raise ValueError('SUSFS application verification failed')
-    except BaseException:
-        for path, content in snapshots.items():
-            if content is None:
-                path.unlink(missing_ok=True)
-            else:
-                path.write_bytes(content)
-        raise
     return {'state': 'EXTRA_KERNEL_PATCHES_APPLIED' if baka else 'PROVIDER_AND_KERNEL_PATCHES_APPLIED',
             'status': 'IMPLEMENTED', 'version': current['version'],
             'applied': [{'target':'kernel' if tree==root else 'provider','file':patch.name,'sha256':digest(patch)} for tree,patch in patches],
