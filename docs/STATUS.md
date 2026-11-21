@@ -7,9 +7,9 @@
 
 ## Not implemented
 
-- **IMPLEMENTED:** configured source checkout, tool version checks, separate GKI and Vendor command adapters, build logging, duration and SHA256 reports for real produced artifacts.
-- **TESTED:** adapter selection and build failure paths are covered by stage-two tests.
-- **NOT_IMPLEMENTED:** automatic toolchain download/cache, project-specific validated GKI/Vendor profiles, KernelSU integration, patch application, SUSFS, TCP/ZRAM detection, verified device builds.
+- **IMPLEMENTED:** safe Git ref resolution/checkout with SHA recording and cleanup, tool executable/path/version checks, separate GKI and Vendor build plans, workspace locking, timeouts, sanitized inherited secret environment, logs, failure/success reports, and SHA-verified real artifact copies.
+- **TESTED:** local Git fixture branch/tag/SHA checkout, failure and occupied-path behavior, toolchain missing/old versions, adapter boundaries, failures/timeouts, report output, artifact hashes, and secret non-inheritance.
+- **NOT_IMPLEMENTED:** automatic toolchain download/cache, validated project-specific GKI/Vendor profiles, Android kernel build verification, KernelSU integration, patch application, SUSFS, TCP/ZRAM detection, verified device builds.
 - **PLACEHOLDER:** GitHub build workflow remains preflight-only pending reviewed build profiles; release workflow is disabled; PJZ110 profile explicitly unverified.
 
 ## Tests

@@ -1,98 +1,221 @@
-"""Separate GKI and Vendor build adapters using explicit argv configuration."""
+"""GKI and Vendor build plans, execution, logging, and stable reports."""
 from __future__ import annotations
 
 import hashlib
 import json
 import logging
 import os
+import re
 import shlex
 import subprocess
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
+from . import __version__
 from .source import checkout
 from .toolchain import check_tools
 
 LOG = logging.getLogger(__name__)
+SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
 
 
 class BuildError(RuntimeError):
     pass
 
 
-class Adapter(Protocol):
-    def command(self, config: dict, context: dict[str, str]) -> list[str]: ...
+class BuildPlan(Protocol):
+    argv: list[str]
+    cwd: Path
+    environment: dict[str, str]
+    targets: list[str]
+    artifact_patterns: list[str]
+
+
+class Plan:
+    def __init__(self, argv, cwd, environment, targets, artifact_patterns, required_tools):
+        self.argv, self.cwd, self.environment = argv, cwd, environment
+        self.targets, self.artifact_patterns = targets, artifact_patterns
+        self.required_tools = required_tools
 
 
 def _expand(argv: list[str], context: dict[str, str]) -> list[str]:
     expanded = []
-    for value in argv:
+    for arg in argv:
         try:
-            expanded.append(value.format_map(context))
+            expanded.append(arg.format_map(context))
         except KeyError as exc:
             raise BuildError(f"unknown build command placeholder: {exc.args[0]}") from exc
+    if not expanded or not expanded[0]:
+        raise BuildError("build command argv must not be empty")
     return expanded
 
 
-class GkiAdapter:
-    """GKI/Kleaf or build.sh command is intentionally supplied by its profile."""
+def _plan(source: Path, output: Path, config: dict, adapter_key: str) -> Plan:
+    spec = config["build"][adapter_key]
+    build_dir = (source / spec.get("directory", ".")).resolve()
+    if build_dir != source.resolve() and source.resolve() not in build_dir.parents:
+        raise BuildError(f"configured build directory escapes source tree: {spec.get('directory')}")
+    if not build_dir.is_dir():
+        raise BuildError(f"configured build directory does not exist: {build_dir}")
+    context = {"source": str(source.resolve()), "out": str(output.resolve()), "build_dir": str(build_dir), "jobs": str(config["build"]["jobs"]), "defconfig": config.get("defconfig", "")}
+    return Plan(_expand(spec["argv"], context), build_dir, spec.get("environment", {}), spec.get("targets", []), spec.get("artifacts", config["artifacts"]["paths"]), spec.get("required_tools", []))
 
-    def command(self, config: dict, context: dict[str, str]) -> list[str]:
-        mode = config["build"]["gki"]["system"]
-        if mode not in {"kleaf", "build-sh"}:
-            raise BuildError(f"unsupported GKI system: {mode}")
-        return _expand(config["build"]["gki"]["argv"], context)
+
+class GkiAdapter:
+    """GKI plan includes explicit Kleaf/build.sh system, targets and outputs."""
+    def plan(self, source: Path, output: Path, config: dict) -> Plan:
+        system = config["build"]["gki"]["system"]
+        if system not in {"kleaf", "build-sh"}:
+            raise BuildError(f"unsupported GKI system: {system}")
+        return _plan(source, output, config, "gki")
 
 
 class VendorAdapter:
-    """Vendor command/arguments are profile-defined; shell interpolation is disabled."""
+    """Vendor plan owns its own working directory, environment, target and outputs."""
+    def plan(self, source: Path, output: Path, config: dict) -> Plan:
+        return _plan(source, output, config, "vendor")
 
-    def command(self, config: dict, context: dict[str, str]) -> list[str]:
-        return _expand(config["build"]["vendor"]["argv"], context)
+
+ADAPTERS = {"gki": GkiAdapter(), "vendor": VendorAdapter()}
 
 
-ADAPTERS: dict[str, Adapter] = {"gki": GkiAdapter(), "vendor": VendorAdapter()}
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _safe_argv(argv: list[str]) -> list[str]:
+    safe, redact_next = [], False
+    for arg in argv:
+        if redact_next:
+            safe.append("[REDACTED]"); redact_next = False; continue
+        if SENSITIVE.search(arg):
+            if "=" in arg:
+                safe.append(arg.split("=", 1)[0] + "=[REDACTED]")
+            else:
+                safe.append(arg); redact_next = True
+        else:
+            safe.append(arg)
+    return safe
+
+
+def _safe_environment(config_env: dict[str, str]) -> dict[str, str]:
+    inherited = {k: v for k, v in os.environ.items() if not SENSITIVE.search(k)}
+    for key, value in config_env.items():
+        if SENSITIVE.search(key):
+            raise BuildError(f"refusing secret-like environment key in build profile: {key}")
+        inherited[key] = str(value)
+    return inherited
+
+
+def _artifacts(source: Path, output: Path, patterns: list[str]) -> list[dict]:
+    found: dict[Path, Path] = {}
+    for pattern in patterns:
+        for path in source.glob(pattern):
+            resolved = path.resolve()
+            if source.resolve() not in resolved.parents or not resolved.is_file():
+                continue
+            found[resolved] = path
+    manifest = []
+    for index, (resolved, path) in enumerate(sorted(found.items(), key=lambda pair: str(pair[0]))):
+        digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
+        target_name = path.name if index == 0 else f"{index}-{path.name}"
+        target = output / target_name
+        target.write_bytes(resolved.read_bytes())
+        copied_hash = hashlib.sha256(target.read_bytes()).hexdigest()
+        if copied_hash != digest:
+            raise BuildError(f"artifact copy SHA256 verification failed: {path}")
+        manifest.append({"source": str(path.relative_to(source)), "file": target.name, "size": target.stat().st_size, "sha256": digest})
+    return manifest
+
+
+def _write_report(output: Path, report: dict) -> None:
+    output.mkdir(parents=True, exist_ok=True)
+    temp = output / ".build-report.json.tmp"
+    temp.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temp.replace(output / "build-report.json")
+
+
+def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
+    output_dir = output_dir.resolve()
+    workspace = workspace.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    started_at, monotonic_start = _utc_now(), time.monotonic()
+    mode = config.get("build", {}).get("mode", "unknown")
+    report = {
+        "report_version": 1, "kernelforge_version": __version__,
+        "device": config.get("device", {}).get("id"), "kernel_version": config.get("kernel_version"),
+        "build_type": mode, "source": {"repository": config.get("source", {}).get("repository"), "requested_ref": config.get("source", {}).get("ref"), "commit_sha": None},
+        "toolchain": {}, "build": {"argv": [], "targets": [], "environment_keys": [], "started_at": started_at, "ended_at": None, "duration_seconds": None, "exit_status": None, "timed_out": False},
+        "artifacts": [], "log_file": "build.log", "error": None,
+    }
+    log_path = output_dir / "build.log"
+    try:
+        if mode not in ADAPTERS:
+            raise BuildError(f"unsupported build mode: {mode}")
+        report["toolchain"] = check_tools(config["toolchain"]["required"])
+        source_dir = workspace / "source"
+        source_sha = checkout(config["source"]["repository"], config["source"]["ref"], source_dir, timeout=config["source"].get("timeout_seconds", 300))
+        report["source"]["commit_sha"] = source_sha
+        plan = ADAPTERS[mode].plan(source_dir, output_dir, config)
+        report["toolchain"].update(check_tools(plan.required_tools))
+        report["build"]["argv"] = _safe_argv(plan.argv)
+        report["build"]["targets"] = plan.targets
+        report["build"]["environment_keys"] = sorted(plan.environment)
+        timeout = config["build"].get("timeout_seconds", 3600)
+        safe_env = _safe_environment(plan.environment)
+        with log_path.open("w", encoding="utf-8") as log:
+            log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
+            try:
+                result = subprocess.run(plan.argv, cwd=plan.cwd, env=safe_env, stdout=log, stderr=subprocess.STDOUT, check=False, timeout=timeout)
+                report["build"]["exit_status"] = result.returncode
+            except subprocess.TimeoutExpired:
+                report["build"]["timed_out"] = True
+                report["build"]["exit_status"] = 124
+                raise BuildError(f"{mode} build timed out after {timeout} seconds")
+        if report["build"]["exit_status"]:
+            raise BuildError(f"{mode} build failed with exit code {report['build']['exit_status']}; see {log_path}")
+        report["artifacts"] = _artifacts(source_dir, output_dir, plan.artifact_patterns)
+        if config["artifacts"].get("require_at_least_one", True) and not report["artifacts"]:
+            raise BuildError("build succeeded but no configured artifact files were produced")
+        report["build"]["status"] = "success"
+    except Exception as exc:
+        report["build"]["status"] = "failure"
+        report["error"] = f"{type(exc).__name__}: {exc}"
+        if not log_path.exists():
+            log_path.write_text(report["error"] + "\n", encoding="utf-8")
+        _finish_report(report, monotonic_start)
+        _write_report(output_dir, report)
+        if isinstance(exc, BuildError):
+            raise
+        raise BuildError(str(exc)) from exc
+    _finish_report(report, monotonic_start)
+    _write_report(output_dir, report)
+    LOG.info("Build succeeded; %d artifact(s)", len(report["artifacts"]))
+    return report
+
+
+def _finish_report(report: dict, monotonic_start: float) -> None:
+    report["build"]["ended_at"] = _utc_now()
+    report["build"]["duration_seconds"] = round(time.monotonic() - monotonic_start, 3)
 
 
 def run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
-    source_cfg = config["source"]
-    build_cfg = config["build"]
-    mode = build_cfg["mode"]
-    if mode not in ADAPTERS:
-        raise BuildError(f"unsupported build mode: {mode}")
-    source_dir = workspace / "source"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    started = time.time()
-    versions = check_tools(config["toolchain"]["required"])
-    source_sha = checkout(source_cfg["repository"], source_cfg["ref"], source_dir)
-    env = os.environ.copy()
-    env.update({key: str(value) for key, value in config.get("environment", {}).items()})
-    context = {"source": str(source_dir.resolve()), "out": str(output_dir.resolve()), "jobs": str(config["build"]["jobs"]), "defconfig": config.get("defconfig", "")}
-    if mode == "gki":
-        argv = ADAPTERS[mode].command(config, context)
-    else:
-        argv = ADAPTERS[mode].command(config, context)
-    if not argv or not argv[0]:
-        raise BuildError(f"{mode} build command is empty")
-    log_path = output_dir / "build.log"
-    LOG.info("Executing %s adapter: %s", mode, shlex.join(argv))
-    with log_path.open("w", encoding="utf-8") as log:
-        log.write(f"$ {shlex.join(argv)}\n")
-        log.flush()
-        result = subprocess.run(argv, cwd=source_dir, env=env, stdout=log, stderr=subprocess.STDOUT, check=False)
-    if result.returncode:
-        raise BuildError(f"{mode} build failed with exit code {result.returncode}; see {log_path}")
-    artifacts = []
-    for pattern in config["artifacts"]["paths"]:
-        for artifact in source_dir.glob(pattern):
-            if artifact.is_file():
-                digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
-                target = output_dir / artifact.name
-                target.write_bytes(artifact.read_bytes())
-                artifacts.append({"source": str(artifact.relative_to(source_dir)), "file": target.name, "size": target.stat().st_size, "sha256": digest})
-    if config["artifacts"].get("require_at_least_one", True) and not artifacts:
-        raise BuildError("build command succeeded but no configured artifact files were produced")
-    report = {"mode": mode, "source_repository": source_cfg["repository"], "source_commit": source_sha, "tool_versions": versions, "command": argv, "duration_seconds": round(time.time() - started, 2), "artifacts": artifacts, "build_log": log_path.name}
-    (output_dir / "build-report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    return report
+    """Serialize builds sharing a workspace and reject stale/active lock collisions."""
+    workspace = workspace.resolve()
+    workspace.mkdir(parents=True, exist_ok=True)
+    lock = workspace / ".kernelforge-build.lock"
+    try:
+        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError as exc:
+        raise BuildError(f"another build may be using workspace {workspace}; lock exists at {lock}") from exc
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(f"pid={os.getpid()}\n")
+        return _run_build(config, workspace, output_dir)
+    finally:
+        try:
+            lock.unlink()
+        except FileNotFoundError:
+            pass

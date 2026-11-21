@@ -49,7 +49,7 @@ python3 -m unittest discover -s tests -v
 
 ## Status
 
-- **IMPLEMENTED:** JSON/schema validation, patch-manifest structure/hash validation, local CLI, pinned-ref source checkout with resolved SHA recording, tool version checks, independent configurable GKI/Vendor adapters, build logs and real artifact hashing.
+- **IMPLEMENTED:** JSON/schema validation, patch-manifest structure/hash validation, local CLI, source ref checkout with resolved SHA recording, tool version checks, independent configurable GKI/Vendor plans, timeout/log/failure reports and real artifact hashing.
 - **TESTED:** positive and negative configuration/manifest tests (see `docs/STATUS.md`).
 - **PLACEHOLDER:** kernel build and release workflow entry points; no kernel build occurs.
 - **NOT_IMPLEMENTED:** auto-downloaded/cached toolchains, verified upstream-specific GKI or vendor build profiles, KernelSU/SUSFS integration, patch application, device-ready configurations, Android kernel build verification.
