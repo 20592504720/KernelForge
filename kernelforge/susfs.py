@@ -69,9 +69,21 @@ def touched(patch):
     return sorted(set(names))
 
 
+def _apply(root, patch, options=()):
+    # git apply silently skips paths when invoked from a repository subdirectory.
+    # Apply from the repository root with an explicit prefix instead.
+    try:
+        top = Path(_run_git(['rev-parse', '--show-toplevel'], cwd=root)).resolve()
+    except RuntimeError:
+        return _run_git(['apply', *options, str(patch)], cwd=root)
+    prefix = root.resolve().relative_to(top).as_posix()
+    directory = [] if prefix == '.' else [f'--directory={prefix}']
+    return _run_git(['apply', *directory, *options, str(patch)], cwd=top)
+
+
 def _check(root, patch, reverse=False):
     try:
-        _run_git(['apply', '--check', *(['--reverse'] if reverse else []), str(patch)], cwd=root)
+        _apply(root, patch, ['--check', *(['--reverse'] if reverse else [])])
         return True
     except RuntimeError:
         return False
@@ -122,7 +134,7 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
     for tree, patch in patches:
         if not _check(tree, patch):
             try:
-                _run_git(['apply', '--check', '--verbose', str(patch)], cwd=tree)
+                _apply(tree, patch, ['--check', '--verbose'])
             except RuntimeError as exc:
                 raise ValueError(f'INCOMPATIBLE: SUSFS patch conflict: {patch.name}: {exc}') from exc
             raise ValueError(f'INCOMPATIBLE: SUSFS patch conflict: {patch.name}')
@@ -139,7 +151,7 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
         snapshots[dest] = None
     try:
         for tree, patch in patches:
-            _run_git(['apply', str(patch)], cwd=tree)
+            _apply(tree, patch)
         for src, dest in copies:
             dest.write_bytes(src.read_bytes())
         if not all(_check(tree, patch, True) for tree, patch in patches):

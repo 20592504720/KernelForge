@@ -96,6 +96,12 @@ class SusfsTests(unittest.TestCase):
         self.assertEqual((self.kernel/'target.c').read_text(),'new\n')
         self.assertTrue((self.kernel/'fs/susfs.c').exists())
 
+    def test_nested_kernel_repo_does_not_silently_skip_patches(self):
+        _run_git(['init', str(self.root)])
+        self.run_patch()
+        self.assertEqual((self.kernel/'target.c').read_text(), 'new\n')
+        self.assertIn('config KSU_SUSFS', (self.provider/'kernel/Kconfig').read_text())
+
     def test_duplicate_application_is_skipped(self):
         self.run_patch(); result=self.run_patch()
         self.assertEqual(result['state'],'ALREADY_INTEGRATED'); self.assertEqual(result['applied'],[])
