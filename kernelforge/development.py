@@ -36,6 +36,11 @@ def prepare(config, workspace: Path, output: Path):
             if sha != lock['commit_sha']:
                 raise ValueError(f'{name} checkout differs from locked Commit')
             lock['source_path'] = str(destination)
+            if name == 'kernelsu' and provider.get('method') == 'builtin-kbuild-v2':
+                from .providers import OfficialModern, BakaModern
+                adapter = OfficialModern() if provider['provider'] == 'official' else BakaModern()
+                lock['layout'] = adapter.validate(destination / 'kernel')
+                lock['layout_sha256'] = {file: susfs.digest(destination / 'kernel' / file) for file in ('Kconfig', 'Kbuild', 'Makefile')}
             if name == 'susfs':
                 layout = susfs.inventory(destination, requested_susfs['android_gki'])
                 lock.update(layout)
@@ -57,6 +62,9 @@ def integrate_locked(config, manifest, source, output, *, mode, integrator):
     lock = manifest['upstreams']['kernelsu']
     spec = freeze(provider_spec, lock)
     staged = Path(lock['source_path'])
+    for file, expected in lock.get('layout_sha256', {}).items():
+        if susfs.digest(staged / 'kernel' / file) != expected:
+            raise ValueError('KernelSU source layout changed after locking')
     enabled_susfs = config.get('susfs', {}).get('enabled', False)
     kernel = _inside(source, spec.get('kernel_directory', '.'))
     if enabled_susfs:

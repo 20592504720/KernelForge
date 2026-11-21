@@ -23,6 +23,8 @@ class KernelSUIntegrationTests(unittest.TestCase):
         git(self.repo,'init','-b','main')
         git(self.repo,'config','user.name','Fixture')
         git(self.repo,'config','user.email','fixture@example.invalid')
+        # Hash the exact committed fixture bytes on Windows as well as Linux.
+        git(self.repo,'config','core.autocrlf','false')
         (self.repo/'kernel').mkdir()
         (self.repo/'kernel/Kconfig').write_text('menu "KernelSU"\nconfig KSU\n tristate "KernelSU"\nendmenu\n')
         (self.repo/'kernel/Makefile').write_text('obj-$(CONFIG_KSU) += kernelsu.o\n')

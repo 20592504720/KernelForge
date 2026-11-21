@@ -121,6 +121,10 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
         raise ValueError('INCOMPATIBLE: partial/different SUSFS payload already present; refusing overwrite')
     for tree, patch in patches:
         if not _check(tree, patch):
+            try:
+                _run_git(['apply', '--check', '--verbose', str(patch)], cwd=tree)
+            except RuntimeError as exc:
+                raise ValueError(f'INCOMPATIBLE: SUSFS patch conflict: {patch.name}: {exc}') from exc
             raise ValueError(f'INCOMPATIBLE: SUSFS patch conflict: {patch.name}')
     snapshots = {}
     for tree, patch in patches:
