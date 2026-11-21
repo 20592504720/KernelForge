@@ -90,7 +90,7 @@ def checkout(repository: str, ref: str, destination: Path, *, timeout: int = 300
         raise SourceError(f"source destination exists and is not empty; refusing to overwrite: {destination}")
     fetch_ref = _resolve_fetch_ref(repository, ref, timeout)
     try:
-        _run_git(["clone", "--no-checkout", "--filter=blob:none", repository, str(destination)], timeout=timeout)
+        _run_git(["clone", "--config", "core.autocrlf=false", "--no-checkout", "--filter=blob:none", repository, str(destination)], timeout=timeout)
         _run_git(["fetch", "--depth=1", "origin", fetch_ref], cwd=destination, timeout=timeout)
         _run_git(["checkout", "--detach", "FETCH_HEAD"], cwd=destination, timeout=timeout)
         _run_git(["fsck", "--connectivity-only", "--no-dangling"], cwd=destination, timeout=timeout)

@@ -18,6 +18,7 @@ from .source import checkout
 from .toolchain import check_tools
 from .toolchains import ToolchainManager, ToolchainManagerError
 from .kernelsu import integrate, IntegrationError
+from . import development
 
 LOG = logging.getLogger(__name__)
 SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
@@ -160,16 +161,24 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     log_path = output_dir / "build.log"
     managed_prepared = None
     manager = None
+    versions = None
     try:
         if mode not in ADAPTERS:
             raise BuildError(f"unsupported build mode: {mode}")
         legacy_requirements = config["toolchain"].get("required", [])
         report["toolchain"] = check_tools(legacy_requirements) if legacy_requirements else {}
+        development_mode = 'version_policy' in config.get('kernelsu', {}) or config.get('susfs', {}).get('enabled', False)
+        if development_mode:
+            versions = development.prepare(config, workspace, output_dir)
+            report['version_lock'] = versions
         source_dir = workspace / "source"
         source_sha = checkout(config["source"]["repository"], config["source"]["ref"], source_dir, timeout=config["source"].get("timeout_seconds", 300))
         report["source"]["commit_sha"] = source_sha
         try:
-            report["kernelsu"] = integrate(config.get("kernelsu", {"enabled": False}), source_dir, output_dir, mode=mode)
+            if versions is not None:
+                report['kernelsu'], report['susfs'] = development.integrate_locked(config, versions, source_dir, output_dir, mode=mode, integrator=integrate)
+            else:
+                report["kernelsu"] = integrate(config.get("kernelsu", {"enabled": False}), source_dir, output_dir, mode=mode)
         except IntegrationError as exc:
             report["kernelsu"] = exc.report
             raise BuildError(f"KernelSU integration failed: {exc}") from exc
@@ -207,6 +216,14 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         report["build"]["environment_keys"] = sorted(plan.environment)
         timeout = config["build"].get("timeout_seconds", 3600)
         safe_env = _safe_environment(plan.environment, managed_environment)
+        if versions is not None:
+            kernel = source_dir / config.get('kernelsu', {}).get('kernel_directory', '.')
+            validation = dict(config['validation']) if config.get('validation') else None
+            if validation and config.get('susfs', {}).get('enabled'):
+                validation['required_configs'] = list(set(validation.get('required_configs', [])) | {'KSU_SUSFS'})
+            report['final_checks'] = development.checks(validation, kernel, environment=safe_env)
+            if not config.get('validation'):
+                raise BuildError('development build requires real Kconfig and Kbuild validation commands; checks remain UNTESTED')
         report["build"]["toolchain_environment"] = {"keys": sorted(managed_environment), "root": report.get("toolchain", {}).get("managed", {}).get("install_path")}
         with log_path.open("w", encoding="utf-8") as log:
             log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
@@ -224,6 +241,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             raise BuildError("build succeeded but no configured artifact files were produced")
         report["build"]["status"] = "success"
     except Exception as exc:
+        if (output_dir / 'versions.lock.json').is_file():
+            report['version_lock'] = json.loads((output_dir / 'versions.lock.json').read_text(encoding='utf-8'))
         if manager and managed_prepared:
             manager.release(managed_prepared)
         report["build"]["status"] = "failure"

@@ -13,6 +13,7 @@ from jsonschema import Draft202012Validator
 
 from .source import checkout, remove_checkout, _run_git
 from .toolchains.locking import FileLock
+from .providers import OfficialModern, BakaModern
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFICIAL = "https://github.com/tiann/KernelSU.git"
@@ -50,10 +51,10 @@ def _unlink(link):
         link.unlink()
 
 
-def integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout):
+def integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout, susfs_ready=False):
     try:
         with FileLock(source / ".kernelforge-kernelsu-transaction.lock", timeout=1):
-            return _integrate(spec, source, output, mode=mode, fetch=fetch)
+            return _integrate(spec, source, output, mode=mode, fetch=fetch, susfs_ready=susfs_ready)
     except IntegrationError:
         raise
     except Exception as exc:
@@ -65,7 +66,7 @@ def integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout):
         raise IntegrationError(str(exc), report) from exc
 
 
-def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout):
+def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout, susfs_ready=False):
     """Integrate one provider; abort and restore edited files on any failure.
 
     Source repositories are never executed by this module. Provider script hashes
@@ -100,13 +101,14 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout):
             report["repository"] = "[REDACTED]"
             raise ValueError("KernelSU repository URL must not contain credentials or private parameters")
         official = spec["provider"] == "official"
+        modern = spec['method'] == 'builtin-kbuild-v2'
         if official:
-            if spec["repository"] != OFFICIAL or spec["expected_commit"] != LEGACY:
+            if spec["repository"] != OFFICIAL or (not modern and spec["expected_commit"] != LEGACY):
                 raise ValueError("official built-in adapter is reviewed only for pinned v0.9.5; other revisions require a new review")
             if spec["ref_type"] == "stable" and spec["ref"] != "v0.9.5":
                 raise ValueError("reviewed official stable release is v0.9.5")
         elif baka:
-            if spec["repository"] != "https://github.com/Baka-SU/BakaSU.git" or spec["expected_commit"] != BAKA:
+            if spec["repository"] != "https://github.com/Baka-SU/BakaSU.git" or (not modern and spec["expected_commit"] != BAKA):
                 raise ValueError("BakaSU provider requires the reviewed repository and pinned Commit")
             report["project"] = "BakaSU"
         elif not spec.get("review"):
@@ -145,9 +147,16 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout):
             if baka:
                 if mode != "gki":
                     raise ValueError("BakaSU adapter currently requires GKI tracepoint hooks; Vendor manual hooks are NOT_IMPLEMENTED")
-                required |= {"KALLSYMS", "KALLSYMS_ALL", "TRACEPOINTS", "KSU_TRACEPOINT_HOOK"}
-                if re.search(r"^CONFIG_KSU_(SUSFS|MANUAL_HOOK)=y$", actual_config, re.M):
+                required |= {"KALLSYMS", "KALLSYMS_ALL", "TRACEPOINTS"}
+                required.add('KSU_SUSFS' if susfs_ready else 'KSU_TRACEPOINT_HOOK')
+                if re.search(r"^CONFIG_KSU_MANUAL_HOOK=y$", actual_config, re.M) or (not susfs_ready and re.search(r'^CONFIG_KSU_SUSFS=y$', actual_config, re.M)):
                     raise ValueError("BakaSU SUSFS/manual hooks are outside this adapter")
+                if susfs_ready and re.search(r'^CONFIG_KSU_TRACEPOINT_HOOK=y$', actual_config, re.M):
+                    raise ValueError('BakaSU inline and tracepoint hooks cannot coexist')
+            elif modern:
+                required |= {'KPROBES', 'EXT4_FS'}
+                if susfs_ready:
+                    required.add('KSU_SUSFS')
             else:
                 required |= {"KPROBES", "HAVE_KPROBES", "KPROBE_EVENTS", "OVERLAY_FS"}
             for symbol in sorted(required):
@@ -181,9 +190,14 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout):
                     raise ValueError(f"provider source missing kernel/{name}")
             if not re.search(r"^config KSU$", (payload / "Kconfig").read_text(), re.M):
                 raise ValueError("provider Kconfig does not declare KSU")
-            build_file = payload / ("Kbuild" if baka else "Makefile")
+            build_file = payload / ("Kbuild" if baka or modern else "Makefile")
             if not build_file.is_file() or "CONFIG_KSU" not in build_file.read_text():
                 raise ValueError("provider Makefile is not the reviewed built-in Kbuild layout")
+            if modern:
+                if not (official or baka):
+                    raise ValueError('modern adapter is available only for official and BakaSU sources')
+                report['layout_adapter'] = (BakaModern() if baka else OfficialModern()).validate(payload)
+                report['unverified'].append('upstream no longer officially supports GKI image mode; experimental built-in Kbuild integration')
             if not official and not baka:
                 digest = hashlib.sha256((payload / "setup.sh").read_bytes()).hexdigest()
                 if digest != spec["review"]["setup_sha256"]:

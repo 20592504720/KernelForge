@@ -65,3 +65,5 @@ Use `python -m kernelforge toolchain list --cache-dir .cache/toolchains` to insp
 See `docs/ROADMAP.md` for sequencing and evidence requirements.
 
 Stage 4 adds opt-in shared KernelSU integration with pinned official v0.9.5 and BakaSU providers. Source integration is IMPLEMENTED and fixture TESTED; kernel compilation/boot remain UNTESTED. See [KernelSU providers](docs/KERNELSU.md).
+
+Stage 4.5 adds opt-in development tracking, immutable build locks, modern Kbuild policies and narrow SUSFS transactions. See [development tracking](docs/DEVELOPMENT_TRACKING.md) for configuration, real-source validation and limits.

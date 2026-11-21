@@ -19,3 +19,7 @@ Toolchain profiles must provide trusted source URLs and SHA256 values. Built-in 
 ## Stage 4
 
 IMPLEMENTED: shared KernelSU providers, pinned official legacy and BakaSU source adapters, preflight checks, rollback and reports. TESTED: local Git fixtures. UNTESTED: real kernel compilation, boot and ABI. See KERNELSU.md for evidence and limits.
+
+## Stage 4.5
+
+IMPLEMENTED: dynamic upstream policies, build locks, modern layout adapters, SUSFS discovery/patch transactions and final checks. TESTED: local fixture scenarios. Real-source CI, kernel compilation and boot status must be read from the delivery report. See DEVELOPMENT_TRACKING.md.

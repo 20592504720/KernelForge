@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "provider": "bakasu",
+  "project": "BakaSU",
+  "repository": "https://github.com/Baka-SU/BakaSU.git",
+  "upstream": "https://github.com/tiann/KernelSU.git",
+  "method": "builtin-kbuild-v2",
+  "architecture": "arm64",
+  "config_file": ".config",
+  "compatibility": {
+    "kernel_families": [
+      "5.10",
+      "5.15",
+      "6.1",
+      "6.6",
+      "6.12"
+    ],
+    "build_modes": [
+      "gki"
+    ],
+    "required_configs": []
+  },
+  "version_policy": "latest_branch",
+  "branch": "main"
+}
