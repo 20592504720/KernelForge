@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import atexit
 import io
 import json
 import os
@@ -64,7 +63,10 @@ class FixtureServer:
 
     def close(self):
         if self.thread.is_alive():
-            self.server.shutdown()
+            # BaseServer.shutdown() can wait forever if an interrupted test has
+            # already stopped its serve_forever loop. Set the same flag and
+            # join with a bound so fixture teardown remains safe on Windows.
+            self.server._BaseServer__shutdown_request = True
             self.thread.join(timeout=2)
         self.server.server_close()
         if self.thread.is_alive():
@@ -92,7 +94,10 @@ def make_tar() -> bytes:
 
 
 MANAGER_HTTP_SERVER = FixtureServer(make_zip())
-atexit.register(MANAGER_HTTP_SERVER.close)
+
+
+def tearDownModule():
+    MANAGER_HTTP_SERVER.close()
 
 
 class ToolchainVersionTests(unittest.TestCase):
