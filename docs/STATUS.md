@@ -7,8 +7,10 @@
 
 ## Not implemented
 
-- **NOT_IMPLEMENTED:** source checkout, GKI/Kleaf/build.sh adapter, Vendor adapter, toolchain downloads, KernelSU integration, patch application, SUSFS, TCP/ZRAM detection, device builds, kernel compilation, artifacts, and releases.
-- **PLACEHOLDER:** build preflight gate, disabled release workflow; PJZ110 profile explicitly unverified.
+- **IMPLEMENTED:** configured source checkout, tool version checks, separate GKI and Vendor command adapters, build logging, duration and SHA256 reports for real produced artifacts.
+- **TESTED:** adapter selection and build failure paths are covered by stage-two tests.
+- **NOT_IMPLEMENTED:** automatic toolchain download/cache, project-specific validated GKI/Vendor profiles, KernelSU integration, patch application, SUSFS, TCP/ZRAM detection, verified device builds.
+- **PLACEHOLDER:** GitHub build workflow remains preflight-only pending reviewed build profiles; release workflow is disabled; PJZ110 profile explicitly unverified.
 
 ## Tests
 
