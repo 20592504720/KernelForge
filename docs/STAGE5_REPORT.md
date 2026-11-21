@@ -110,6 +110,8 @@ Executable creations, symlinks, renames, copies, binary patches and mode changes
 remain rejected. The build checks Manifest/Lock/staged-byte consistency before
 application. The focused patch, Stage 5 and SUSFS suite passed 29/29; Python
 syntax, JSON Schema/Manifest validation and Git diff checks passed.
+The [four-platform CI run for this code](https://github.com/20592504720/KernelForge/actions/runs/44961989086)
+passed Ubuntu/Windows × Python 3.11/3.12 (4/4 jobs).
 
 The official OnePlus 13 manifest/common refs and Fengchi candidate ref were
 rechecked on 2026-11-22 and matched the pinned audit SHAs above. The local
@@ -124,3 +126,10 @@ Stage 6 work; no patch was redistributed or applied here.
 generic patch application on actual GKI, SM8750 full source sync/build, ABI,
 device boot, Root and SUSFS runtime. These require separate CI/Linux/device
 evidence and prevent declaring Stage 5 complete.
+
+The local Windows host reports no installed WSL distribution (`wsl --list`);
+there is no local Linux filesystem build environment. The GitHub connector
+exposes workflow inspection but no workflow dispatch action, and the in-app
+browser could not open the workflow page. A fresh real GKI run for this Tree
+therefore remains BLOCKED in this session; the previous run must not be reused
+as its acceptance result.
