@@ -198,6 +198,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         report["source"]["commit_sha"] = source_sha
         if patch_entries:
             try:
+                from .patch_manager import verify_lock
+                verify_lock(patch_entries, patch_root, report['patch_lock'])
                 report["patch_series"] = apply_series(
                     source_dir, patch_entries, patch_root,
                     kernel_commit=source_sha,

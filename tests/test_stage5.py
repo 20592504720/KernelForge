@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch as mock_patch
 
 from kernelforge.capabilities import inspect
-from kernelforge.patch_manager import lock_series, apply_series, apply_reviewed_operations
+from kernelforge.patch_manager import lock_series, apply_series, apply_reviewed_operations, verify_lock
 from kernelforge.source_provider import load_profile, audit_manifest, require_flashable
 
 
@@ -87,6 +87,9 @@ class Stage5Tests(unittest.TestCase):
             frozen, stage, lock = lock_series([entry], base, base / 'work', base / 'report')
             self.assertEqual(lock['patches'][0]['source']['commit_sha'], upstream_sha)
             self.assertEqual(lock['patches'][0]['sha256'], hashlib.sha256(payload).hexdigest())
+            verify_lock(frozen, stage, lock)
+            with self.assertRaisesRegex(ValueError, 'manifest differs'):
+                verify_lock([dict(frozen[0], feature='other')], stage, lock)
             # The upstream branch can move now; the frozen bytes must not.
             (upstream / 'change.patch').write_bytes(b'changed after locking')
             git(upstream, 'add', '.')

@@ -99,3 +99,28 @@ cleanup error (`WinError 32` deleting a transient Git fixture after its test);
 it must not be reported as a passing full run. The earlier eight real GKI
 jobs on the preceding patch-manager commit passed, but this continuation's
 new code still needs its own CI result.
+
+## Second continuation, 2026-11-22
+
+**IMPLEMENTED; fixture TESTED:** generic text patches can now create and
+delete regular files with transaction rollback. A test applies a create and
+delete in a real Git repository, forces failure in a later patch, verifies
+both paths and original bytes, then verifies successful and repeated application.
+Executable creations, symlinks, renames, copies, binary patches and mode changes
+remain rejected. The build checks Manifest/Lock/staged-byte consistency before
+application. The focused patch, Stage 5 and SUSFS suite passed 29/29; Python
+syntax, JSON Schema/Manifest validation and Git diff checks passed.
+
+The official OnePlus 13 manifest/common refs and Fengchi candidate ref were
+rechecked on 2026-11-22 and matched the pinned audit SHAs above. The local
+Fengchi candidate patch SHA256 was recalculated and matched the audit record.
+Official source directory publication still does not prove a complete,
+firmware-matched repo sync or module ABI. Ace 6 6.6.118 remains unidentified.
+BBG and Unicode are not enabled because exact-baseline patch/LSM/filesystem
+behavior and compile evidence are absent. Fengchi automatic integration remains
+Stage 6 work; no patch was redistributed or applied here.
+
+**UNTESTED:** the present code Tree's Linux GKI integration and full Image build,
+generic patch application on actual GKI, SM8750 full source sync/build, ABI,
+device boot, Root and SUSFS runtime. These require separate CI/Linux/device
+evidence and prevent declaring Stage 5 complete.

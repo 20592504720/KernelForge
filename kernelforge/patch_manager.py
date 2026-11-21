@@ -146,6 +146,18 @@ def apply_reviewed_operations(targets, operations, verify):
             raise ValueError('patch application verification failed')
 
 
+def verify_lock(entries, stage, record):
+    """Reject manifest/lock/staged-byte drift before patch application."""
+    if record.get('state') != 'LOCKED' or len(entries) != len(record.get('patches', [])):
+        raise ValueError('patch lock is incomplete')
+    for entry, locked in zip(entries, record['patches']):
+        if entry['id'] != locked['id'] or entry['feature'] != locked['feature'] or entry['sha256'] != locked['sha256']:
+            raise ValueError('patch manifest differs from lock')
+        path = Path(stage) / entry['file']
+        if path.is_symlink() or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != locked['sha256']:
+            raise ValueError(f'{entry["id"]}: staged patch differs from lock')
+
+
 def apply_series(root, entries, patch_root, *, kernel_commit, target=None):
     """Apply independent text edits. Shared files require manual consolidation."""
     root, patch_root = Path(root).resolve(), Path(patch_root).resolve()
@@ -181,6 +193,15 @@ def apply_series(root, entries, patch_root, *, kernel_commit, target=None):
         data = patch.read_bytes()
         if hashlib.sha256(data).hexdigest() != entry["sha256"]:
             raise ValueError(f"{key}: SHA256 mismatch")
+        summary = _run_git(["apply", "--summary", "--", str(patch)], cwd=root)
+        operations = {}
+        for line in summary.splitlines():
+            match = re.fullmatch(r"\s*(create|delete) mode 100644 (.+)", line)
+            if not match:
+                raise ValueError(f"{key}: unsupported patch operation: {line}")
+            operations[match[2]] = match[1]
+        if re.search(rb"^(old mode|new mode|rename |copy |GIT binary patch)", data, re.M):
+            raise ValueError(f"{key}: unsupported patch operation")
         # numstat reports the actual paths Git will use, including rename records.
         stats = _run_git(["apply", "--numstat", "--", str(patch)], cwd=root)
         targets = []
@@ -194,14 +215,22 @@ def apply_series(root, entries, patch_root, *, kernel_commit, target=None):
                 raise ValueError(f"{key}: unsafe patch path {name}")
             path = root / name
             resolved = path.resolve()
-            if root not in resolved.parents or not path.is_file() or path.is_symlink():
-                raise ValueError(f"{key}: patch must modify existing source: {name}")
+            if root not in resolved.parents or path.is_symlink() or resolved.parent.is_symlink():
+                raise ValueError(f"{key}: unsafe patch target: {name}")
+            if operations.get(name) == 'create':
+                if (path.exists() and not path.is_file()) or not path.parent.is_dir():
+                    raise ValueError(f"{key}: unsafe new patch target or parent missing: {name}")
+            elif operations.get(name) == 'delete':
+                if path.exists() and not path.is_file():
+                    raise ValueError(f"{key}: unsafe deleted patch target: {name}")
+            elif not path.is_file():
+                raise ValueError(f"{key}: patch must modify/delete existing source: {name}")
             identity = str(resolved).casefold()
             if identity in owners:
                 raise ValueError(f"{key}: shared patch target with {owners[identity]}: {name}")
             owners[identity] = key
             targets.append(resolved)
-        if not targets or re.search(rb"^(new file mode|deleted file mode|old mode|new mode|rename |copy |GIT binary patch)", data, re.M):
+        if not targets:
             raise ValueError(f"{key}: unsupported patch operation")
         plans.append((key, patch, targets))
     report = []

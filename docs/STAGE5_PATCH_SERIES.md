@@ -6,7 +6,7 @@ kernel commit allowlist, upstream HTTPS URL and commit, and a license.
 depends_on, conflicts and order are optional. The lowest order and then the
 ID break ties between ready entries. The build report records the result.
 
-The manager accepts text edits to existing files and rejects shared targets,
+The manager accepts text edits, regular-file additions and deletions, and rejects shared targets,
 even when individual hunks might be disjoint. Review and consolidate such
 patches before applying them. Text applicability and reverse verification
 do not establish semantic compatibility. Use the checked-out build-owned
@@ -28,7 +28,9 @@ An entry can additionally limit kernel versions, Android GKI identities,
 architectures, build modes and required final Kconfig symbols. Unknown target
 identity and unavailable final Kconfig fail closed. Text conflict, feature
 duplication and semantic compatibility are distinct checks. Existing source
-files are restored byte for byte after a failed series. SUSFS uses this same
+files are restored byte for byte after a failed series; created files are removed
+and deleted files restored. Symlinks, mode changes, renames, copies, binary
+patches and executable-file creation are rejected. SUSFS uses this same
 transaction boundary while retaining its precise baseline selection, payload
 checks and BakaSU duplicate-hook protection.
 
