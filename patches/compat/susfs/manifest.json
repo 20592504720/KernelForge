@@ -16,6 +16,7 @@
   "verification": {
     "applicability": "TESTED on 27 exact Git blob targets",
     "object_compilation": "TESTED: exact official/BakaSU baselines; ARM64 objects and relocatable link; run 44896399426",
+    "scope": "Historical Clang14 object smoke check only: original GKI KCFI was unavailable. Hardened acceptance requires current Clang17 workflow and final hardening gates.",
     "boot": "UNTESTED",
     "root": "UNTESTED"
   },

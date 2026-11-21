@@ -35,6 +35,13 @@ their hashes are checked. A relocatable aggregate is linked separately; it does
 not establish full vmlinux symbol resolution. No dry run counts as compilation.
 Complete logs, configuration and locks are uploaded even on failure.
 
+The current runner uses Ubuntu 24.04, Clang/LLVM 17 and GNU host compiler 11.
+It first probes KCFI support and requires the hardening symbols explicitly
+requested by the real GKI defconfig (including CFI_CLANG and SHADOW_CALL_STACK)
+to survive final Kconfig resolution. Earlier Clang 14 smoke runs silently lost
+CFI through Kconfig compiler capability detection; their Images/objects are
+historical smoke evidence only and do not satisfy hardened GKI acceptance.
+
 `python scripts/validate_upstreams.py --provider bakasu --susfs
 --pinned-baseline --workspace <new-Linux-directory>` reproduces the fixed
 combination. Omit `--pinned-baseline` to resolve latest branches; use

@@ -73,7 +73,7 @@ def main():
         result['kernel_commit']=kernel_lock['commit_sha']
         # Target code uses LLVM; host helpers in this ACK revision require the
         # GNU host compiler rather than the runner's newer Clang diagnostics.
-        command=['make','ARCH=arm64','LLVM=1','HOSTCC=gcc','HOSTCXX=g++']
+        command=['make','ARCH=arm64','LLVM=1','HOSTCC=gcc-11','HOSTCXX=g++-11']
         def run(argv,timeout=900):
             with (output/'source-check.log').open('a',encoding='utf-8') as stream:
                 stream.write('$ '+' '.join(argv)+'\n'); stream.flush()
@@ -83,12 +83,16 @@ def main():
         result['host']={'cpus':os.cpu_count(),'free_bytes':shutil.disk_usage(work).free,
                         'memory':Path('/proc/meminfo').read_text() if Path('/proc/meminfo').exists() else 'unknown'}
         step='toolchain inventory'
-        for tool in ('clang','ld.lld','llvm-nm','gcc'):
+        for tool in ('clang','ld.lld','llvm-nm','gcc-11'):
             run([tool,'--version'])
             result['toolchain'][tool]=subprocess.check_output([tool,'--version'],text=True).splitlines()[0]
         step='initial Kconfig'
+        run(['clang','--target=aarch64-linux-gnu','-fsanitize=kcfi','-x','c','-c','/dev/null','-o',str(output/'compiler-kcfi-probe.o')])
+        defconfig=(source/'arch/arm64/configs/gki_defconfig').read_text().splitlines()
+        hardening=[name for name in ('CFI_CLANG','SHADOW_CALL_STACK','STACKPROTECTOR_STRONG','RANDOMIZE_BASE','HARDENED_USERCOPY','FORTIFY_SOURCE') if f'CONFIG_{name}=y' in defconfig]
+        result['baseline_hardening']=hardening
         run(command+['gki_defconfig'])
-        symbols=['KSU','SECURITY_SELINUX','ARM64','KALLSYMS','KALLSYMS_ALL','TRACEPOINTS','KPROBES','EXT4_FS']
+        symbols=['KSU','SECURITY_SELINUX','ARM64','KALLSYMS','KALLSYMS_ALL','TRACEPOINTS','KPROBES','EXT4_FS']+hardening
         symbols+=['KSU_SUSFS','THREAD_INFO_IN_TASK'] if args.susfs else (['KSU_TRACEPOINT_HOOK'] if args.provider=='bakasu' else [])
         for symbol in symbols:
             run(['scripts/config','--enable',symbol])
@@ -96,10 +100,7 @@ def main():
         result['integration'],result['susfs']=development.integrate_locked(config,lock,source,output,mode='gki',integrator=integrate)
         step='final Kconfig'
         run(command+['olddefconfig'])
-        final=(source/'.config').read_text().splitlines()
-        for symbol in symbols:
-            if f'CONFIG_{symbol}=y' not in final:
-                raise ValueError(f'final Kconfig dropped CONFIG_{symbol}=y')
+        result['required_final_configs']=development.require_final_configs(source,symbols)
         result['kconfig']='TESTED'
         shutil.copyfile(source/'.config',output/'kernel.config')
         step='make prepare and UAPI headers'

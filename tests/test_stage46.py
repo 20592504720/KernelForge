@@ -182,6 +182,16 @@ class CompatibilityTests(unittest.TestCase):
 
 
 class RealContextTests(unittest.TestCase):
+    def test_missing_gki_hardening_cannot_pass(self):
+        from kernelforge.development import require_final_configs
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); path=root/'.config'
+            path.write_text('CONFIG_KSU=y\n')
+            with self.assertRaisesRegex(ValueError,'CFI_CLANG'):
+                require_final_configs(root,['KSU','CFI_CLANG'])
+            path.write_text('CONFIG_KSU=y\nCONFIG_CFI_CLANG=y\n')
+            self.assertEqual(require_final_configs(root,['KSU','CFI_CLANG'])['CFI_CLANG'],'y')
+
     """Offline reproduction uses verbatim excerpts from the locked GKI blobs."""
     def test_original_conflict_and_context_adapter_apply_reverse(self):
         fixture=ROOT/'tests/fixtures/susfs-context'

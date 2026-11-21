@@ -86,6 +86,14 @@ def integrate_locked(config, manifest, source, output, *, mode, integrator):
     return result, record
 
 
+def require_final_configs(kernel, symbols):
+    final=(kernel/'.config').read_text(encoding='utf-8').splitlines()
+    for symbol in symbols:
+        if f'CONFIG_{symbol}=y' not in final:
+            raise ValueError(f'final Kconfig dropped CONFIG_{symbol}=y')
+    return {symbol:'y' for symbol in sorted(set(symbols))}
+
+
 def checks(spec, kernel, *, environment=None):
     """Run real Kconfig/Kbuild commands when explicitly configured; fail on any error."""
     import subprocess
