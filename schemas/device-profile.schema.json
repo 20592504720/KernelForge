@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "id", "manufacturer", "model", "codename", "soc", "architecture", "android_version", "firmware_build", "kernel_version", "android_gki", "source_kind", "manifest", "kernel_commit", "vendor_modules", "devicetree", "abi_kmi", "toolchain", "root_provider", "patch_allowlist", "patch_conflicts", "verification"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"enum": ["oneplus13-pjz110", "oneplus-ace6-plq110"]},
+    "manufacturer": {"const": "OnePlus"},
+    "model": {"type": "string", "minLength": 1},
+    "codename": {"type": ["string", "null"]},
+    "soc": {"const": "SM8750"},
+    "architecture": {"const": "arm64"},
+    "android_version": {"type": ["string", "null"]},
+    "firmware_build": {"type": ["string", "null"]},
+    "kernel_version": {"type": ["string", "null"]},
+    "android_gki": {"type": ["string", "null"]},
+    "source_kind": {"enum": ["oneplus-oss", "community-reference"]},
+    "manifest": {"type": ["object", "null"], "properties": {
+      "repository": {"type": "string"}, "path": {"type": "string"},
+      "branch": {"type": "string"}, "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+      "revision": {"type": "string"}}, "required": ["repository", "path", "branch", "commit", "revision"], "additionalProperties": false},
+    "kernel_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "vendor_modules": {"type": ["string", "null"]},
+    "devicetree": {"type": ["string", "null"]},
+    "abi_kmi": {"type": ["string", "null"]},
+    "toolchain": {"type": ["string", "null"]},
+    "root_provider": {"type": ["string", "null"]},
+    "patch_allowlist": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "patch_conflicts": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "verification": {"type": "object", "additionalProperties": false,
+      "required": ["source_mapping", "full_build", "module_abi", "device_boot", "root"],
+      "properties": {"source_mapping": {"enum": ["TESTED", "UNTESTED"]}, "full_build": {"enum": ["TESTED", "UNTESTED"]}, "module_abi": {"enum": ["TESTED", "UNTESTED"]}, "device_boot": {"enum": ["TESTED", "UNTESTED"]}, "root": {"enum": ["TESTED", "UNTESTED"]}}}
+  }
+}

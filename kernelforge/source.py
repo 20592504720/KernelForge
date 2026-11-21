@@ -46,7 +46,9 @@ def validate_repository(repository: str) -> None:
 def _run_git(args: list[str], cwd: Path | None = None, timeout: int = 300) -> str:
     env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_CONFIG_")}
     try:
-        result = subprocess.run(["git", *args], cwd=cwd, env=env, text=True, capture_output=True, check=False, timeout=timeout)
+        # Git for Windows emits UTF-8 paths even when Python's locale is CP936.
+        result = subprocess.run(["git", *args], cwd=cwd, env=env, text=True, encoding='utf-8',
+                                capture_output=True, check=False, timeout=timeout)
     except FileNotFoundError as exc:
         raise SourceError("Git executable not found on PATH") from exc
     except subprocess.TimeoutExpired as exc:

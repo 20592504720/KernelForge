@@ -1,18 +1,13 @@
 name: Real development sources
 on:
-  pull_request:
-    paths:
-      - kernelforge/versions.py
-      - kernelforge/susfs.py
-      - kernelforge/development.py
-      - kernelforge/providers.py
-      - kernelforge/kernelsu.py
-      - kernelforge/compatibility.py
-      - kernelforge/objects.py
-      - patches/compat/**
-      - scripts/validate_upstreams.py
-      - .github/workflows/upstream-validation.yml
+  schedule:
+    - cron: '15 3 * * 1'
   workflow_dispatch:
+    inputs:
+      full_kernel:
+        description: 'Compile complete Image for pinned baseline'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -44,7 +39,8 @@ jobs:
         run: |
           args=(--provider "$PROVIDER" --workspace "$RUNNER_TEMP/source-validation")
           if [ "$WITH_SUSFS" = true ]; then args+=(--susfs); fi
-          if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline --full-kernel); fi
+          if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline); fi
+          if [ "${{ inputs.full_kernel }}" = true ] && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
           python scripts/validate_upstreams.py "${args[@]}"
       - name: Print verification reports
         if: always()

@@ -4,24 +4,24 @@ KernelForge is a modular framework for reproducible Android Linux kernel builds.
 
 ## Goals and scope
 
-The platform covers source pinning, distinct GKI and Vendor adapters, managed toolchains, reviewed patch manifests, Kconfig compatibility, device profiles, build reports, and validated artifacts. The current build engine can prepare local or configured LLVM/GCC toolchains and pass their environment to either adapter. It does not claim a real Android kernel build has succeeded.
+The platform covers source pinning, distinct GKI and Vendor adapters, managed toolchains, reviewed patch manifests, Kconfig compatibility, device profiles, build reports, and validated artifacts. The current build engine can prepare local or configured LLVM/GCC toolchains and pass their environment to either adapter. The exact Android GKI 6.1 baseline completed historical Image builds; no SM8750 device kernel or boot has been validated.
 
 ## Kernel families and planned integrations
 
 Configuration profiles exist for Linux 5.10, 5.15, 6.1, 6.6, and 6.12. Profiles are scaffolding, not evidence that a particular patch, feature, or toolchain works on that kernel.
 
-GKI support is planned for Kleaf/Bazel and legacy build systems through separate adapters. Vendor builds will use device-specific source, defconfig, toolchain, commands, and artifact paths. Pinned official legacy KernelSU and BakaSU source integration is available. KernelSU-Next, ReSukiSU, SUSFS, TCP congestion options and ZRAM remain future integrations.
+GKI and Vendor have separate build adapters; actual build success depends on a reviewed source/config/toolchain combination. Official KernelSU and BakaSU have source integration paths. SUSFS has an exact-baseline GKI adapter with historical real-source and Image evidence. KernelSU-Next and ReSukiSU remain unimplemented. TCP and ZRAM source/config inspection is available; algorithm compilation and runtime behavior are not inferred from inspection.
 
 ## Repository map
 
 - `configs/`: global defaults and kernel-family inputs.
 - `schemas/`: strict JSON Schema contracts.
-- `patches/`: versioned manifests; enabled patch set is currently empty.
-- `devices/`: device profile location; no unverified PJZ110 values are asserted.
+- `patches/`: versioned manifests and a narrowly scoped SUSFS compatibility patch; optional generic patch series are disabled by default.
+- `devices/`: separate OnePlus 13 official-source and Ace 6 community-reference Profiles; neither is cleared for flashing.
 - `kernelforge/`: CLI, build and source modules, plus the standalone `toolchains/` manager, downloader, safe archive extraction, and portable locks.
 - `scripts/`: compatibility wrapper for the validator.
 - `tests/`: unit and negative tests.
-- `.github/workflows/`: validation CI, preflight-only manual build workflow, and guarded release placeholder.
+- `.github/workflows/`: lightweight validation CI, scheduled/manual real-source checks, scheduled/manual SM8750 manifest audit, preflight build entry and guarded release placeholder.
 - `docs/`: architecture, configuration, development, roadmap, and status.
 
 ## Configuration
@@ -43,6 +43,8 @@ python3 -m unittest discover -s tests -v
 
 `doctor` reports local Python and dependency availability. A configured build uses `python -m kernelforge build --config path/to/build.json`; each adapter can supply its own toolchain profile. Commands execute as argv arrays without a shell. Source commit, toolchain integrity and provenance, elapsed time, logs, and hashes for files actually produced are written to the output directory. Downloads require a configured SHA256; absent checksums fail before network access.
 
+Use `python -m kernelforge inspect-features --source /path/to/kernel --config /path/to/.config` to obtain source, Kconfig and final-config evidence for TCP and ZRAM. Compilation and runtime remain separate checks. Optional generic patches may use pinned or moving upstream references; each build writes `patches.lock.json` with the resolved Commit and SHA256 before touching kernel source. See [Stage 5 patch series](docs/STAGE5_PATCH_SERIES.md) and [Stage 5 evidence](docs/STAGE5_REPORT.md).
+
 Toolchain manager modes are:
 
 - `AUTO`: use an explicitly configured local toolchain first, then a valid cache, then download and verify when needed.
@@ -53,14 +55,17 @@ Use `python -m kernelforge toolchain list --cache-dir .cache/toolchains` to insp
 
 ## GitHub Actions
 
-`validate.yml` runs structural checks and tests on pushes and pull requests. `build.yml` remains an explicit preflight-only manual workflow until a reviewed, checked-in build profile exists. Local configured builds are available through the CLI. `release.yml` is a disabled-by-default gate; it is not a kernel release pipeline.
+`validate.yml` runs structural checks and tests on pushes and pull requests. Real-source checks run on a schedule or by manual dispatch; full Image compilation requires an explicit manual option. `build.yml` remains a preflight-only manual workflow until a reviewed build profile exists. Local configured builds are available through the CLI. `release.yml` is a disabled gate.
 
 ## Status
 
 - **IMPLEMENTED:** JSON/schema validation, patch-manifest structure/hash validation, source ref checkout with resolved SHA recording, independent GKI/Vendor plans, local and managed LLVM/GCC profile preparation, secure downloads, mandatory archive SHA256 verification, safe extraction, atomic cache installation, cache metadata/maintenance, portable locks, isolated toolchain environments, timeout/log/failure reports and real artifact hashing.
 - **TESTED:** local HTTP download and interruption handling, SHA256 success/failure, zip/tar extraction and traversal rejection, cache corruption and reuse, concurrent requests, mode behavior, GKI/Vendor environment delivery, failure reports, plus existing regression suite (see `docs/STATUS.md`).
-- **PLACEHOLDER:** kernel build and release workflow entry points; no kernel build occurs.
-- **NOT_IMPLEMENTED:** verified upstream-specific GKI/vendor source profiles, SUSFS integration, patch application, device-ready configurations, Android kernel build verification. No real large Clang/GCC distribution was downloaded during automated tests; those tests exercise actual local HTTP and archive handling with fixture payloads.
+- **IMPLEMENTED:** generic patch locking and transactional text application; SUSFS exact-baseline integration; TCP/ZRAM source inspection; device Profile isolation and official manifest mapping audit.
+- **TESTED:** patch transactions on fixture Git repositories, historical GKI 6.1 SUSFS object/Image builds, official OnePlus 13 manifest mapping, and local feature-inspection fixtures. See `docs/STAGE5_REPORT.md` for limits.
+- **UNTESTED:** current Stage 5 generic patches on a real GKI tree, SM8750 Image/module ABI, device boot, Root and SUSFS runtime.
+- **PLACEHOLDER:** preflight-only build and disabled Release workflow.
+- **NOT_IMPLEMENTED:** BBG, Unicode and Fengchi integration, OnePlus 13/Ace 6 flashable kernels, KernelSU-Next and ReSukiSU.
 
 See `docs/ROADMAP.md` for sequencing and evidence requirements.
 

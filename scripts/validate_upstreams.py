@@ -103,6 +103,8 @@ def main():
         result['required_final_configs']=development.require_final_configs(source,symbols)
         result['kconfig']='TESTED'
         shutil.copyfile(source/'.config',output/'kernel.config')
+        from kernelforge.capabilities import inspect as inspect_capabilities
+        result['capabilities'] = inspect_capabilities(source, source / '.config')
         step='make prepare and UAPI headers'
         run(command+['prepare'])
         run(command+['headers_install'])

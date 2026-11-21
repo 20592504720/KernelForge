@@ -1,0 +1,10 @@
+{
+  "schema_version": 1, "id": "oneplus-ace6-plq110", "manufacturer": "OnePlus",
+  "model": "PLQ110", "codename": null, "soc": "SM8750", "architecture": "arm64",
+  "android_version": null, "firmware_build": null, "kernel_version": "6.6",
+  "android_gki": null, "source_kind": "community-reference", "manifest": null,
+  "kernel_commit": null, "vendor_modules": "https://github.com/Ace6-Development/android_kernel_oneplus_sm8750-modules",
+  "devicetree": null, "abi_kmi": null, "toolchain": null, "root_provider": null,
+  "patch_allowlist": [], "patch_conflicts": ["fengchi", "bbg", "unicode-zero-width"],
+  "verification": {"source_mapping": "UNTESTED", "full_build": "UNTESTED", "module_abi": "UNTESTED", "device_boot": "UNTESTED", "root": "UNTESTED"}
+}

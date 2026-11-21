@@ -68,6 +68,15 @@ def validate_configs(root: Path) -> list[str]:
             manifest = root / data["features"]["patch_manifest"]
             if not manifest.is_file():
                 problems.append(f"{path.relative_to(root)} references missing patch manifest {manifest.relative_to(root)}")
+    try:
+        from .source_provider import PROFILE_IDS, load_profile
+        for profile_id in sorted(PROFILE_IDS):
+            try:
+                load_profile(root, profile_id)
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                problems.append(f'device profile {profile_id}: {exc}')
+    except ImportError as exc:
+        problems.append(f'cannot validate device profiles: {exc}')
     return problems
 
 

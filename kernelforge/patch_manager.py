@@ -2,11 +2,15 @@
 from contextlib import contextmanager
 import hashlib
 import heapq
+import json
+import os
 from pathlib import Path
 import re
+import shutil
 import stat
 
-from .source import _run_git
+from .source import _run_git, checkout
+from .versions import resolve, timestamp
 
 
 @contextmanager
@@ -60,7 +64,89 @@ def order(entries):
     return result
 
 
-def apply_series(root, entries, patch_root, *, kernel_commit):
+def lock_series(entries, local_root, workspace, output):
+    """Resolve each moving patch upstream once and stage immutable patch bytes.
+
+    A failed lookup or checksum aborts before the kernel source is modified.
+    The lock is written even on failure for diagnosis. It is build scoped.
+    """
+    local_root, workspace, output = map(lambda p: Path(p).resolve(), (local_root, workspace, output))
+    output.mkdir(parents=True, exist_ok=True)
+    destination = output / 'patches.lock.json'
+    stage = workspace / 'patch-lock'
+    if stage.exists():
+        raise ValueError('patch lock staging directory already exists; refusing overwrite')
+    stage.mkdir(parents=True)
+    record = {'schema_version': 1, 'resolved_at': timestamp(), 'state': 'RESOLVING', 'patches': []}
+    frozen = []
+
+    def save():
+        temporary = destination.with_suffix('.tmp')
+        temporary.write_text(json.dumps(record, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+        os.replace(temporary, destination)
+
+    save()
+    try:
+        for entry in order(entries):
+            key = entry['id']
+            relative = Path(entry['file'])
+            if relative.is_absolute() or '..' in relative.parts or not relative.parts:
+                raise ValueError(f'{key}: unsafe patch path')
+            source_spec = entry.get('source_spec')
+            upstream = None
+            if source_spec:
+                if source_spec['repository'].removesuffix('.git') != entry['upstream'].removesuffix('.git'):
+                    raise ValueError(f'{key}: upstream repository identity mismatch')
+                upstream = resolve(source_spec)
+                checkout_root = workspace / 'patch-upstreams' / key
+                actual = checkout(upstream['repository'], upstream['commit_sha'], checkout_root)
+                if actual != upstream['commit_sha']:
+                    raise ValueError(f'{key}: patch upstream checkout drifted')
+                origin = (checkout_root / relative).resolve()
+                if checkout_root.resolve() not in origin.parents:
+                    raise ValueError(f'{key}: upstream path escapes checkout')
+            else:
+                origin = (local_root / relative).resolve()
+                if local_root not in origin.parents:
+                    raise ValueError(f'{key}: local patch path escapes patch directory')
+            if origin.is_symlink() or not origin.is_file() or origin.stat().st_nlink != 1:
+                raise ValueError(f'{key}: patch file missing or unsafe')
+            data = origin.read_bytes()
+            digest = hashlib.sha256(data).hexdigest()
+            if entry.get('sha256') and digest != entry['sha256']:
+                raise ValueError(f'{key}: SHA256 mismatch')
+            if upstream and entry.get('upstream_commit') and upstream['commit_sha'] != entry['upstream_commit']:
+                raise ValueError(f'{key}: resolved upstream differs from declared commit')
+            staged = stage / f'{key}.patch'
+            staged.write_bytes(data)
+            item = {**entry, 'file': staged.name, 'sha256': digest}
+            item.pop('source_spec', None)
+            frozen.append(item)
+            record['patches'].append({'id': key, 'feature': entry['feature'],
+                                      'source': upstream or {'repository': entry['upstream'],
+                                                             'commit_sha': entry['upstream_commit'], 'policy': 'pinned'},
+                                      'source_file': relative.as_posix(), 'sha256': digest,
+                                      'compatibility': 'UNTESTED'})
+            save()
+        record['state'] = 'LOCKED'
+        save()
+        return frozen, stage, record
+    except Exception as exc:
+        record.update(state='FAILED', error=str(exc))
+        save()
+        raise
+
+
+def apply_reviewed_operations(targets, operations, verify):
+    """Shared transaction boundary for reviewed patch edits and SUSFS payload copies."""
+    with rollback_files(targets):
+        for operation in operations:
+            operation()
+        if not verify():
+            raise ValueError('patch application verification failed')
+
+
+def apply_series(root, entries, patch_root, *, kernel_commit, target=None):
     """Apply independent text edits. Shared files require manual consolidation."""
     root, patch_root = Path(root).resolve(), Path(patch_root).resolve()
     if Path(_run_git(["rev-parse", "--show-toplevel"], cwd=root)).resolve() != root:
@@ -70,6 +156,23 @@ def apply_series(root, entries, patch_root, *, kernel_commit):
     plans, owners = [], {}
     for entry in order(entries):
         key = entry["id"]
+        target = target or {}
+        for field, selected in (('kernel_versions', target.get('kernel_version')),
+                                ('android_gki', target.get('android_gki')),
+                                ('architectures', target.get('architecture')),
+                                ('build_modes', target.get('build_mode'))):
+            if field in entry and selected not in entry[field]:
+                raise ValueError(f'{key}: target {field} incompatible or unknown: {selected}')
+        if entry.get('adaptation', 'git-apply-text-v1') != 'git-apply-text-v1':
+            raise ValueError(f'{key}: unsupported adaptation')
+        if entry.get('required_configs'):
+            config = root / '.config'
+            if not config.is_file():
+                raise ValueError(f'{key}: final Kconfig unavailable for required symbols')
+            enabled = set(re.findall(r'^CONFIG_([A-Z0-9_]+)=[ym]$', config.read_text(encoding='utf-8'), re.M))
+            missing = set(entry['required_configs']) - enabled
+            if missing:
+                raise ValueError(f'{key}: required Kconfig symbols disabled: {sorted(missing)}')
         if kernel_commit not in entry["kernel_commits"]:
             raise ValueError(f"{key}: unsupported kernel commit")
         patch = (patch_root / entry["file"]).resolve()

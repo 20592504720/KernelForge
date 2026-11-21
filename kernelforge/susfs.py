@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import hashlib
-from .patch_manager import rollback_files
+from .patch_manager import apply_reviewed_operations
 import re
 from pathlib import Path
 
@@ -154,13 +154,11 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
         if dest.parent.is_symlink() or root.resolve() not in dest.resolve().parents:
             raise ValueError('unsafe SUSFS copy destination')
         targets.append(dest)
-    with rollback_files(targets):
-        for tree, patch in patches:
-            _apply(tree, patch)
-        for src, dest in copies:
-            dest.write_bytes(src.read_bytes())
-        if not all(_check(tree, patch, True) for tree, patch in patches):
-            raise ValueError('SUSFS application verification failed')
+    operations = [lambda tree=tree, patch=patch: _apply(tree, patch) for tree, patch in patches]
+    operations.extend(lambda src=src, dest=dest: dest.write_bytes(src.read_bytes()) for src, dest in copies)
+    apply_reviewed_operations(targets, operations,
+                              lambda: all(_check(tree, patch, True) for tree, patch in patches)
+                              and all(digest(src) == digest(dest) for src, dest in copies))
     return {'state': 'EXTRA_KERNEL_PATCHES_APPLIED' if baka else 'PROVIDER_AND_KERNEL_PATCHES_APPLIED',
             'status': 'IMPLEMENTED', 'version': current['version'],
             'applied': [{'target':'kernel' if tree==root else 'provider','file':patch.name,'sha256':digest(patch)} for tree,patch in patches],

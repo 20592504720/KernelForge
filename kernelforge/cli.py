@@ -24,6 +24,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("validate-config", help="validate JSON configuration and references")
     sub.add_parser("validate-patches", help="validate patch manifests and local file hashes")
     sub.add_parser("doctor", help="inspect the local validation environment")
+    features = sub.add_parser('inspect-features', help='inspect TCP and ZRAM source/config evidence')
+    features.add_argument('--source', type=Path, required=True)
+    features.add_argument('--config', type=Path)
     workspace = sub.add_parser('workspace', help='show or initialize KERNELFORGE_HOME paths')
     workspace.add_argument('--init', action='store_true')
     build = sub.add_parser("build", help="run a configured kernel build")
@@ -55,6 +58,14 @@ def main(argv: list[str] | None = None) -> int:
             selected.initialize()
         print(json.dumps(selected.manifest(), ensure_ascii=False, indent=2))
         return 0
+    if args.command == 'inspect-features':
+        from .capabilities import inspect
+        try:
+            print(json.dumps(inspect(args.source, args.config), indent=2, sort_keys=True))
+            return 0
+        except (OSError, ValueError) as exc:
+            logging.error('feature inspection failed: %s', exc)
+            return 1
     if args.command == "doctor":
         logging.info("Python %s on %s", platform.python_version(), platform.platform())
         try:

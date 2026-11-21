@@ -1,4 +1,5 @@
 import hashlib
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -22,7 +23,8 @@ class PatchSeriesTests(unittest.TestCase):
             root.mkdir()
 
             def git(*args):
-                return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+                env = {key: value for key, value in os.environ.items() if not key.startswith('GIT_CONFIG_')}
+                return subprocess.check_output(["git", *args], cwd=root, text=True, env=env).strip()
 
             git("init", "-q")
             for name in ("a", "b"):
