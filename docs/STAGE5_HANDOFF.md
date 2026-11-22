@@ -438,3 +438,10 @@ SM8750 vendor-source Images, firmware/ABI validation, or device boot evidence.
 The Stage 5 35/35 locked SM8750 sync remains **UNTESTED/BLOCKED**.
 This audit added evidence only; no new CI, sync, build, or Windows E:/F: disk
 operation was performed.
+
+
+## Cloud-first preparation while the persistent 35-project sync runs (2026-11-22)
+
+The requested five independent preparatory tasks—module compatibility review, Git/archive dual-source design, GitHub Releases toolchain mirror design, GitHub Actions caching/resource plan, and Stage 6–9 acceptance contracts—are captured in [STAGE5_CLOUD_READINESS.md](STAGE5_CLOUD_READINESS.md) and referenced in [ROADMAP.md](ROADMAP.md). They are **DESIGN_REVIEWED / STATIC_AUDIT_ONLY**; no new source provider, Release mirror, full OKI build workflow or stage-acceptance implementation exists from this documentation change. The previous numbered Stage 6 features / Stage 7 devices-and-delivery commitments are explicitly remapped, not waived.
+
+Key blocker: patch_manager.apply_series() requires true Git top-level and locked HEAD; a TAR-only kernel cannot be substituted without a reviewed equivalent. build.py currently obtains a single source checkout, not a complete official multi-project OKI workspace. ToolchainManager already has SHA256/cache/source-adapter contracts that mirror support must reuse. The existing Windows-backed ext4 sync and its report/log remain unchanged. Read the actual final JSON before calling 35/35 TESTED or doing volume analysis. Preserve the existing branch, PR #1, main, locks, caches, WSL directories and user backups.
