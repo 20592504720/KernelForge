@@ -339,6 +339,14 @@ using a `[skip ci]` follow-up commit.
   attempt. Routine status inspection of this Run is next eligible after
   **2026-11-22 06:03 UTC** (14:03 China time); batch it with other runs.
 
+At the permitted **06:03 UTC** check, Manifest job `137112719805` had
+completed successfully; locked-sync job `137112720089` was still
+**IN_PROGRESS**. No final sync report or minimum-space measurement was
+available yet. The next routine status check is **no earlier than 06:13 UTC**
+(14:13 China time). If the job completes or fails unexpectedly, an immediate
+completion/failure check is allowed under the execution policy. Keep this
+same Run; do not launch another sync.
+
 ### Windows CI failure on the trigger Tree
 
 [Validate Run 44991303165](https://github.com/20592504720/KernelForge/actions/runs/44991303165),
