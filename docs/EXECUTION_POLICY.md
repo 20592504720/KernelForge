@@ -174,7 +174,8 @@ the status.
   threshold. Do not install or enable WSL without an explicit decision.
 - For a pre-existing workspace, use the verifier's explicit `--resume` mode.
   It validates the pinned Manifest Commit and selected Manifest before
-  incremental `repo sync -c -j2`. Choose a local timeout with
+  incremental `repo sync -c -j2 --no-manifest-update`; the latter option
+  keeps the existing Manifest checkout fixed during sync. Choose a local timeout with
   `--sync-timeout-seconds`; the hosted 2700-second limit is not a local
   requirement. A mismatch fails closed rather than rewriting the workspace.
 - A timed-out hosted job cannot establish the exact state of projects whose

@@ -265,7 +265,8 @@ def main(argv=None):
                 raise RuntimeError('resume manifest selection differs from locked manifest path')
             record['pre_sync_project_results'] = inspect_projects(work, projects)
         record['stage'] = 'repo_sync'
-        run_monitored(['repo', 'sync', '-c', '-j2', '--fail-fast', '--no-clone-bundle'],
+        run_monitored(['repo', 'sync', '-c', '-j2', '--fail-fast', '--no-clone-bundle',
+                       '--no-manifest-update'],
                       work, log, args.sync_timeout_seconds, record['reserve_bytes'],
                       sampled, args.sample_seconds)
         record['stage'] = 'head_validation'

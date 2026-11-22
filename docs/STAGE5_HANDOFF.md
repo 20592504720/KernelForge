@@ -400,6 +400,7 @@ to test this independent Windows change.
   120 GiB; use an ext4 path such as
   `~/kernelforge/sources/oneplus13-pjz110-sm8750`. Keep `.repo` and run the
   verifier with `--resume`, `--reserve-gib 20` and a locally suitable
-  `--sync-timeout-seconds`. First validate the exact Manifest Commit and
+  `--sync-timeout-seconds`. The verifier uses `--no-manifest-update` so a
+  resume cannot silently advance the Manifest during sync. First validate the exact Manifest Commit and
   three incomplete projects. Do not copy the vanished hosted-runner worktree
   or start another GitHub-hosted 45-minute sync as a substitute.
