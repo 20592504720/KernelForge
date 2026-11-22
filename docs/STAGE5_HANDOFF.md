@@ -338,3 +338,20 @@ using a `[skip ci]` follow-up commit.
   until this Run's log and JSON Artifact are inspected. Do not start a second
   attempt. Routine status inspection of this Run is next eligible after
   **2026-11-22 06:03 UTC** (14:03 China time); batch it with other runs.
+
+### Windows CI failure on the trigger Tree
+
+[Validate Run 44991303165](https://github.com/20592504720/KernelForge/actions/runs/44991303165),
+Windows/Python 3.11 job `137112730067`, failed in
+`test_custom_source_adapter_can_resolve_archive_and_layout`: the long
+toolchain staging path produced `WinError 3` during archive extraction,
+followed by `KeyboardInterrupt` and exit `-1073741510`. This is a real
+failure, not a passing four-platform result. The follow-up local fix shortens
+the transient stage, backup and metadata names while retaining the full
+identity in the cache lock/metadata. A long-root regression and interrupted
+backup recovery test passed locally (9 targeted checks). A full local Windows
+run reported 162 unittest assertions OK but its wrapper exited 1. That
+wrapper also checks for residual worker threads, and the final diagnostic
+line was not retained; it is **not** counted as a passing full run. GitHub
+CI for the follow-up fix is **UNTESTED**; do not rerun the 35-project sync
+to test this independent Windows change.

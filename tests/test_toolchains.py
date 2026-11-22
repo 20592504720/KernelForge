@@ -535,6 +535,19 @@ class ConcurrentManagerTests(ManagerFixture):
 
 
 class SourceAdapterTests(ManagerFixture):
+    def test_staging_path_is_bounded_under_long_cache_root(self):
+        observed = []
+        def observe(archive, destination, fmt):
+            observed.append(destination)
+            extract(archive, destination, fmt)
+
+        manager = ToolchainManager(self.root / ('long-root-' + 'x' * 95) / 'cache',
+                                   extractor=observe)
+        result = manager.prepare(self.spec())
+        self.assertTrue(result['audit']['sha256_verified'])
+        self.assertEqual(len(observed), 1)
+        self.assertLessEqual(len(observed[0].parent.name), 25)
+
     def test_custom_source_adapter_can_resolve_archive_and_layout(self):
         class ProfileAdapter(ArchiveSourceAdapter):
             requires_archive_format = False

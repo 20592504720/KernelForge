@@ -419,7 +419,10 @@ class ToolchainManager:
                     shutil.rmtree(path, ignore_errors=True) if path.is_dir() else path.unlink(missing_ok=True)
 
     def _recover_install(self, key: str, install: Path) -> None:
-        backups = sorted(install.parent.glob(f".{key}.old-*"), key=lambda path: path.stat().st_mtime, reverse=True) if install.parent.exists() else []
+        backups = (sorted((*install.parent.glob(f".{key}.old-*"),
+                           *install.parent.glob(f".{key[:16]}.old-*")),
+                          key=lambda path: path.stat().st_mtime, reverse=True)
+                   if install.parent.exists() else [])
         if not install.exists() and backups:
             atomic_replace(backups.pop(0), install)
         for backup in backups:
@@ -428,7 +431,9 @@ class ToolchainManager:
     def _download_install(self, spec: dict, key: str, audit: dict) -> dict:
         install, metadata_path, archive = self._metadata_paths(key)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        stage = self.cache_dir / "staging" / f"{key}-{uuid.uuid4().hex}"
+        # Keep transient paths short for Windows MAX_PATH; the cache lock and
+        # published metadata still use the complete SHA256 identity.
+        stage = self.cache_dir / "staging" / f"{key[:12]}-{uuid.uuid4().hex[:12]}"
         stage.mkdir(parents=True, exist_ok=False)
         staged_archive = stage / "download.archive"
         try:
@@ -456,7 +461,7 @@ class ToolchainManager:
             install.parent.mkdir(parents=True, exist_ok=True); metadata_path.parent.mkdir(parents=True, exist_ok=True); archive.parent.mkdir(parents=True, exist_ok=True)
             # Publish archive first; metadata and install are committed under the cache lock.
             atomic_replace(staged_archive, archive)
-            backup = install.with_name(f".{install.name}.old-{uuid.uuid4().hex}")
+            backup = install.with_name(f".{key[:16]}.old-{uuid.uuid4().hex[:12]}")
             if install.exists():
                 atomic_replace(install, backup)
             temp_meta = None
@@ -466,7 +471,7 @@ class ToolchainManager:
                             "host_arch": audit["host_arch"], "target_arch": spec["target_arch"], "source_type": audit["source_type"], "source": _safe_source(source_url),
                             "expected_sha256": expected, "actual_sha256": actual, "verified_at": audit["verified_at"], "archive_format": _archive_format, "adapter_version": spec.get("adapter_version", "1"),
                             "installed_tree_sha256": installed_digest, "executables": details["executables"], "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")}
-                temp_meta = metadata_path.with_name(f".{metadata_path.name}.{uuid.uuid4().hex}.tmp")
+                temp_meta = metadata_path.with_name(f".{key[:16]}.{uuid.uuid4().hex[:12]}.tmp")
                 temp_meta.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
                 atomic_replace(temp_meta, metadata_path)
             except BaseException:
