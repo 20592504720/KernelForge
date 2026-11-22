@@ -136,6 +136,14 @@ as its acceptance result.
 
 ## Third continuation, 2026-11-22 (in progress)
 
+The later completed [disk pilot 44988567235](https://github.com/20592504720/KernelForge/actions/runs/44988567235)
+measured 92,656,624 KiB free before and 99,241,204 KiB after an allowlisted
+`/usr/share/dotnet` cleanup, recovering 6,584,580 KiB. Basic tools remained
+available; complete vendor build compatibility remains UNTESTED. A new
+locked-sync monitor and one-time hosted-runner trigger have been added; the
+actual 35-project result must be read from its Run, not inferred from the
+pilot or manifest-only audit. Stage 5 is still open.
+
 The real-source workflow now has a same-repository PR trigger with read-only
 permissions. A development-branch push trigger was used to establish that
 GitHub would schedule the eight-job matrix, then removed to avoid duplicate

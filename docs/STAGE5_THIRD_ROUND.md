@@ -84,6 +84,18 @@ permission remain unresolved. No automatic download/application is enabled.
 
 ## Acceptance boundary
 
+### Controlled sync preparation, 2026-11-22
+
+The hosted Runner pilot actually recovered 6,584,580 KiB by removing only
+the checked `/usr/share/dotnet` preinstall; capacity must be measured on the
+fresh sync Runner. The source-audit workflow now separates manifest-only
+PR/schedule activity from a named one-time full-sync trigger, keeps the
+35-project exact lock and adds low-space process-group termination and
+periodic JSON/log evidence. The 35 GiB admission floor and 10 GiB reserve
+are provisional. Until a new Run yields 35 matching HEADs, complete locked
+source sync remains **UNTESTED**. Full image, modules, ABI, firmware match,
+boot and Root remain **UNTESTED** even if that sync succeeds.
+
 Until the current-Tree Linux jobs finish, real GKI Patch Manager, final
 network/ZRAM object evidence, full Images and any SM8750 source sync/build are
 UNTESTED. Even successful source sync will not establish firmware-matched ABI,

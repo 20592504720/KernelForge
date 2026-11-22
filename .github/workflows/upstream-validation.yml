@@ -21,7 +21,10 @@ permissions:
   contents: read
 jobs:
   sources:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    # This controlled SM8750 sync commit must not relaunch the already-tested
+    # eight-job GKI matrix. Restore the normal same-repository PR gate after
+    # the one-time sync run is recorded.
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref != 'stage1/initial-foundation') }}
     # Clang 17 preserves ACK KCFI. Pin the host compiler separately to avoid
     # newer GNU host diagnostics in this older ACK revision.
     runs-on: ubuntu-24.04

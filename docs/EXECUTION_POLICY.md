@@ -50,13 +50,12 @@ the status.
   artifact quota. `No space left on device` in a Worker diagnostic path proves
   filesystem exhaustion; it does **not** identify the directory that first
   filled the disk or prove a kernel code defect.
-- Standard hosted `ubuntu-24.04` runners have a 14 GB SSD (GitHub-hosted
-  runner reference, checked 2026-11-22); the provisional 35 GiB free-space
-  floor cannot pass there. Keep the lightweight manifest audit available, but
-  gate complete locked sync on repository variable `SM8750_LARGE_RUNNER`
-  specifying an explicitly authorized runner with adequate disk. A skipped
-  locked-sync is BLOCKED/UNTESTED, never proof of source completeness. Do not
-  provision paid or self-hosted runners without user approval.
+- Do not infer usable capacity from a runner label or a generic published
+  specification. The 2026-11-22 hosted Ubuntu 24.04 pilot actually measured
+  92,656,624 KiB free before cleanup and 99,241,204 KiB after; a fresh job
+  can differ. The provisional 35 GiB preflight is only a floor, not a measured
+  source peak. Keep manifest-only PR/schedule jobs available and make full
+  sync an explicit, one-attempt action. A skipped sync remains UNTESTED.
 - On repeated disk failure, do not retry again under identical conditions.
   Preserve Run ID/log, locate the growth source and change the resource plan.
   Consider eliminating duplicate copies, safe shallow/partial sync only if
@@ -69,6 +68,23 @@ the status.
   C-drive backups, other projects or runner system directories. Never disable
   CFI/KCFI, required modules or device trees to save space. Paid or self-hosted
   capacity requires a separate security and cost decision.
+- For this SM8750 attempt only, `/usr/share/dotnet` is the sole tested cleanup
+  candidate. Verify hosted Ubuntu 24.04, exact real path, non-symlink,
+  non-mountpoint and recognizable root-owned .NET installation; use
+  `--one-file-system`. Check direct tools and protected tool paths before and
+  after. The pilot recovered 6,584,580 KiB; this proves only the checked tools
+  survived, not full vendor build compatibility. Do not widen the allowlist.
+- Monitor free blocks and inodes inside the sync job at low cost (30–60 s),
+  recording stages, lowest observed capacity and exact failure. Use a measured
+  safety reserve; a provisional 10 GiB is used for the first controlled sync.
+  Terminate the sync process group before the reserve is exhausted and retain
+  a small JSON/log report. Do not perform repeated full-tree `du` scans.
+- A large sync should have a one-time explicit trigger, never an automatic PR
+  or schedule trigger. Match its Run ID to a source lock and Commit before
+  judging results. One failed attempt requires diagnosis before any retry.
+  If hosted capacity is proven insufficient, first design a measured larger
+  Linux option; E:/F: storage is only a later option with a Linux filesystem,
+  no automatic migration or exposed public self-hosted runner.
 
 ## Efficient development and verification
 
@@ -116,10 +132,11 @@ the status.
 
 ## Safe hosted-runner free-space pilot (2026-11-22)
 
-- Prefer one isolated measurement on a fresh `ubuntu-24.04` hosted runner
-  before any actual 35-project sync. `.github/workflows/runner-disk-pilot.yml`
-  runs only a narrowly allowlisted trial: `/usr/share/dotnet` and
-  `/opt/ghc`, guarded against symlinks/mountpoints and restricted to
+- The completed [pilot run 44988567235](https://github.com/20592504720/KernelForge/actions/runs/44988567235)
+  measured 92,656,624 KiB free before cleanup, 99,241,204 KiB after and
+  6,584,580 KiB recovered. `.github/workflows/runner-disk-pilot.yml`
+  tried only `/usr/share/dotnet` and `/opt/ghc`; the latter was absent. It
+  guarded symlinks/mountpoints and was restricted to
   GitHub-hosted Ubuntu 24.04. It preserves Android SDK/NDK, all
   `RUNNER_TOOL_CACHE`, Java, Clang/LLVM, GCC, Git, Python, Node, Bazel,
   Docker, source locks and kernel files; verifies essential executable paths

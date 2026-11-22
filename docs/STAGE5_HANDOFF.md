@@ -256,13 +256,12 @@ originals remain untouched. Do not enter Stage 6 without a new instruction.
 
 ## Post-handoff CI capacity and Node 24 smoke plan (2026-11-22)
 
-- The standard GitHub-hosted `ubuntu-24.04` runner has a 14 GB SSD per
-  GitHub documentation, less than the current provisional 35 GiB
-  free-space preflight. The existing full 35-project SM8750 sync has
-  therefore been gated behind the explicitly configured repository
-  variable `SM8750_LARGE_RUNNER`; without it the job is skipped, **not
-  TESTED**. Do not repeat source sync on the standard runner or provision
-  paid resources without approval.
+- This was the pre-pilot capacity assumption. The later measured hosted
+  Runner had 92,656,624 KiB free before a safe cleanup and 99,241,204 KiB
+  after; the blanket 14 GB claim must not govern the next attempt. The
+  previous `SM8750_LARGE_RUNNER` gate skipped source sync, **not TESTED**.
+  Recheck actual capacity on every fresh Runner and keep paid resources
+  subject to a separate decision.
 - The lightweight Validate workflow now uploads one small Node 24 smoke
   artifact on Ubuntu/Python 3.12, exercising the pinned checkout,
   setup-python and upload-artifact Actions together. Check the new run
@@ -274,7 +273,7 @@ originals remain untouched. Do not enter Stage 6 without a new instruction.
   commit. At next Codex resume, compare remote HEAD/Tree with local
   history and reconcile safely; do not reset local work or force push.
 
-## Free hosted-runner disk pilot (2026-11-22; awaiting CI evidence)
+## Free hosted-runner disk pilot (2026-11-22; original plan)
 
 The user prefers free, dependency-safe Runner cleanup over an immediate
 switch to local E:/F: storage. A one-run disk experiment was added in
@@ -290,3 +289,34 @@ whether and how the verified safe cleanup can be reused inside the
 actual sync job. Actual full-source and build safety is still UNTESTED.
 Do not touch E: or F: drives or clean SDK/NDK, Java, Python/Node,
 Clang/GCC, Bazel or toolcache to obtain a green check.
+
+## Controlled OnePlus 13 sync continuation (2026-11-22)
+
+The prior remote branch head was `7b6fe3129effd6c0c883e67adb9c46d3e194c387`
+with Tree `6d153fe52f9d2ee7527f529dab8c453b03f37d07`. Its two changes
+were safely cherry-picked onto the divergent but Tree-equal local branch;
+no reset or force push occurred. The completed [disk pilot 44988567235](https://github.com/20592504720/KernelForge/actions/runs/44988567235)
+removed only `/usr/share/dotnet`, skipped absent `/opt/ghc`, recovered
+6,584,580 KiB, and passed its direct tool checks. The completed
+[four-platform validation 44988571659](https://github.com/20592504720/KernelForge/actions/runs/44988571659)
+passed 4/4; [GKI 44988571592](https://github.com/20592504720/KernelForge/actions/runs/44988571592)
+passed 8/8; [SM8750 audit 44988571636](https://github.com/20592504720/KernelForge/actions/runs/44988571636)
+passed manifest audit while locked sync was skipped by the old large-runner
+gate. These are prior-Tree evidence, not proof of the new sync monitor.
+
+The new workflow confines the verified .NET cleanup to its locked-sync job,
+then checks current free blocks/inodes and applies a provisional 35 GiB
+preflight. `verify_sm8750_sync.py` records 30-second resource samples,
+minimum free bytes/inodes, repo stage, partial project HEADs and failure
+reason; it reserves a provisional 10 GiB and stops the sync process group
+if that reserve is crossed. Ordinary PRs and schedules remain manifest-only.
+A single named development-branch push (`[run-sm8750-once]`) or explicit
+manual `full_sync` input can authorize the complete sync. This is not a
+commit-reachability or complete-source result until the actual Run and its
+35/35 HEAD report are inspected. No device build, firmware ABI, boot or Root
+claim follows from a successful sync.
+
+The one-time trigger commit temporarily skips the already validated GKI
+matrix for this same-repository development PR; it does not change any GKI
+build step. Restore the prior PR gate in a later `[skip ci]` documentation
+commit after recording the sync Run, so future source changes can use it.
