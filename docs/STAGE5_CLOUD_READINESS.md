@@ -1,5 +1,8 @@
 # Stage 5 cloud-readiness audit and Stages 6–9 design contracts
 
+> **Source-sync status update (2026-11-23):** The user's same-workspace WSL2 `--resume` is recorded in [Stage 5 handoff](STAGE5_HANDOFF.md) as `source_sync=TESTED`, 35/35 pinned HEADs and exact Manifest. The original first-attempt Rust/GnuTLS error remains archived. The GitHub-only reviewer has not opened raw WSL JSON/log bytes. Superseding CI evidence and outstanding acceptance gates are in [Stage 5 evidence reconciliation](STAGE5_EVIDENCE_RECONCILIATION.md). The earlier "sync runs / not yet complete" descriptions below are historical snapshots, not the current sync status. Stage 5 overall remains IN_PROGRESS; Stages 6–9 remain DESIGN_ONLY.
+
+
 Status: **DESIGN_REVIEWED / STATIC_AUDIT_ONLY** (2026-11-22). The five preparatory reviews in this document are authored; the proposed providers, mirrors, caches, build jobs and acceptance tests are **NOT_IMPLEMENTED / UNTESTED**. Stage 5 stays **IN_PROGRESS** while the user's existing, persistent WSL2 OnePlus 13 35-project locked sync runs. This documentation does not claim 35/35 TESTED.
 
 Scope: develop an Actions-first, cloud-based KernelForge; persistent local WSL2 is only the isolated current Stage 5 source-validation attempt. Preserve branch stage1/initial-foundation, open PR #1, main, source locks, the E-drive project and the running WSL workspace. No new full-sync job, local build, costly runner, cache deletion, branch reset, release or device flashing is authorized by this design.

@@ -1,5 +1,8 @@
 # Roadmap
 
+> **Status clarification (2026-11-23):** OnePlus 13 official `source_sync=TESTED` (35/35) is documented in [Stage 5 handoff](STAGE5_HANDOFF.md). The latest checked real-source GKI matrix was 7/8, with BakaSU+SUSFS `latest_branch` patch conflict; Stage 5 overall is not yet accepted. See [evidence reconciliation](STAGE5_EVIDENCE_RECONCILIATION.md). Older "WSL source sync is running" lines below are historical and superseded for that single gate. Later Stages 6–9 remain planning only.
+
+
 All stages follow the [execution policy](EXECUTION_POLICY.md). Stage 5 remains
 open until current-Tree Linux and SM8750 evidence is assessed; do not infer
 acceptance from configuration files or an earlier run.

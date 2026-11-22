@@ -469,3 +469,10 @@ first sync and 185.41 GiB after successful resume; the 50 GiB host reserve
 was not crossed. The successful resume report retains ext4 and host samples.
 No OnePlus 13 kernel compilation, module ABI, firmware match, flashability,
 device boot, Root or runtime behavior was verified; these remain UNTESTED.
+
+
+## Stage 5 evidence reconciliation following successful WSL source sync (2026-11-23)
+
+The GitHub-side evidence review and local-only task split are now in [STAGE5_EVIDENCE_RECONCILIATION.md](STAGE5_EVIDENCE_RECONCILIATION.md) and [STAGE5_LOCAL_CODEX_HANDOFF.md](STAGE5_LOCAL_CODEX_HANDOFF.md). This later entry supersedes the earlier **in-progress** statements *only for source sync*: the prior local WSL `35/35`, `source_sync=TESTED` evidence remains recorded in the section above.
+
+The newest inspected GKI job matrix, [Run 45020470109](https://github.com/20592504720/KernelForge/actions/runs/45020470109), was **7/8**, not 8/8. The sole failed configuration was `BakaSU + SUSFS + latest_branch` (job `137201998796`): the locked SUSFS patch `50_add_susfs_in_gki-android14-6.1.patch` failed against ACK 6.1 `fs/exec.c` and `fs/namespace.c`. Four pinned GKI jobs passed; the complete OnePlus 13 Vendor/OKI Image, modules, ABI, firmware, device boot and Root runtime remain UNTESTED. This failure must not be conflated with the successfully resumed OnePlus 13 35-project source sync. Local WSL file inspection and exact capacity/prebuilt measurements remain outstanding and are delegated strictly as read-only tasks. Stage 5 as a whole is IN_PROGRESS.
