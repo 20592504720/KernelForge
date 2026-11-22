@@ -1,5 +1,12 @@
 name: Real development sources
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - kernelforge/patch_manager.py
+      - kernelforge/capabilities.py
+      - scripts/validate_upstreams.py
+      - .github/workflows/upstream-validation.yml
   schedule:
     - cron: '15 3 * * 1'
   workflow_dispatch:
@@ -12,6 +19,7 @@ permissions:
   contents: read
 jobs:
   sources:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     # Clang 17 preserves ACK KCFI. Pin the host compiler separately to avoid
     # newer GNU host diagnostics in this older ACK revision.
     runs-on: ubuntu-24.04
@@ -40,7 +48,7 @@ jobs:
           args=(--provider "$PROVIDER" --workspace "$RUNNER_TEMP/source-validation")
           if [ "$WITH_SUSFS" = true ]; then args+=(--susfs); fi
           if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline); fi
-          if [ "${{ inputs.full_kernel }}" = true ] && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
+          if { [ "${{ inputs.full_kernel }}" = true ] || [ "${{ github.event_name }}" = pull_request ]; } && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
           python scripts/validate_upstreams.py "${args[@]}"
       - name: Print verification reports
         if: always()
