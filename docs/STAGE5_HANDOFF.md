@@ -316,7 +316,25 @@ commit-reachability or complete-source result until the actual Run and its
 35/35 HEAD report are inspected. No device build, firmware ABI, boot or Root
 claim follows from a successful sync.
 
-The one-time trigger commit temporarily skips the already validated GKI
-matrix for this same-repository development PR; it does not change any GKI
-build step. Restore the prior PR gate in a later `[skip ci]` documentation
-commit after recording the sync Run, so future source changes can use it.
+The one-time trigger commit temporarily skipped the already validated GKI
+matrix for this same-repository development PR; it changed no GKI build step.
+The prior PR gate was restored immediately after registering the sync Run,
+using a `[skip ci]` follow-up commit.
+
+### One-time Run registry
+
+- [SM8750 source audit Run 44991299785](https://github.com/20592504720/KernelForge/actions/runs/44991299785),
+  push event at **2026-11-22 05:53 UTC** (13:53 China time), source Commit
+  `0a14ade2b68f1376606a312f745a5ed86004019f`, Tree
+  `e7dbd8cad22eb7765d758c0bae91705d24850529`.
+- Target: OnePlus 13 PJZ110 official 6.6.118, 35-project lock
+  `manifests/oneplus13-pjz110-sm8750-source.lock.json`, Manifest Commit
+  `f8e50677874c65b6da41057d2f39be7b4ef3c08a`; configured hosted
+  `ubuntu-24.04`, 35 GiB provisional admission floor, 10 GiB monitored
+  reserve, 30-second in-job resource sampling. The Manifest audit produced
+  its small Artifact; locked sync was **IN_PROGRESS** at registration.
+- Initial free capacity, reclaimed bytes, minimum during sync, 35/35 HEAD
+  count, CodeLinaro reachability, Bazel entry and final outcome are **UNKNOWN**
+  until this Run's log and JSON Artifact are inspected. Do not start a second
+  attempt. Routine status inspection of this Run is next eligible after
+  **2026-11-22 06:03 UTC** (14:03 China time); batch it with other runs.
