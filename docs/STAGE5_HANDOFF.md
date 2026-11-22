@@ -445,3 +445,27 @@ operation was performed.
 The requested five independent preparatory tasks—module compatibility review, Git/archive dual-source design, GitHub Releases toolchain mirror design, GitHub Actions caching/resource plan, and Stage 6–9 acceptance contracts—are captured in [STAGE5_CLOUD_READINESS.md](STAGE5_CLOUD_READINESS.md) and referenced in [ROADMAP.md](ROADMAP.md). They are **DESIGN_REVIEWED / STATIC_AUDIT_ONLY**; no new source provider, Release mirror, full OKI build workflow or stage-acceptance implementation exists from this documentation change. The previous numbered Stage 6 features / Stage 7 devices-and-delivery commitments are explicitly remapped, not waived.
 
 Key blocker: patch_manager.apply_series() requires true Git top-level and locked HEAD; a TAR-only kernel cannot be substituted without a reviewed equivalent. build.py currently obtains a single source checkout, not a complete official multi-project OKI workspace. ToolchainManager already has SHA256/cache/source-adapter contracts that mirror support must reuse. The existing Windows-backed ext4 sync and its report/log remain unchanged. Read the actual final JSON before calling 35/35 TESTED or doing volume analysis. Preserve the existing branch, PR #1, main, locks, caches, WSL directories and user backups.
+
+## Persistent OnePlus 13 source sync result (2026-11-22)
+
+**TESTED for source checkout only:** Ubuntu 24.04 WSL2 ext4 workspace
+`/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750` is backed by
+`E:\内核构建\wsl\Ubuntu-24.04\ext4.vhdx`. The first `repo sync -c -j2`
+attempt stopped with a CodeLinaro Rust fetch error, `curl 56 GnuTLS recv
+error (-9): Error decoding the received TLS packet`. Its JSON recorded
+34/35 at exit; the original `.repo`, objects and checkout were preserved.
+An independent post-exit HEAD check then found 35/35 pinned commits. A
+same-workspace `--resume` with `--no-manifest-update` exited zero and its
+final JSON records `source_sync=TESTED`, `matched_projects=35`, no unmatched
+projects, and Manifest HEAD
+`f8e50677874c65b6da41057d2f39be7b4ef3c08a`.
+
+Evidence is retained inside WSL at
+`/home/kernelforge/kernelforge/reports/oneplus13-pjz110-sm8750-sync.json`
+and `.log` (failed first attempt), plus
+`/home/kernelforge/kernelforge/reports/oneplus13-pjz110-sm8750-resume.json`
+and `.log` (successful resume). Windows E: had 338.13 GiB free before the
+first sync and 185.41 GiB after successful resume; the 50 GiB host reserve
+was not crossed. The successful resume report retains ext4 and host samples.
+No OnePlus 13 kernel compilation, module ABI, firmware match, flashability,
+device boot, Root or runtime behavior was verified; these remain UNTESTED.
