@@ -10,6 +10,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 import time
+import xml.etree.ElementTree as ET
 
 
 def disk_sample(path, stage):
@@ -127,15 +128,14 @@ def inspect_project(work, item):
     except (KeyError, ValueError):
         return 'UNSAFE_PATH', {}
     marker = path / '.git'
-    metadata = work / '.repo' / 'projects' / (item['path'].rstrip('/') + '.git')
+    metadata = work / '.repo' / 'projects' / (
+        '.git' if item['path'] == './' else item['path'] + '.git')
     details = {'directory_exists': path.is_dir(), 'git_marker_exists': marker.exists(),
                'repo_project_metadata_exists': metadata.exists()}
     if not path.is_dir():
         return 'NOT_DOWNLOADED', details
     if not marker.exists():
         return 'INCOMPLETE_CHECKOUT', details
-    if marker.is_symlink():
-        return 'UNSAFE_PATH', details
     try:
         git_dir = Path(git_value(path, 'rev-parse', '--absolute-git-dir')).resolve()
         if work.resolve() != git_dir and work.resolve() not in git_dir.parents:
@@ -181,6 +181,36 @@ def inspect_projects(work, projects):
                         'expected': item['commit_sha'], 'actual': actual, 'diagnosis': diagnosis,
                         'matches_lock': actual == item['commit_sha'], **details})
     return results
+
+
+def verify_manifest_selection(work, lock):
+    """Verify Repo's generated include or legacy symlink without editing .repo."""
+    name = lock['manifest_path']
+    if (not isinstance(name, str) or not name or '/' in name or '\\' in name or
+            name in ('.', '..')):
+        raise RuntimeError('unsafe locked manifest name')
+    repo_dir = work / '.repo'
+    if (repo_dir / 'local_manifest.xml').exists() or any(
+            (repo_dir / 'local_manifests').glob('*.xml')):
+        raise RuntimeError('unexpected local manifest overlay in locked workspace')
+    selected = repo_dir / 'manifest.xml'
+    expected = repo_dir / 'manifests' / name
+    if (work.resolve() not in expected.resolve().parents or
+            work.resolve() not in selected.resolve().parents):
+        raise RuntimeError('manifest path escapes locked workspace')
+    if not selected.is_file() or not expected.is_file():
+        raise RuntimeError('locked manifest file is missing')
+    if subprocess.run(['git', '-C', str(repo_dir / 'manifests'), 'diff', '--quiet',
+                       'HEAD', '--', name], timeout=15, check=False).returncode != 0:
+        raise RuntimeError('locked manifest checkout has local modifications')
+    if selected.is_symlink():
+        if selected.resolve() != expected.resolve():
+            raise RuntimeError('selected manifest symlink differs from lock')
+    else:
+        root = ET.parse(selected).getroot()
+        if (root.tag != 'manifest' or len(root) != 1 or root[0].tag != 'include' or
+                root[0].attrib != {'name': name}):
+            raise RuntimeError('selected generated manifest differs from lock')
 
 
 def main(argv=None):
@@ -258,11 +288,8 @@ def main(argv=None):
         record['actual_manifest_commit'] = manifest_head
         if manifest_head != lock['manifest_commit']:
             raise RuntimeError('manifest branch moved after locking; refusing mixed source versions')
+        verify_manifest_selection(work, lock)
         if args.resume:
-            manifest_name = (work / '.repo/manifest.xml').resolve()
-            expected_manifest = (work / '.repo/manifests' / lock['manifest_path']).resolve()
-            if manifest_name != expected_manifest:
-                raise RuntimeError('resume manifest selection differs from locked manifest path')
             record['pre_sync_project_results'] = inspect_projects(work, projects)
         record['stage'] = 'repo_sync'
         run_monitored(['repo', 'sync', '-c', '-j2', '--fail-fast', '--no-clone-bundle',

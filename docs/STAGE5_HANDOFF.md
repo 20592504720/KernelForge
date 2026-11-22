@@ -404,3 +404,8 @@ to test this independent Windows change.
   resume cannot silently advance the Manifest during sync. First validate the exact Manifest Commit and
   three incomplete projects. Do not copy the vanished hosted-runner worktree
   or start another GitHub-hosted 45-minute sync as a substitute.
+- Repo's current generated `.repo/manifest.xml` include and older symlink
+  form are both accepted after verifying the selected file against the pinned
+  Manifest checkout. Repo-owned `.git` links within the workspace are allowed;
+  links escaping the workspace remain rejected. This behavior has fixture
+  tests but is **UNTESTED** on the unavailable 35-project ext4 checkout.

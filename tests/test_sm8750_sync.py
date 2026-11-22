@@ -174,6 +174,31 @@ class MonitoredSyncTests(unittest.TestCase):
         self.assertEqual(sync.inspect_projects(self.work, [self._project()])[0]['diagnosis'],
                          'GIT_METADATA_CORRUPT')
 
+    def test_generated_manifest_is_verified_without_symlink_assumption(self):
+        manifest_dir = self.work / '.repo/manifests'
+        manifest_dir.mkdir(parents=True)
+        subprocess.run(['git', 'init', '-q', str(manifest_dir)], check=True)
+        subprocess.run(['git', '-C', str(manifest_dir), 'config', 'user.email',
+                        'test@example.org'], check=True)
+        subprocess.run(['git', '-C', str(manifest_dir), 'config', 'user.name', 'Test'], check=True)
+        source = manifest_dir / 'oneplus_13_b.xml'
+        source.write_text('<manifest/>\n', encoding='utf-8')
+        subprocess.run(['git', '-C', str(manifest_dir), 'add', 'oneplus_13_b.xml'], check=True)
+        subprocess.run(['git', '-C', str(manifest_dir), 'commit', '-q', '-m', 'locked'], check=True)
+        selected = self.work / '.repo/manifest.xml'
+        selected.write_text('<manifest><include name="oneplus_13_b.xml"/></manifest>',
+                            encoding='utf-8')
+        lock = {'manifest_path': 'oneplus_13_b.xml'}
+        sync.verify_manifest_selection(self.work, lock)
+        selected.write_text('<manifest><include name="other.xml"/></manifest>', encoding='utf-8')
+        with self.assertRaisesRegex(RuntimeError, 'differs from lock'):
+            sync.verify_manifest_selection(self.work, lock)
+        selected.write_text('<manifest><include name="oneplus_13_b.xml"/></manifest>',
+                            encoding='utf-8')
+        source.write_text('<manifest><project name="moved"/></manifest>', encoding='utf-8')
+        with self.assertRaisesRegex(RuntimeError, 'local modifications'):
+            sync.verify_manifest_selection(self.work, lock)
+
 
 if __name__ == '__main__':
     unittest.main()
