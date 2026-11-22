@@ -9,7 +9,7 @@ from unittest.mock import patch as mock_patch
 
 from kernelforge.capabilities import inspect
 from kernelforge.patch_manager import lock_series, apply_series, apply_reviewed_operations, verify_lock
-from kernelforge.source_provider import load_profile, audit_manifest, require_flashable
+from kernelforge.source_provider import load_profile, audit_manifest, manifest_source_lock, require_flashable
 
 
 REPOSITORY = Path(__file__).resolve().parents[1]
@@ -19,7 +19,8 @@ class Stage5Tests(unittest.TestCase):
     def test_profile_isolation_and_flash_gate(self):
         official = load_profile(REPOSITORY, 'oneplus13-pjz110')
         ace = load_profile(REPOSITORY, 'oneplus-ace6-plq110')
-        self.assertNotEqual(official['source_kind'], ace['source_kind'])
+        self.assertNotEqual(official['manifest']['revision'], ace['manifest']['revision'])
+        self.assertNotEqual(official['manifest']['path'], ace['manifest']['path'])
         self.assertIsNone(official['firmware_build'])
         xml = '<manifest>' + ''.join(
             f'<project name="{name}" path="{i}" revision="{official["manifest"]["revision"]}"/>'
@@ -28,12 +29,44 @@ class Stage5Tests(unittest.TestCase):
                          'android_kernel_modules_and_devicetree_oneplus_sm8750')))) + '</manifest>'
         audit = audit_manifest(xml, official)
         self.assertEqual(audit['source_mapping'], 'TESTED')
-        with self.assertRaisesRegex(ValueError, 'community profile'):
+        with self.assertRaisesRegex(ValueError, 'mismatched revisions'):
             audit_manifest(xml, ace)
         with self.assertRaisesRegex(ValueError, 'flashable release refused'):
             require_flashable(official, audit)
         with self.assertRaisesRegex(ValueError, 'mismatched revisions'):
             audit_manifest(xml.replace(official['manifest']['revision'], 'wrong', 1), official)
+
+    def test_complete_manifest_lock_marks_unresolved_and_unfetched_sources(self):
+        xml = ('<manifest><remote name="origin" fetch="https://github.com/OnePlusOSS"/>'
+               '<remote name="clo" fetch="https://git.codelinaro.org/clo/la"/>'
+               '<project name="kernel/common" path="common" remote="origin" revision="branch"/>'
+               '<project name="kernel/build" path="build" remote="clo" revision="' + 'a'*40 + '"/>'
+               '</manifest>')
+        lock = manifest_source_lock(xml, {'kernel/common': 'b'*40})
+        self.assertTrue(lock['all_refs_locked'])
+        self.assertEqual(lock['project_count'], 2)
+        self.assertEqual(lock['projects'][1]['commit_reachability'], 'UNTESTED')
+        self.assertEqual(lock['complete_sync'], 'UNTESTED')
+        with self.assertRaisesRegex(ValueError, 'complete, non-including'):
+            manifest_source_lock('<manifest><include name="other.xml"/></manifest>', {})
+
+    def test_oneplus_source_locks_are_independent(self):
+        locks = {}
+        for name in ('oneplus13-pjz110', 'oneplus-ace6-plq110'):
+            profile = load_profile(REPOSITORY, name)
+            path = REPOSITORY / 'manifests' / (name + '-sm8750-source.lock.json')
+            lock = json.loads(path.read_text(encoding='utf-8'))
+            self.assertEqual(lock['device_profile'], name)
+            self.assertEqual(lock['manifest_commit'], profile['manifest']['commit'])
+            self.assertEqual(lock['source_lock']['project_count'], 35)
+            self.assertTrue(lock['source_lock']['all_refs_locked'])
+            self.assertTrue(all(len(p['commit_sha']) == 40 for p in lock['source_lock']['projects']))
+            locks[name] = lock
+        oneplus = 'android_kernel_common_oneplus_sm8750'
+        def common_sha(lock):
+            return next(p['commit_sha'] for p in lock['source_lock']['projects'] if p['name'] == oneplus)
+        self.assertNotEqual(common_sha(locks['oneplus13-pjz110']),
+                            common_sha(locks['oneplus-ace6-plq110']))
 
     def test_source_feature_evidence_levels(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -58,6 +91,25 @@ class Stage5Tests(unittest.TestCase):
             self.assertTrue(report['zram']['lzo-rle']['default_kconfig_declared'])
             self.assertTrue(report['zram']['lzo-rle']['default_selected'])
             self.assertEqual(report['zram']['lzo-rle']['runtime_selectable'], 'UNTESTED')
+            self.assertEqual(report['network']['bbr']['status'], 'UNTESTED')
+            self.assertEqual(report['zram']['lzo-rle']['status'], 'UNTESTED')
+            for name in ('net/ipv4/tcp_bbr.o', 'drivers/block/zram/zcomp.o',
+                         'crypto/lzo-rle.o'):
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                header = bytearray(64)
+                header[:6] = b'\x7fELF\x02\x01'
+                header[16:20] = b'\x01\x00\xb7\x00'
+                path.write_bytes(header)
+            compiled = inspect(root)
+            self.assertEqual(compiled['network']['bbr']['status'], 'TESTED')
+            self.assertEqual(compiled['network']['bbr']['object_compiled']['sha256'],
+                             hashlib.sha256(header).hexdigest())
+            self.assertEqual(compiled['zram']['lzo-rle']['status'], 'TESTED')
+            self.assertEqual(compiled['network']['bbr2']['status'], 'UNTESTED')
+            (root / 'net/ipv4/tcp_bbr.o').write_bytes(b'not an object')
+            with self.assertRaisesRegex(ValueError, 'not an ELF64'):
+                inspect(root)
 
     def test_dynamic_patch_lock_and_real_apply(self):
         with tempfile.TemporaryDirectory() as tmp:

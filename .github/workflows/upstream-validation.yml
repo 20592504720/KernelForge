@@ -1,18 +1,13 @@
 name: Real development sources
 on:
-  push:
-    branches: [stage1/initial-foundation]
-    paths:
-      - kernelforge/patch_manager.py
-      - kernelforge/capabilities.py
-      - scripts/validate_upstreams.py
-      - .github/workflows/upstream-validation.yml
   pull_request:
     branches: [main]
     paths:
       - kernelforge/patch_manager.py
+      - kernelforge/real_patch_probe.py
       - kernelforge/capabilities.py
       - scripts/validate_upstreams.py
+      - tests/test_real_patch_probe.py
       - .github/workflows/upstream-validation.yml
   schedule:
     - cron: '15 3 * * 1'
@@ -55,7 +50,7 @@ jobs:
           args=(--provider "$PROVIDER" --workspace "$RUNNER_TEMP/source-validation")
           if [ "$WITH_SUSFS" = true ]; then args+=(--susfs); fi
           if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline); fi
-          if { [ "${{ inputs.full_kernel }}" = true ] || [ "${{ github.event_name }}" = pull_request ] || [ "${{ github.event_name }}" = push ]; } && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
+          if { [ "${{ inputs.full_kernel }}" = true ] || [ "${{ github.event_name }}" = pull_request ]; } && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
           python scripts/validate_upstreams.py "${args[@]}"
       - name: Print verification reports
         if: always()

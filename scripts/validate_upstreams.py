@@ -71,6 +71,11 @@ def main():
         if _run_git(['rev-parse','HEAD'],cwd=source)!=kernel_lock['commit_sha']:
             raise ValueError('GKI source Commit mismatch')
         result['kernel_commit']=kernel_lock['commit_sha']
+        if args.pinned_baseline and args.provider == 'official' and not args.susfs:
+            step='real GKI Patch Manager transaction probe'
+            from kernelforge.real_patch_probe import check_real_source
+            result['patch_manager'] = check_real_source(
+                source, work / 'patch-probe', output / 'patch-probe', kernel_lock['commit_sha'])
         # Target code uses LLVM; host helpers in this ACK revision require the
         # GNU host compiler rather than the runner's newer Clang diagnostics.
         command=['make','ARCH=arm64','LLVM=1','HOSTCC=gcc-11','HOSTCXX=g++-11']
@@ -105,6 +110,7 @@ def main():
         shutil.copyfile(source/'.config',output/'kernel.config')
         from kernelforge.capabilities import inspect as inspect_capabilities
         result['capabilities'] = inspect_capabilities(source, source / '.config')
+        (output/'capabilities.json').write_text(json.dumps(result['capabilities'],indent=2)+'\n',encoding='utf-8')
         step='make prepare and UAPI headers'
         run(command+['prepare'])
         run(command+['headers_install'])
@@ -145,11 +151,20 @@ def main():
             image=source/'arch/arm64/boot/Image'
             if not image.is_file() or not image.stat().st_size:
                 raise ValueError('Image build returned without a nonempty Image')
+            vmlinux=source/'vmlinux'
+            if not vmlinux.is_file() or not vmlinux.stat().st_size:
+                raise ValueError('Image build returned without a nonempty vmlinux')
+            with vmlinux.open('rb') as stream:
+                result['vmlinux']={'path':str(vmlinux.relative_to(work)),
+                                   'bytes':vmlinux.stat().st_size,
+                                   'sha256':hashlib.file_digest(stream,'sha256').hexdigest()}
             result['image']={'path':str(image.relative_to(work)),'bytes':image.stat().st_size,'sha256':hashlib.sha256(image.read_bytes()).hexdigest()}
             shutil.copyfile(image,output/'Image')
             if hashlib.sha256((output/'Image').read_bytes()).hexdigest()!=result['image']['sha256']:
                 raise ValueError('Image artifact copy SHA256 mismatch')
             result['image']['artifact']='Image'
+            result['capabilities'] = inspect_capabilities(source, source / '.config')
+            (output/'capabilities.json').write_text(json.dumps(result['capabilities'],indent=2)+'\n',encoding='utf-8')
             result['kernel_compile']='TESTED'
             result['kernel_compile_reason']='Image and vmlinux linked successfully; copied Image SHA256 verified'
             result['acceptance']['full_vmlinux']='TESTED'

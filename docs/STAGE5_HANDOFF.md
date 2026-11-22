@@ -139,3 +139,12 @@ originals remain untouched. Do not move or clean this workspace on resume.
    source permission, exact patch SHA/Commit, target baseline and conflicts.
 
 No Stage 5 completion claim is made here.
+
+## Third-round continuation
+
+See `docs/STAGE5_THIRD_ROUND.md` and the later sections of
+`docs/STAGE5_REPORT.md` for current evidence. The earlier statement that no
+official Ace 6 6.6.118 source was found has been corrected: the official
+Manifest contains `oneplus_ace_6.xml` and an independent source lock was
+created. The current-Tree real GKI matrix and Linux OnePlus 13 locked sync
+must be judged by their actual GitHub run reports, not by this older handoff.

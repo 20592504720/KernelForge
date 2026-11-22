@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -55,6 +56,50 @@ def audit_manifest(xml: str, profile: dict) -> dict:
     return {'profile': profile['id'], 'projects': selected, 'manifest_revision': expected,
             'source_mapping': 'TESTED', 'source_completeness': 'UNTESTED',
             'module_abi': 'UNTESTED', 'device_boot': 'UNTESTED'}
+
+
+def manifest_source_lock(xml: str, resolved_branches: dict[str, str]) -> dict:
+    """Describe every manifest project; caller resolves all moving branches once.
+
+    A pinned SHA in XML is a declaration, not proof that the commit is fetchable
+    or that the vendor build is complete.
+    """
+    if '<!DOCTYPE' in xml or '<!ENTITY' in xml:
+        raise ValueError('manifest external entities are forbidden')
+    document = ElementTree.fromstring(xml)
+    if document.tag != 'manifest' or document.findall('include'):
+        raise ValueError('manifest must be a complete, non-including snapshot')
+    remotes = {item.get('name'): item.get('fetch') for item in document.findall('remote')}
+    default = document.find('default')
+    default_remote = default.get('remote') if default is not None else None
+    default_revision = default.get('revision') if default is not None else None
+    projects = []
+    paths = set()
+    for item in document.findall('project'):
+        name = item.get('name')
+        path = item.get('path') or name
+        remote = item.get('remote') or default_remote
+        revision = item.get('revision') or default_revision
+        if not name or not path or not revision or remote not in remotes:
+            raise ValueError('manifest project lacks name, path, revision or remote')
+        if path != './' and (path.startswith('/') or '..' in Path(path).parts or path in paths):
+            raise ValueError(f'unsafe or duplicate manifest project path: {path}')
+        paths.add(path)
+        base = remotes[remote]
+        if not base.startswith('https://') or not re.fullmatch(r'[A-Za-z0-9_.\-/]+', name):
+            raise ValueError(f'unsafe manifest remote or project: {name}')
+        commit = revision if re.fullmatch(r'[0-9a-f]{40}', revision) else resolved_branches.get(name)
+        if commit is not None and not re.fullmatch(r'[0-9a-f]{40}', commit):
+            raise ValueError(f'invalid resolved commit for {name}')
+        projects.append({'name': name, 'path': path, 'repository': base.rstrip('/') + '/' + name + '.git',
+                         'revision': revision, 'commit_sha': commit,
+                         'ref_state': 'LOCKED' if commit else 'UNRESOLVED',
+                         'commit_reachability': 'UNTESTED', 'source_sync': 'UNTESTED'})
+    if not projects:
+        raise ValueError('manifest has no projects')
+    return {'project_count': len(projects), 'projects': projects,
+            'all_refs_locked': all(p['ref_state'] == 'LOCKED' for p in projects),
+            'complete_sync': 'UNTESTED'}
 
 
 def require_flashable(profile: dict, audit: dict):

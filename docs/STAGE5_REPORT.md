@@ -133,3 +133,31 @@ exposes workflow inspection but no workflow dispatch action, and the in-app
 browser could not open the workflow page. A fresh real GKI run for this Tree
 therefore remains BLOCKED in this session; the previous run must not be reused
 as its acceptance result.
+
+## Third continuation, 2026-11-22 (in progress)
+
+The real-source workflow now has a same-repository PR trigger with read-only
+permissions. A development-branch push trigger was used to establish that
+GitHub would schedule the eight-job matrix, then removed to avoid duplicate
+future runs. Each report must be matched to its actual Commit and Tree. The
+real-source script now includes a build-owned GKI Patch Manager transaction
+probe, records actual ARM64 object hashes for TCP/ZRAM, and requires both
+nonempty `vmlinux` and `Image` for full-build success. Final-Tree CI evidence
+is tracked in `docs/STAGE5_THIRD_ROUND.md` and the delivery report.
+
+Official `oneplus_ace_6.xml` was found at the pinned OnePlusOSS Manifest
+Commit. Its separate 6.6.118 common branch resolves to full Commit
+`65b954a773b183a9999b06bb1b2f921f12eaaf11`; the old conclusion that
+only a 6.6.142 community reference was identified is superseded. Both device
+profiles now have independent 35-project source lock files. Reachability of
+all CodeLinaro SHAs, complete sync/build, firmware and ABI are not thereby
+verified. The Linux source-audit workflow attempts a locked sync and keeps
+failure logs.
+
+BBG upstream commit `028ff7fd509e2104596da7cc1ef8e6ce2a0c9082` references
+`blk.h` and `objsec.h` that are absent at that exact commit: integration
+BLOCKED before object compilation. The Unicode candidate patch at
+`70c394f16d82b0f85a4f07617630d82dde6d203c` passes exact-file
+`git apply --check` on locked ACK 6.1 and OnePlus 13 common 6.6.118, but
+filesystem semantic and security behavior remain UNTESTED; integration is
+NOT_IMPLEMENTED. Fengchi remains an audited Stage 6 candidate only.

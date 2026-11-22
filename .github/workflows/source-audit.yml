@@ -1,5 +1,15 @@
 name: SM8750 source audit
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/audit_sm8750.py
+      - scripts/verify_sm8750_sync.py
+      - kernelforge/source_provider.py
+      - devices/profiles/oneplus13-pjz110.json
+      - devices/profiles/oneplus-ace6-plq110.json
+      - manifests/*-sm8750-source.lock.json
+      - .github/workflows/source-audit.yml
   schedule:
     - cron: '45 4 * * 1'
   workflow_dispatch:
@@ -7,6 +17,7 @@ permissions:
   contents: read
 jobs:
   manifest:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -22,3 +33,31 @@ jobs:
           name: sm8750-source-audit
           path: ${{ runner.temp }}/sm8750-audit.json
           if-no-files-found: warn
+  locked-sync:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Install distro repo tool
+        run: sudo apt-get update && sudo apt-get install -y repo
+      - name: Inspect capacity and sync locked source
+        run: |
+          df -h "$RUNNER_TEMP"
+          python scripts/verify_sm8750_sync.py \
+            --lock manifests/oneplus13-pjz110-sm8750-source.lock.json \
+            --workspace "$RUNNER_TEMP/sm8750-locked-source" \
+            --report "$RUNNER_TEMP/sm8750-locked-sync.json"
+      - name: Preserve exact sync result and failure log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sm8750-locked-sync
+          path: |
+            ${{ runner.temp }}/sm8750-locked-sync.json
+            ${{ runner.temp }}/sm8750-locked-sync.log
+          if-no-files-found: warn
+          retention-days: 14
