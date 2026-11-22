@@ -273,3 +273,20 @@ originals remain untouched. Do not enter Stage 6 without a new instruction.
 - The local E-drive checkout is not updated by a GitHub connector
   commit. At next Codex resume, compare remote HEAD/Tree with local
   history and reconcile safely; do not reset local work or force push.
+
+## Free hosted-runner disk pilot (2026-11-22; awaiting CI evidence)
+
+The user prefers free, dependency-safe Runner cleanup over an immediate
+switch to local E:/F: storage. A one-run disk experiment was added in
+`.github/workflows/runner-disk-pilot.yml`; it is scoped to the
+`stage1/initial-foundation` push of that workflow or manual dispatch.
+It removes only the optional preinstalled .NET and GHC directories on an
+isolated GitHub-hosted Ubuntu 24.04 Runner, records actual free-space and
+inode gain, checks essential build tools and uploads one small report.
+The real SM8750 locked-sync remains gated on an explicitly authorized
+large Runner; the pilot does not sync kernel source. At resume, read the
+pilot's existing Run ID/results rather than relaunching it and decide
+whether and how the verified safe cleanup can be reused inside the
+actual sync job. Actual full-source and build safety is still UNTESTED.
+Do not touch E: or F: drives or clean SDK/NDK, Java, Python/Node,
+Clang/GCC, Bazel or toolcache to obtain a green check.

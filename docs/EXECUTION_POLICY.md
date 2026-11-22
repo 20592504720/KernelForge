@@ -113,3 +113,34 @@ the status.
   evidence is reviewed. A runner disk blocker is `BLOCKED:
   RUNNER_DISK_EXHAUSTED`, never TESTED. The user decides whether a documented
   exception is acceptable. Stage 6 begins only on a later instruction.
+
+## Safe hosted-runner free-space pilot (2026-11-22)
+
+- Prefer one isolated measurement on a fresh `ubuntu-24.04` hosted runner
+  before any actual 35-project sync. `.github/workflows/runner-disk-pilot.yml`
+  runs only a narrowly allowlisted trial: `/usr/share/dotnet` and
+  `/opt/ghc`, guarded against symlinks/mountpoints and restricted to
+  GitHub-hosted Ubuntu 24.04. It preserves Android SDK/NDK, all
+  `RUNNER_TOOL_CACHE`, Java, Clang/LLVM, GCC, Git, Python, Node, Bazel,
+  Docker, source locks and kernel files; verifies essential executable paths
+  after the trial and uploads free-space/inode diagnostics.
+- The pilot does **not** modify persistent E: or F: drives, perform `repo
+  sync`, or prove complete kernel-build dependency safety. Newly synced
+  vendor projects may introduce dependencies not visible in this repository;
+  assess them before extending cleanup. Never apply third-party blanket
+  free-disk actions or indiscriminate `apt autoremove` without auditing
+  exactly what they delete.
+- Hosted GitHub jobs start fresh images; a pilot's freed space cannot be used
+  by a different job. Only after reviewing measured gain and dependencies
+  should an approved allowlist be added to the *same* locked-sync job.
+  Preinstalled components deleted in an isolated trial do not need to be
+  re-downloaded in later jobs because each receives a fresh VM, but deleting
+  a tool needed later *within the same job* can trigger unnecessary downloads.
+  Never remove toolcache, build-essential, SDK/NDK, Java, LLVM/Clang or Bazel
+  while their dependency status is unknown.
+- The 35 GiB floor is provisional, not a measured source peak. If guarded
+  cleanup cannot provide sufficient free bytes and inode capacity with
+  safety margin, do not repeat the same sync on a standard hosted runner;
+  evaluate authorized larger Linux capacity, with user-provided E:/F: space
+  available as a later alternative. No paid resources or local-drive
+  mutations without further coordination.
