@@ -93,12 +93,13 @@ def inspect(root: Path, config: Path | None = None) -> dict:
             'algorithm_listed': listed,
             'default_kconfig_declared': default_symbol in zram_symbols,
             'crypto_kconfig_declared': crypto_symbol in crypto_symbols,
+            'zram_final_config': values.get('ZRAM'),
             'default_selected': values.get(default_symbol) == 'y',
             'crypto_final_config': values.get(crypto_symbol),
             'object_compiled': zcomp_object, 'backend_object': backend_object,
             'runtime_selectable': 'UNTESTED',
             'status': 'TESTED' if listed and values.get('ZRAM') in ('y', 'm')
-                      and values.get(crypto_symbol) in ('y', 'm')
+                      and (values.get(crypto_symbol) in ('y', 'm') or values.get(default_symbol) == 'y')
                       and zcomp_object != 'UNTESTED' and backend_object != 'UNTESTED'
                       else 'UNTESTED',
         }

@@ -78,8 +78,8 @@ class Stage5Tests(unittest.TestCase):
                 'net/ipv4/tcp_cubic.c': '.name = "cubic";',
                 'drivers/block/zram/Kconfig': 'config ZRAM_DEF_COMP_LZORLE\n',
                 'drivers/block/zram/zcomp.c': '"lzo-rle", "lz4"',
-                'crypto/Kconfig': 'config CRYPTO_LZO_RLE\n',
-                '.config': 'CONFIG_TCP_CONG_BBR=y\nCONFIG_TCP_CONG_CUBIC=m\nCONFIG_ZRAM=y\nCONFIG_ZRAM_DEF_COMP_LZORLE=y\nCONFIG_CRYPTO_LZO_RLE=y\n',
+                'crypto/Kconfig': '',
+                '.config': 'CONFIG_TCP_CONG_BBR=y\nCONFIG_TCP_CONG_CUBIC=m\nCONFIG_ZRAM=y\nCONFIG_ZRAM_DEF_COMP_LZORLE=y\n',
             }.items():
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -106,6 +106,7 @@ class Stage5Tests(unittest.TestCase):
             self.assertEqual(compiled['network']['bbr']['object_compiled']['sha256'],
                              hashlib.sha256(header).hexdigest())
             self.assertEqual(compiled['zram']['lzo-rle']['status'], 'TESTED')
+            self.assertEqual(compiled['zram']['lzo-rle']['zram_final_config'], 'y')
             self.assertEqual(compiled['network']['bbr2']['status'], 'UNTESTED')
             (root / 'net/ipv4/tcp_bbr.o').write_bytes(b'not an object')
             with self.assertRaisesRegex(ValueError, 'not an ELF64'):

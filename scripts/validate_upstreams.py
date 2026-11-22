@@ -127,6 +127,13 @@ def main():
             targets+=sorted({str(Path(name).with_suffix('.o')) for name in changed}|{'fs/susfs.o'})
             objects+=targets[1:]
         run(command+['-j2']+targets,timeout=1200)
+        if args.pinned_baseline and args.provider == 'official' and not args.susfs:
+            step='ZRAM module object compilation'
+            run(command+['-j2','drivers/block/zram/'],timeout=1200)
+            zcomp=source/'drivers/block/zram/zcomp.o'
+            if not zcomp.is_file() or not zcomp.stat().st_size:
+                raise ValueError('ZRAM module build did not produce zcomp.o')
+            result['zram_module_object']=inspect_object(zcomp,source)
         objects=[str(path.relative_to(source)) for path in archive_members(source/'drivers/kernelsu/built-in.a',source)]+objects
         result['objects']=[inspect_object(source/name,source) for name in objects]
         result['object_compilation']='TESTED'
