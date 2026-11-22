@@ -34,8 +34,11 @@ jobs:
           path: ${{ runner.temp }}/sm8750-audit.json
           if-no-files-found: warn
   locked-sync:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-24.04
+    # Standard ubuntu-24.04 has only 14 GB SSD; it cannot satisfy the
+    # provisional 35 GiB free-space preflight for a full 35-project sync.
+    # Opt in only after configuring an authorized, adequately sized runner.
+    if: ${{ ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || github.event_name == 'workflow_dispatch') && vars.SM8750_LARGE_RUNNER != '' }}
+    runs-on: ${{ vars.SM8750_LARGE_RUNNER }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0

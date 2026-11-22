@@ -50,6 +50,13 @@ the status.
   artifact quota. `No space left on device` in a Worker diagnostic path proves
   filesystem exhaustion; it does **not** identify the directory that first
   filled the disk or prove a kernel code defect.
+- Standard hosted `ubuntu-24.04` runners have a 14 GB SSD (GitHub-hosted
+  runner reference, checked 2026-11-22); the provisional 35 GiB free-space
+  floor cannot pass there. Keep the lightweight manifest audit available, but
+  gate complete locked sync on repository variable `SM8750_LARGE_RUNNER`
+  specifying an explicitly authorized runner with adequate disk. A skipped
+  locked-sync is BLOCKED/UNTESTED, never proof of source completeness. Do not
+  provision paid or self-hosted runners without user approval.
 - On repeated disk failure, do not retry again under identical conditions.
   Preserve Run ID/log, locate the growth source and change the resource plan.
   Consider eliminating duplicate copies, safe shallow/partial sync only if

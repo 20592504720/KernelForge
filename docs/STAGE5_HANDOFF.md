@@ -252,3 +252,24 @@ repo, disk, network or tool error. Do not claim Stage 5 acceptance, flashable
 PJZ110 output, ABI, boot or Root until evidence exists. Keep E-drive sources,
 cache, toolchains, builds, artifacts, logs, reports and backups; C-drive
 originals remain untouched. Do not enter Stage 6 without a new instruction.
+
+
+## Post-handoff CI capacity and Node 24 smoke plan (2026-11-22)
+
+- The standard GitHub-hosted `ubuntu-24.04` runner has a 14 GB SSD per
+  GitHub documentation, less than the current provisional 35 GiB
+  free-space preflight. The existing full 35-project SM8750 sync has
+  therefore been gated behind the explicitly configured repository
+  variable `SM8750_LARGE_RUNNER`; without it the job is skipped, **not
+  TESTED**. Do not repeat source sync on the standard runner or provision
+  paid resources without approval.
+- The lightweight Validate workflow now uploads one small Node 24 smoke
+  artifact on Ubuntu/Python 3.12, exercising the pinned checkout,
+  setup-python and upload-artifact Actions together. Check the new run
+  and its artifact before marking these upgraded Actions TESTED.
+- Historical GKI 8/8 evidence remains valid for its recorded code and
+  workflow inputs. No new GKI or full SM8750 builds are required merely
+  because of this workflow-only revision.
+- The local E-drive checkout is not updated by a GitHub connector
+  commit. At next Codex resume, compare remote HEAD/Tree with local
+  history and reconcile safely; do not reset local work or force push.
