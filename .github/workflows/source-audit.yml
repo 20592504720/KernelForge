@@ -21,14 +21,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
       - run: python scripts/audit_sm8750.py "$RUNNER_TEMP/sm8750-audit.json"
       - if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: sm8750-source-audit
           path: ${{ runner.temp }}/sm8750-audit.json
@@ -38,22 +38,40 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - name: Install distro repo tool
         run: sudo apt-get update && sudo apt-get install -y repo
+      - name: Check runner disk before source sync
+        run: |
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          du -sh "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          free_kib=$(df -Pk "$RUNNER_TEMP" | awk 'NR == 2 {print $4}')
+          # Provisional floor for this 35-project sync; revise from measured peak use.
+          if [ "$free_kib" -lt 36700160 ]; then
+            echo "SM8750 sync requires at least 35 GiB free in RUNNER_TEMP; found ${free_kib} KiB" >&2
+            exit 1
+          fi
       - name: Inspect capacity and sync locked source
         run: |
           df -h "$RUNNER_TEMP"
+          df -i "$RUNNER_TEMP"
           python scripts/verify_sm8750_sync.py \
             --lock manifests/oneplus13-pjz110-sm8750-source.lock.json \
             --workspace "$RUNNER_TEMP/sm8750-locked-source" \
             --report "$RUNNER_TEMP/sm8750-locked-sync.json"
+      - name: Record capacity after sync attempt
+        if: always()
+        run: |
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          du -sh "$RUNNER_TEMP/sm8750-locked-source" "$GITHUB_WORKSPACE" 2>/dev/null || true
       - name: Preserve exact sync result and failure log
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: sm8750-locked-sync
           path: |

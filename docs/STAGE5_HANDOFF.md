@@ -1,5 +1,8 @@
 # KernelForge Stage 5 handoff — in progress
 
+Resume under the [all-stage execution policy](EXECUTION_POLICY.md), including
+the minimum 10-minute routine CI check interval and disk-failure classification.
+
 Status captured 2026-11-21. Stage 5 is **not complete**. Continue only on
 `stage1/initial-foundation`; do not modify `main`, force push or merge PR #1.
 
@@ -139,6 +142,43 @@ originals remain untouched. Do not move or clean this workspace on resume.
    source permission, exact patch SHA/Commit, target baseline and conflicts.
 
 No Stage 5 completion claim is made here.
+
+## 2026-11-22 post-run evidence and Node 24 maintenance
+
+The previous handoff Commit is local `190626985e7bcdeeb14f1602b4f1359273bce648`,
+remote `417dbbad37022ee89042d6b6d2fe079042a92443`, with equal Tree
+`0a38f3d999e4b2bafbc190d60fbf64ddf5d91bbb`. This section is a later
+documentation/workflow change; verify its own Commit and Tree on resume.
+
+- Current-code [GKI run 44971781385](https://github.com/20592504720/KernelForge/actions/runs/44971781385)
+  completed **success, 8/8 jobs**. The four `latest_branch` jobs completed
+  integration/Kconfig/object/link checks; the four pinned jobs completed real
+  ARM64 Image builds. The final official/pinned/SUSFS-off job includes the
+  modular ZRAM object check. Inspect its archived machine report for exact
+  object and image hashes before quoting them; do not infer boot or Root.
+- Current-code [four-platform run 44971781400](https://github.com/20592504720/KernelForge/actions/runs/44971781400)
+  ended success after one targeted Windows/Python 3.12 job retry. Initial
+  WinError 2/KeyboardInterrupt failure remains recorded above.
+- [SM8750 run 44970091559](https://github.com/20592504720/KernelForge/actions/runs/44970091559)
+  and [current-code run 44971781359](https://github.com/20592504720/KernelForge/actions/runs/44971781359)
+  both ended **failure** in locked-sync; their manifest jobs succeeded. The
+  user supplied runner diagnostic `_diag/Worker_20261122-013037-utc.log` with
+  `System.IO.IOException: No space left on device`. Classify the sync gate as
+  **BLOCKED: RUNNER_DISK_EXHAUSTED**. GitHub's archived locked-sync job logs
+  returned 404/BlobNotFound and no locked-sync artifact was present, so the
+  first growth directory and exact failing sync step remain UNKNOWN. Do not
+  retry identical runner conditions. OnePlus full build, modules, ABI,
+  firmware pairing, DTBO and boot remain UNTESTED.
+- All used checkout/setup-python/upload-artifact Action references were
+  updated to verified upstream Node 24 release SHAs. The SM8750 workflow
+  now records block/inode capacity and has a provisional 35 GiB free-space
+  preflight. This workflow revision has static checks only at handoff; its
+  actual GitHub runtime is **UNTESTED**. Run only a lightweight validation
+  on the new Tree when available, and separately design a measured disk
+  mitigation before any new 35-project sync.
+
+Do not accept Stage 5 or enter Stage 6 from the eight GKI successes alone.
+Read `docs/EXECUTION_POLICY.md` before the next long run.
 
 ## Third-round continuation
 
