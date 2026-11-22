@@ -169,3 +169,18 @@ BLOCKED before object compilation. The Unicode candidate patch at
 `git apply --check` on locked ACK 6.1 and OnePlus 13 common 6.6.118, but
 filesystem semantic and security behavior remain UNTESTED; integration is
 NOT_IMPLEMENTED. Fengchi remains an audited Stage 6 candidate only.
+
+## Locked SM8750 sync follow-up (2026-11-22)
+
+The [Run 44991299785](https://github.com/20592504720/KernelForge/actions/runs/44991299785)
+is **FAILED**, not a completed source audit: 31/35 HEADs matched before a
+2700-second `repo sync` timeout. The pinned Manifest HEAD matched. One failure
+was the verifier's false rejection of the Manifest's legitimate root project;
+this verifier error is now repaired and covered by targeted tests. The other
+three projects (`prebuilts/rust`, `tools/mkbootimg`, `prebuilts/tradefed`) had
+Git exit 128, with insufficient saved filesystem evidence to determine their
+individual cause. Their exact checkout and object state is **UNTESTED**.
+The downloaded Artifact is retained in `E:\内核构建\reports`.
+This Windows machine has no installed WSL distribution, so persistent ext4
+source sync and 35/35 validation are **BLOCKED** pending environment setup;
+no device build or firmware compatibility claim follows from this run.

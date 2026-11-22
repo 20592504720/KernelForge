@@ -105,6 +105,75 @@ class MonitoredSyncTests(unittest.TestCase):
         self.assertIn('mountpoint -q "$dir"', cleanup)
         self.assertIn('RUNNER_ENVIRONMENT', cleanup)
 
+    def _project(self, name='example', path='child', repository='https://example.org/repo.git'):
+        return {'name': name, 'path': path, 'repository': repository,
+                'commit_sha': '0' * 40}
+
+    def test_root_project_requires_exact_manifest_identity_and_git_remote(self):
+        root = self._project(sync.ROOT_PROJECT, './', sync.ROOT_REPOSITORY)
+        subprocess.run(['git', 'init', '-q', str(self.work)], check=True)
+        subprocess.run(['git', '-C', str(self.work), 'config', 'user.email', 'test@example.org'], check=True)
+        subprocess.run(['git', '-C', str(self.work), 'config', 'user.name', 'Test'], check=True)
+        subprocess.run(['git', '-C', str(self.work), 'commit', '-q', '--allow-empty', '-m', 'fixture'], check=True)
+        subprocess.run(['git', '-C', str(self.work), 'remote', 'add', 'origin', sync.ROOT_REPOSITORY], check=True)
+        root['commit_sha'] = subprocess.check_output(['git', '-C', str(self.work), 'rev-parse', 'HEAD'],
+                                                   text=True).strip()
+        row = sync.inspect_projects(self.work, [root])[0]
+        self.assertTrue(row['matches_lock'])
+        self.assertEqual(sync.inspect_project(self.work, {**root, 'name': 'impostor'})[0], 'UNSAFE_PATH')
+        subprocess.run(['git', '-C', str(self.work), 'remote', 'set-url', 'origin',
+                        'https://example.org/impostor.git'], check=True)
+        self.assertEqual(sync.inspect_project(self.work, root)[0], 'PROJECT_IDENTITY_MISMATCH')
+
+    def test_path_escape_and_missing_checkout_classification(self):
+        for path in ('../escape', '/tmp/escape', 'C:/escape', 'child/../escape',
+                     'child//escape', './', 'child\\escape'):
+            self.assertEqual(sync.inspect_project(self.work, self._project(path=path))[0],
+                             'UNSAFE_PATH', path)
+        project = self._project()
+        self.assertEqual(sync.inspect_project(self.work, project)[0], 'NOT_DOWNLOADED')
+        (self.work / 'child').mkdir()
+        self.assertEqual(sync.inspect_project(self.work, project)[0], 'INCOMPLETE_CHECKOUT')
+
+    def test_symlink_escape_rejected(self):
+        outside = self.work.parent / (self.work.name + '-outside')
+        outside.mkdir(exist_ok=True)
+        self.addCleanup(lambda: outside.rmdir())
+        try:
+            (self.work / 'child').symlink_to(outside, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest('symlink creation unavailable')
+        self.assertEqual(sync.inspect_project(self.work, self._project())[0], 'UNSAFE_PATH')
+
+    def test_resume_refuses_missing_repo_metadata(self):
+        report = self.work / 'report.json'
+        with self.assertRaisesRegex(ValueError, 'intact .repo manifest'):
+            sync.main(['--lock', str(self.work / 'missing.json'), '--workspace', str(self.work),
+                       '--report', str(report), '--resume'])
+
+    def test_missing_target_and_mismatched_head_are_distinct(self):
+        child = self.work / 'child'
+        subprocess.run(['git', 'init', '-q', str(child)], check=True)
+        subprocess.run(['git', '-C', str(child), 'config', 'user.email', 'test@example.org'], check=True)
+        subprocess.run(['git', '-C', str(child), 'config', 'user.name', 'Test'], check=True)
+        subprocess.run(['git', '-C', str(child), 'commit', '-q', '--allow-empty', '-m', 'first'], check=True)
+        first = subprocess.check_output(['git', '-C', str(child), 'rev-parse', 'HEAD'], text=True).strip()
+        subprocess.run(['git', '-C', str(child), 'commit', '-q', '--allow-empty', '-m', 'second'], check=True)
+        project = self._project()
+        self.assertEqual(sync.inspect_projects(self.work, [project])[0]['diagnosis'],
+                         'TARGET_COMMIT_MISSING')
+        project['commit_sha'] = first
+        row = sync.inspect_projects(self.work, [project])[0]
+        self.assertEqual(row['diagnosis'], 'HEAD_MISMATCH')
+        self.assertTrue(row['target_object_present'])
+
+    def test_corrupt_git_marker_is_reported(self):
+        child = self.work / 'child'
+        child.mkdir()
+        (child / '.git').write_text('gitdir: nowhere\n', encoding='utf-8')
+        self.assertEqual(sync.inspect_projects(self.work, [self._project()])[0]['diagnosis'],
+                         'GIT_METADATA_CORRUPT')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -161,3 +161,23 @@ the status.
   evaluate authorized larger Linux capacity, with user-provided E:/F: space
   available as a later alternative. No paid resources or local-drive
   mutations without further coordination.
+
+## Persistent SM8750 source workspace
+
+- Use a Linux ext4 filesystem inside a WSL2 VHD on E: or F:, not `/mnt/e`
+  or `/mnt/f`, for full `repo sync` and compilation. Preserve the whole
+  `.repo` directory and Git objects across interrupted attempts. The Windows
+  project remains at `E:\内核构建\project`.
+- Before starting, confirm the host disk has at least 120 GiB free and the
+  ext4 filesystem can preserve a 20 GiB reserve. Check both during sync.
+  Never delete existing sources, caches, toolchains or backups to reach that
+  threshold. Do not install or enable WSL without an explicit decision.
+- For a pre-existing workspace, use the verifier's explicit `--resume` mode.
+  It validates the pinned Manifest Commit and selected Manifest before
+  incremental `repo sync -c -j2`. Choose a local timeout with
+  `--sync-timeout-seconds`; the hosted 2700-second limit is not a local
+  requirement. A mismatch fails closed rather than rewriting the workspace.
+- A timed-out hosted job cannot establish the exact state of projects whose
+  HEAD was unreadable. Collect directory, `.git`, Repo metadata and target
+  object evidence from the next persistent attempt before classifying each
+  as missing, incomplete, corrupt or mismatched.

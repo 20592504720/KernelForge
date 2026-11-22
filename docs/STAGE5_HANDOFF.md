@@ -363,3 +363,43 @@ wrapper also checks for residual worker threads, and the final diagnostic
 line was not retained; it is **not** counted as a passing full run. GitHub
 CI for the follow-up fix is **UNTESTED**; do not rerun the 35-project sync
 to test this independent Windows change.
+
+## 2026-11-22: SM8750 locked sync diagnosis and local continuation
+
+- [Run 44991299785](https://github.com/20592504720/KernelForge/actions/runs/44991299785),
+  Commit `0a14ade2b68f1376606a312f745a5ed86004019f`, is now **FAILED**.
+  Its `sm8750-locked-sync` Artifact `14742927455` was downloaded and its ZIP
+  SHA256 matched `b28f33c4dc85df34c8d2c783d630d888b61244d0775135374aad62aca51fc3d1`.
+  The report records Manifest HEAD exactly `f8e50677874c65b6da41057d2f39be7b4ef3c08a`,
+  31/35 project HEADs matched, and `repo sync` timed out after 2700 seconds.
+  Free space fell from 101,619,314,688 to 15,283,589,120 bytes (86,335,725,568
+  bytes consumed); the 10 GiB safety reserve was not crossed. These are
+  runner measurements, not persistent local disk usage.
+- The official pinned `oneplus_13_b.xml` declares the OnePlus modules and
+  device tree project at `path="./"`. The old inspector falsely reported
+  `UNSAFE_PATH`. The inspector now accepts only that exact project identity,
+  checks its Git top-level, origin and locked HEAD, while still rejecting
+  traversal and paths outside the worktree.
+- `kernel_platform/prebuilts/rust`, `kernel_platform/tools/mkbootimg`, and
+  `kernel_platform/prebuilts/tradefed` returned Git exit 128 after the timeout.
+  The saved Artifact lacks per-path directory and `.repo` object details, and
+  the hosted runner's filesystem has expired. Their precise states are
+  **UNTESTED**: one cannot conclude network failure, missing download or Git
+  corruption from exit 128 alone. The new inspector records directory, `.git`,
+  Repo project metadata, target-object presence and a distinct diagnosis on
+  the next persistent run. Repo 2.36 printed an update notice for 2.71, not a
+  compatibility error; its causal role is **UNTESTED**.
+- This Windows host has WSL available as a command but `wsl -l -q` exits 1
+  with no installed distribution. E: has 340.19 GiB free, F: 281.30 GiB;
+  the host has 8 logical CPUs and about 7.88 GiB RAM. No WSL installation,
+  ext4 VHD, local 35-project sync or migration has been performed. The
+  persistent source workspace is **BLOCKED** until a Linux distribution is
+  installed/imported on E: or F: with an ext4 VHD. Keep the existing
+  `E:\内核构建\project`, caches, sources and all backups intact.
+- After a distro exists, place the VHD on E: if its free space still exceeds
+  120 GiB; use an ext4 path such as
+  `~/kernelforge/sources/oneplus13-pjz110-sm8750`. Keep `.repo` and run the
+  verifier with `--resume`, `--reserve-gib 20` and a locally suitable
+  `--sync-timeout-seconds`. First validate the exact Manifest Commit and
+  three incomplete projects. Do not copy the vanished hosted-runner worktree
+  or start another GitHub-hosted 45-minute sync as a substitute.

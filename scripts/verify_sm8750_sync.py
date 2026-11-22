@@ -3,7 +3,7 @@
 import argparse
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import signal
 import subprocess
@@ -92,22 +92,94 @@ def write_report(path, record):
     temporary.replace(path)
 
 
+ROOT_PROJECT = 'android_kernel_modules_and_devicetree_oneplus_sm8750'
+ROOT_REPOSITORY = ('https://github.com/OnePlusOSS/'
+                   'android_kernel_modules_and_devicetree_oneplus_sm8750.git')
+
+
+def project_path(work, item):
+    """Accept only locked repo paths; the manifest's one root project is explicit."""
+    raw = item['path']
+    if not isinstance(raw, str) or not raw or '\\' in raw or ':' in raw:
+        raise ValueError('UNSAFE_PATH')
+    if raw == './':
+        if item['name'] != ROOT_PROJECT or item['repository'] != ROOT_REPOSITORY:
+            raise ValueError('UNSAFE_PATH')
+        return work.resolve()
+    relative = PurePosixPath(raw)
+    if relative.is_absolute() or any(part in ('', '.', '..') for part in raw.split('/')):
+        raise ValueError('UNSAFE_PATH')
+    target = (work / raw).resolve()
+    if work.resolve() not in target.parents:
+        raise ValueError('UNSAFE_PATH')
+    return target
+
+
+def git_value(path, *args):
+    return subprocess.check_output(['git', '-C', str(path), *args], text=True,
+                                   stderr=subprocess.PIPE, timeout=15).strip()
+
+
+def inspect_project(work, item):
+    """Classify checkout, metadata, object and HEAD failures separately."""
+    try:
+        path = project_path(work, item)
+    except (KeyError, ValueError):
+        return 'UNSAFE_PATH', {}
+    marker = path / '.git'
+    metadata = work / '.repo' / 'projects' / (item['path'].rstrip('/') + '.git')
+    details = {'directory_exists': path.is_dir(), 'git_marker_exists': marker.exists(),
+               'repo_project_metadata_exists': metadata.exists()}
+    if not path.is_dir():
+        return 'NOT_DOWNLOADED', details
+    if not marker.exists():
+        return 'INCOMPLETE_CHECKOUT', details
+    if marker.is_symlink():
+        return 'UNSAFE_PATH', details
+    try:
+        git_dir = Path(git_value(path, 'rev-parse', '--absolute-git-dir')).resolve()
+        if work.resolve() != git_dir and work.resolve() not in git_dir.parents:
+            return 'UNSAFE_PATH', details
+        if Path(git_value(path, 'rev-parse', '--show-toplevel')).resolve() != path:
+            return 'GIT_METADATA_CORRUPT', details
+        if (item['path'] == './' and
+                git_value(path, 'remote', 'get-url', 'origin').removesuffix('.git') !=
+                ROOT_REPOSITORY.removesuffix('.git')):
+            return 'PROJECT_IDENTITY_MISMATCH', details
+        actual = git_value(path, 'rev-parse', '--verify', 'HEAD^{commit}')
+        if actual == item['commit_sha']:
+            return actual, details
+        try:
+            git_value(path, 'cat-file', '-e', item['commit_sha'] + '^{commit}')
+            details['target_object_present'] = True
+        except (OSError, subprocess.SubprocessError):
+            details['target_object_present'] = False
+        return actual, details
+    except (OSError, subprocess.SubprocessError) as exc:
+        details['git_error'] = str(exc)
+        try:
+            git_value(path, 'cat-file', '-e', item['commit_sha'] + '^{commit}')
+            details['target_object_present'] = True
+            return 'INCOMPLETE_CHECKOUT', details
+        except (OSError, subprocess.SubprocessError):
+            details['target_object_present'] = False
+            return 'GIT_METADATA_CORRUPT', details
+
+
 def inspect_projects(work, projects):
     results = []
     for item in projects:
-        path = (work / item['path']).resolve()
-        if path == work or work not in path.parents:
-            actual = 'UNSAFE_PATH'
+        actual, details = inspect_project(work, item)
+        if actual == item['commit_sha']:
+            diagnosis = 'MATCH'
+        elif len(actual) == 40 and all(ch in '0123456789abcdef' for ch in actual):
+            diagnosis = ('HEAD_MISMATCH' if details.get('target_object_present')
+                         else 'TARGET_COMMIT_MISSING')
         else:
-            try:
-                actual = subprocess.check_output(['git', '-C', str(path), 'rev-parse', 'HEAD'],
-                                                 text=True, stderr=subprocess.STDOUT,
-                                                 timeout=15).strip()
-            except (OSError, subprocess.SubprocessError) as exc:
-                actual = f'ERROR: {exc}'
+            diagnosis = actual
         results.append({'name': item['name'], 'path': item['path'],
-                        'expected': item['commit_sha'], 'actual': actual,
-                        'matches_lock': actual == item['commit_sha']})
+                        'expected': item['commit_sha'], 'actual': actual, 'diagnosis': diagnosis,
+                        'matches_lock': actual == item['commit_sha'], **details})
     return results
 
 
@@ -118,12 +190,18 @@ def main(argv=None):
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('--reserve-gib', type=int, default=10)
     parser.add_argument('--sample-seconds', type=int, default=30)
+    parser.add_argument('--sync-timeout-seconds', type=int, default=2700)
+    parser.add_argument('--resume', action='store_true',
+                        help='reuse an existing repo workspace after verifying its manifest')
     args = parser.parse_args(argv)
-    if args.reserve_gib < 1 or not 10 <= args.sample_seconds <= 60:
-        parser.error('reserve-gib must be positive and sample-seconds must be 10..60')
+    if args.reserve_gib < 1 or not 10 <= args.sample_seconds <= 60 or args.sync_timeout_seconds < 60:
+        parser.error('reserve-gib must be positive; sample-seconds 10..60; sync timeout >= 60')
     work = args.workspace.resolve()
-    if work.exists() and any(work.iterdir()):
+    existing = work.exists() and any(work.iterdir())
+    if existing and not args.resume:
         raise ValueError(f'refusing to overwrite nonempty workspace: {work}')
+    if args.resume and not (work / '.repo/manifests/.git').exists():
+        raise ValueError(f'resume requires intact .repo manifest checkout: {work}')
     work.mkdir(parents=True, exist_ok=True)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     record = {'started_at': datetime.now(timezone.utc).isoformat(), 'stage': 'preflight',
@@ -166,19 +244,30 @@ def main(argv=None):
                       project_count=35)
         if os.name != 'posix' or shutil.which('repo') is None:
             raise RuntimeError('Linux repo tool is required')
-        record['stage'] = 'repo_init'
-        run_monitored(['repo', 'init', '-u', lock['manifest_repository'], '-b', 'oneplus/sm8750',
-                       '-m', lock['manifest_path'], '--no-clone-bundle'], work, log, 300,
-                      record['reserve_bytes'], sampled, args.sample_seconds)
-        sampled(disk_sample(work, 'repo_init:complete'))
+        if not args.resume:
+            record['stage'] = 'repo_init'
+            run_monitored(['repo', 'init', '-u', lock['manifest_repository'], '-b', 'oneplus/sm8750',
+                           '-m', lock['manifest_path'], '--no-clone-bundle'], work, log, 300,
+                          record['reserve_bytes'], sampled, args.sample_seconds)
+            sampled(disk_sample(work, 'repo_init:complete'))
+        else:
+            record['resumed_workspace'] = True
+            record['stage'] = 'resume_manifest_validation'
         manifest_head = subprocess.check_output(
             ['git', '-C', str(work / '.repo/manifests'), 'rev-parse', 'HEAD'], text=True).strip()
         record['actual_manifest_commit'] = manifest_head
         if manifest_head != lock['manifest_commit']:
             raise RuntimeError('manifest branch moved after locking; refusing mixed source versions')
+        if args.resume:
+            manifest_name = (work / '.repo/manifest.xml').resolve()
+            expected_manifest = (work / '.repo/manifests' / lock['manifest_path']).resolve()
+            if manifest_name != expected_manifest:
+                raise RuntimeError('resume manifest selection differs from locked manifest path')
+            record['pre_sync_project_results'] = inspect_projects(work, projects)
         record['stage'] = 'repo_sync'
         run_monitored(['repo', 'sync', '-c', '-j2', '--fail-fast', '--no-clone-bundle'],
-                      work, log, 2700, record['reserve_bytes'], sampled, args.sample_seconds)
+                      work, log, args.sync_timeout_seconds, record['reserve_bytes'],
+                      sampled, args.sample_seconds)
         record['stage'] = 'head_validation'
         record['project_results'] = inspect_projects(work, projects)
         if not all(row['matches_lock'] for row in record['project_results']):
