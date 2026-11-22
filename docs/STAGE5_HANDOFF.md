@@ -148,3 +148,67 @@ official Ace 6 6.6.118 source was found has been corrected: the official
 Manifest contains `oneplus_ace_6.xml` and an independent source lock was
 created. The current-Tree real GKI matrix and Linux OnePlus 13 locked sync
 must be judged by their actual GitHub run reports, not by this older handoff.
+
+## Emergency third-round handoff, 2026-11-22 (Stage 5 remains open)
+
+At this handoff the working tree was clean on `stage1/initial-foundation`.
+Local Commit `ac921b5ec004fe15348f6c02b2e5779fbf91d16f` and remote
+Commit `78aec63fcdd5d9f74857b47c51d3d4b473a31c85` had the same Tree
+`938b1a8371b87c8937d9f7aac451cf23749d2958`. The Commit SHAs differ
+because local and connector-maintained remote histories have different parents.
+This documentation-only handoff will create a later Commit; inspect its final
+SHA and Tree before resuming. PR #1 was open and unmerged; `main` remained
+`77af49c47acbfd384a4e22993797eebfa8d9eee6`.
+
+**IMPLEMENTED; fixture TESTED:** the real-source GKI job now runs a locked,
+build-local Patch Manager apply/repeat/rollback probe on official/pinned/SUSFS
+off. The preceding-code [GKI run 44970091372](https://github.com/20592504720/KernelForge/actions/runs/44970091372)
+finished 8/8; its official/off job produced a nonempty Image and vmlinux,
+reported `APPLIED`, `ALREADY_APPLIED`, rollback `TESTED`, and a clean source.
+The independently downloaded Image matched SHA256
+`d4be9d084676242be5698bb984f6fb28af157ecba871950c2a3625fce0113a2c`.
+That run preceded the final ZRAM object-check change and is not the final Tree's
+complete acceptance result. Local focused tests passed 12/12 before that
+change and 9/9 after it; Python compile and configuration validation passed.
+
+**TESTED for current Tree:** [four-platform CI 44971781400](https://github.com/20592504720/KernelForge/actions/runs/44971781400)
+has a successful Ubuntu/Windows × Python 3.11/3.12 result (155 tests on each
+completed suite). The initial Windows/Python 3.12 attempt failed with WinError
+2 during temporary cache path resolution followed by `KeyboardInterrupt`;
+the single failed job was retried once and passed. Keep the first failure in
+the record. Current-Tree [GKI run 44971781385](https://github.com/20592504720/KernelForge/actions/runs/44971781385)
+had 4/4 `latest_branch` jobs successful at last inspection. Official/BakaSU ×
+SUSFS off/on resolved the same locked commits as the pinned baseline on this
+occasion; no version drift occurred. Three of four pinned Image jobs had
+completed successfully; official/pinned/SUSFS-off, which additionally compiles
+the modular ZRAM object, was **IN_PROGRESS**. Do not infer its outcome.
+
+**IN_PROGRESS:** [SM8750 source audit 44971781359](https://github.com/20592504720/KernelForge/actions/runs/44971781359)
+on remote Commit `78aec63fcdd5d9f74857b47c51d3d4b473a31c85` had the
+manifest job successful and the locked 35-project Linux `repo sync` still
+running. [Earlier sync 44970091559](https://github.com/20592504720/KernelForge/actions/runs/44970091559)
+on Commit `e357a089ec7c3d986ec1c6bd6f0a4901e53bfe97` was also running.
+Neither sync nor any OnePlus 13 full Bazel build, module ABI, firmware match,
+DTBO, boot or Root test has passed. Both jobs were left running; do not cancel
+or relaunch them merely for this handoff.
+
+**IMPLEMENTED; source mapping TESTED:** separate OnePlus 13/PJZ110 and Ace 6/
+PLQ110 official 6.6.118 profiles and 35-project source locks exist in
+`manifests/`. The Ace 6 official `oneplus_ace_6.xml` finding corrects the
+earlier community-only conclusion. CodeLinaro commit reachability and complete
+sync remain UNTESTED until the Linux jobs finish. BBG is **BLOCKED** by missing
+`blk.h` and `objsec.h` at the audited upstream Commit. Unicode patch textual
+applicability passed on two exact source files, while semantic and compile
+validation remain UNTESTED; integration is NOT_IMPLEMENTED. Fengchi candidate
+Commit and SHA256 were rechecked; automatic integration remains Stage 6 work.
+
+**Resume in order:** inspect the final attempt of GKI run 44971781385,
+especially official/pinned/off `zcomp.o`, `capabilities.json`, Image and
+vmlinux hashes; inspect both SM8750 sync reports and exact errors; reconcile
+CI with the code Tree above; update PR #1 once with final Stage 5 evidence.
+If sync succeeds, audit the official `sun` Bazel target and attempt a separate
+Linux build with the locked source. If it fails, record the specific missing
+repo, disk, network or tool error. Do not claim Stage 5 acceptance, flashable
+PJZ110 output, ABI, boot or Root until evidence exists. Keep E-drive sources,
+cache, toolchains, builds, artifacts, logs, reports and backups; C-drive
+originals remain untouched. Do not enter Stage 6 without a new instruction.
