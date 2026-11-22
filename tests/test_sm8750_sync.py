@@ -59,6 +59,23 @@ class MonitoredSyncTests(unittest.TestCase):
         self.assertIsNotNone(processes[0].poll())
         self.assertTrue(self.samples)
 
+    def test_host_drive_low_space_stops_download_group(self):
+        processes = []
+        def capture(*args, **kwargs):
+            process = subprocess.Popen(*args, **kwargs)
+            processes.append(process)
+            return process
+        def sample(path, stage):
+            return {'stage': stage, 'free_bytes': 1 if stage.endswith(':host') else 100}
+        with mock.patch.object(sync, 'disk_sample', side_effect=sample):
+            with self.assertRaisesRegex(RuntimeError, 'HOST_DISK_CAPACITY_INSUFFICIENT'):
+                sync.run_monitored([sys.executable, '-c', 'import time; time.sleep(5)'],
+                                   self.work, self.log, 2, 10, self.samples.append,
+                                   interval=0.05, popen=capture,
+                                   host_disk_path=self.work, host_reserve_bytes=50)
+        self.assertIsNotNone(processes[0].poll())
+        self.assertTrue(any(x['stage'].endswith(':host') for x in self.samples))
+
     def test_interrupt_stops_process(self):
         processes = []
         def capture(*args, **kwargs):

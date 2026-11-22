@@ -55,7 +55,8 @@ def stop_group(process, grace_seconds=15):
 
 
 def run_monitored(command, cwd, log, timeout, reserve_bytes, on_sample,
-                  interval=30, popen=subprocess.Popen):
+                  interval=30, popen=subprocess.Popen, host_disk_path=None,
+                  host_reserve_bytes=0):
     """Stop the whole repo process group before free space reaches the reserve."""
     with log.open('a', encoding='utf-8') as stream:
         stream.write('$ ' + ' '.join(command) + '\n')
@@ -70,6 +71,13 @@ def run_monitored(command, cwd, log, timeout, reserve_bytes, on_sample,
                 if sample['free_bytes'] < reserve_bytes:
                     raise RuntimeError('RUNNER_DISK_CAPACITY_INSUFFICIENT: '
                                        f"{sample['free_bytes']} bytes free; reserve {reserve_bytes}")
+                if host_disk_path is not None:
+                    host_sample = disk_sample(host_disk_path, command[1] + ':host')
+                    on_sample(host_sample)
+                    if host_sample['free_bytes'] < host_reserve_bytes:
+                        raise RuntimeError('HOST_DISK_CAPACITY_INSUFFICIENT: '
+                                           f"{host_sample['free_bytes']} bytes free; "
+                                           f"reserve {host_reserve_bytes}")
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise TimeoutError(f'{command[0]} {command[1]} timed out after {timeout}s')
@@ -221,11 +229,17 @@ def main(argv=None):
     parser.add_argument('--reserve-gib', type=int, default=10)
     parser.add_argument('--sample-seconds', type=int, default=30)
     parser.add_argument('--sync-timeout-seconds', type=int, default=2700)
+    parser.add_argument('--host-disk-path', type=Path,
+                        help='mounted Windows host drive to monitor during WSL sync')
+    parser.add_argument('--host-reserve-gib', type=int, default=50)
     parser.add_argument('--resume', action='store_true',
                         help='reuse an existing repo workspace after verifying its manifest')
     args = parser.parse_args(argv)
-    if args.reserve_gib < 1 or not 10 <= args.sample_seconds <= 60 or args.sync_timeout_seconds < 60:
+    if (args.reserve_gib < 1 or args.host_reserve_gib < 1 or
+            not 10 <= args.sample_seconds <= 60 or args.sync_timeout_seconds < 60):
         parser.error('reserve-gib must be positive; sample-seconds 10..60; sync timeout >= 60')
+    if args.host_disk_path is not None and not args.host_disk_path.is_dir():
+        parser.error('host-disk-path must be an existing mounted directory')
     work = args.workspace.resolve()
     existing = work.exists() and any(work.iterdir())
     if existing and not args.resume:
@@ -238,6 +252,8 @@ def main(argv=None):
               'source_sync': 'UNTESTED', 'reserve_bytes': args.reserve_gib * (1024 ** 3),
               'full_build': 'UNTESTED', 'module_abi': 'UNTESTED', 'device_boot': 'UNTESTED',
               'project_results': [], 'resource_samples': []}
+    if args.host_disk_path is not None:
+        record['host_reserve_bytes'] = args.host_reserve_gib * (1024 ** 3)
     log = args.report.with_suffix('.log')
     def sampled(sample):
         record['resource_samples'].append(sample)
@@ -264,6 +280,11 @@ def main(argv=None):
         signal.signal(signal.SIGTERM, interrupted)
     try:
         sampled(disk_sample(work, 'preflight'))
+        if args.host_disk_path is not None:
+            host_sample = disk_sample(args.host_disk_path, 'preflight:host')
+            sampled(host_sample)
+            if host_sample['free_bytes'] < record['host_reserve_bytes']:
+                raise RuntimeError('HOST_DISK_CAPACITY_INSUFFICIENT before sync')
         lock = json.loads(args.lock.read_text(encoding='utf-8'))
         if lock['device_profile'] != 'oneplus13-pjz110' or not lock['source_lock']['all_refs_locked']:
             raise ValueError('complete OnePlus 13 source lock required')
@@ -278,7 +299,9 @@ def main(argv=None):
             record['stage'] = 'repo_init'
             run_monitored(['repo', 'init', '-u', lock['manifest_repository'], '-b', 'oneplus/sm8750',
                            '-m', lock['manifest_path'], '--no-clone-bundle'], work, log, 300,
-                          record['reserve_bytes'], sampled, args.sample_seconds)
+                          record['reserve_bytes'], sampled, args.sample_seconds,
+                          host_disk_path=args.host_disk_path,
+                          host_reserve_bytes=record.get('host_reserve_bytes', 0))
             sampled(disk_sample(work, 'repo_init:complete'))
         else:
             record['resumed_workspace'] = True
@@ -295,7 +318,9 @@ def main(argv=None):
         run_monitored(['repo', 'sync', '-c', '-j2', '--fail-fast', '--no-clone-bundle',
                        '--no-manifest-update'],
                       work, log, args.sync_timeout_seconds, record['reserve_bytes'],
-                      sampled, args.sample_seconds)
+                      sampled, args.sample_seconds,
+                      host_disk_path=args.host_disk_path,
+                      host_reserve_bytes=record.get('host_reserve_bytes', 0))
         record['stage'] = 'head_validation'
         record['project_results'] = inspect_projects(work, projects)
         if not all(row['matches_lock'] for row in record['project_results']):
