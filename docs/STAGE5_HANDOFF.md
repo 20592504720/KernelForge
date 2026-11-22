@@ -409,3 +409,32 @@ to test this independent Windows change.
   Manifest checkout. Repo-owned `.git` links within the workspace are allowed;
   links escaping the workspace remain rejected. This behavior has fixture
   tests but is **UNTESTED** on the unavailable 35-project ext4 checkout.
+## 2026-11-22: independent audit of 8 real-source artifacts (Run 44997133564)
+
+On the development-branch commit \`da45033adb9e1976caf9419d08002af91b6a225c\`, the CI state was confirmed
+without triggering new runs:
+- [four-platform regression 44997133507](https://github.com/20592504720/KernelForge/actions/runs/44997133507):
+  **TESTED 4/4**, Ubuntu and Windows on Python 3.11/3.12.
+- [SM8750 audit 44997133509](https://github.com/20592504720/KernelForge/actions/runs/44997133509):
+  Manifest job **TESTED**, 35-project \`locked-sync\` **SKIPPED/UNTESTED**.
+- [real-source matrix 44997133564](https://github.com/20592504720/KernelForge/actions/runs/44997133564):
+  **8/8 jobs successful**. All eight downloadable Artifact ZIPs were opened and
+  their \`real-source-report.json\` records inspected, including independently
+  hashing each packaged \`Image\` against its report's size and SHA256.
+
+| Provider | SUSFS | Policy | Image bytes | Verified Image SHA256 | Full vmlinux |
+| --- | --- | --- | ---: | --- | --- |
+| official | off | pinned | 36,223,488 | \`2c8dabac80719c9046c09b3f923655859684f631bc574e5b2e7ba86c5bfbd637\` | TESTED |
+| official | on | pinned | 36,293,120 | \`bc451c27ab5faf48bf9de11b42e2ab6d39999ee85fed4db86d3578d2845bfa3a\` | TESTED |
+| BakaSU | off | pinned | 36,289,024 | \`87b625567a4311276634dbc4d63a6f39aea8ecce6a57b27e12b07d7dc9902572\` | TESTED |
+| BakaSU | on | pinned | 36,293,120 | \`4ab7ccd62a6ce4a4262c5157c542cedbf6266719a22223cc51a508be3090c19d\` | TESTED |
+
+All four \`latest_branch\` artifacts have \`status=success\`, \`object_compilation=TESTED\`,
+and \`acceptance.relocatable_link=TESTED\`, but **contain no Image** by design;
+\`kernel_compile=UNTESTED\` and \`acceptance.full_vmlinux=UNTESTED\`.
+All eight report \`boot=UNTESTED\` and \`root=UNTESTED\`.
+The verified Images are **generic GKI validation output**, not official OnePlus 13
+SM8750 vendor-source Images, firmware/ABI validation, or device boot evidence.
+The Stage 5 35/35 locked SM8750 sync remains **UNTESTED/BLOCKED**.
+This audit added evidence only; no new CI, sync, build, or Windows E:/F: disk
+operation was performed.
