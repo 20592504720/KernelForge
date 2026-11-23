@@ -96,6 +96,32 @@ class Stage74AdmissionTests(unittest.TestCase):
         with self.assertRaisesRegex(AdmissionBlocked, "DUPLICATE_PROJECT_PATH"):
             evaluate(self.root, self.sha())
 
+    def test_untrusted_https_host_blocks_even_with_reviewed_digest(self):
+        self.edit(LOCK, lambda d: d["source_lock"]["projects"][0].update(
+            repository="https://attacker.invalid/kernel.git"))
+        with self.assertRaisesRegex(AdmissionBlocked, "UNTRUSTED_PROJECT_REPOSITORY"):
+            evaluate(self.root, self.sha())
+
+    def test_dirty_tracked_source_blocks_even_if_all_commits_match(self):
+        source = self.root / "source"
+        (source / ".repo/manifests").mkdir(parents=True)
+        lock, _, _ = inspect_policy(self.root, self.sha())
+        matches = [{"name": p["name"], "matches_lock": True}
+                   for p in lock["source_lock"]["projects"]]
+        with patch("scripts.stage7_4_fast_build_gate.sample_capacity", return_value={}):
+            with patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection"):
+                with patch("scripts.stage7_4_fast_build_gate.git_value",
+                           return_value=lock["manifest_commit"]):
+                    with patch("scripts.stage7_4_fast_build_gate.inspect_projects",
+                               return_value=matches):
+                        with patch("scripts.stage7_4_fast_build_gate.project_path",
+                                   return_value=source):
+                            with patch("scripts.stage7_4_fast_build_gate.subprocess.check_output",
+                                       return_value=" M fs/unsafe.c"):
+                                with self.assertRaisesRegex(AdmissionBlocked,
+                                                            "SOURCE_TRACKED_WORKTREE_DIRTY"):
+                                    inspect_source(lock, source)
+
     def test_missing_source_fails_closed(self):
         with self.assertRaisesRegex(AdmissionBlocked, "EXISTING_REPO_SOURCE_REQUIRED"):
             evaluate(self.root, self.sha(), source=self.root / "missing")
