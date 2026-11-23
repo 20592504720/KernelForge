@@ -1,0 +1,55 @@
+# Stage 5 OnePlus 13 Kleaf and capacity audit — 2026-11-23
+
+**Scope and status:** `STATIC_AUDITED`. This is a read-only review of the existing 35/35 locked WSL2 ext4 checkout and Stage 5 evidence. No Bazel Query, repository sync, download, build, cache cleanup, or device test was run. The locked MSM repository is `6028f47faddaa27700f8dd3a1d83906ea8f27170`; the Manifest is `f8e50677874c65b6da41057d2f39be7b4ef3c08a`. Per-project commits and measured bytes are in the local-only `E:\内核构建\reports\stage5-oneplus13-local-resource.json` and `.md`. `source_sync=TESTED` does not imply a build.
+
+## Build entry and target derivation
+
+The workspace is `/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform`. Its `build_with_bazel.py` symlink points to `msm-kernel/build_with_bazel.py`; `tools/bazel` delegates to Kleaf's Bazel wrapper and the pinned Bazel binary. `msm-kernel/BUILD.bazel:655-657` loads and calls `define_msm_platforms()`. `msm-kernel/msm_platforms.bzl:12,28` loads and invokes `define_sun()`. `msm-kernel/sun.bzl:8,10,413-451` sets `target_name="sun"`, iterates `la_variants`, and calls `define_msm_la` (also `define_msm_16k_la`). `msm-kernel/target_variants.bzl:9-13` declares `consolidate` and `perf`.
+
+`msm-kernel/msm_kernel_la.bzl:432-466` derives `sun_perf` and `sun_consolidate`. Its `_define_kernel_dist` at lines 320-410 creates a `{}_dist` rule with `kernel_abi_dist` for `perf` and `copy_to_dist_dir` for `consolidate`. Thus `//msm-kernel:sun_perf_dist` and `//msm-kernel:sun_consolidate_dist` are **source-derived candidate labels**, not Bazel-parsed or built targets. The 16 KiB macro also generates separate variants; their exact complete graph was not audited. The official wrapper accepts `-t sun perf` / `-t sun consolidate`, but first queries matching `_dist` rules. It also creates a Bazel cache directory at import and may create extension symlinks. A raw Bazel Query can start Bazel, write output caches and resolve external modules. Therefore no Query was run under this read-only task; label existence and graph analysis remain **UNTESTED**.
+
+For the two candidate distribution rules, the static chain is `//common:kernel_aarch64` (perf) or `//common:kernel_aarch64_consolidate` (consolidate) → MSM `kernel_build` → in-tree modules, DTB/DTBO and build-config fragments → module install, images, headers and distribution. `msm_kernel_la.bzl:133-194,202-275,343-409,459-521` names `.config`, `Module.symvers`, image inputs, `android/abi_gki_aarch64_qcom` and additional KMI lists for `perf`. `sun.bzl` supplies platform module lists. The loaded `build/msm_kernel_extensions.bzl` functions select DTB/DTBO, device tree, vendor ramdisk binaries and config fragments. These inputs are represented in the lock but have **not** been resolved by Bazel analysis, so exact output completeness and KMI compatibility remain **UNTESTED**.
+
+### ABL / edk2 finding
+
+`msm-kernel/msm_abl.bzl:4-21` creates a separate `sun_<variant>_abl` alias pointing to `//bootable/bootloader/edk2:sun_<variant>_abl` and a separate `sun_<variant>_abl_dist`. `define_msm_la()` invokes this macro, but `_define_kernel_dist()` does not list the ABL target in its `data` list. `msm-kernel/build_with_bazel.py:16,505` defaults to skipping `abi` and `abl` distribution targets. The `bootable/bootloader/edk2` path is absent from this 35-project checkout and lock. **Static conclusion:** edk2 is an explicit dependency for ABL distribution, not a demonstrated direct dependency of `sun_perf_dist` or `sun_consolidate_dist`. **Open:** Bazel package loading and build-config fragments may still require the missing ABL extension or source; only a controlled Bazel Query/analysis can settle this. Do not label the kernel build `BLOCKED` solely because the directory is absent, and do not claim the ABL target works.
+
+## Toolchain and repository inputs
+
+All paths below are relative to `kernel_platform`; binaries were invoked only for `--version` (Java uses `-version`), and `file` confirmed x86-64 Linux executables or a symlink to one. The Commit and size values come from the 35-project source lock and earlier read-only byte inventory.
+
+| Input | Path / locked Commit | Version and status |
+| --- | --- | --- |
+| Clang | `prebuilts/clang/host/linux-x86/clang-r510928/bin/clang`; `b099698c583b8361ca771f3cc8d6af6f729f39b3` | **PRESENT**, Android Clang 18.0.0, x86_64; both Common and MSM `build.config.constants` request `r510928` |
+| Rust | `prebuilts/rust/linux-x86/1.73.0b/bin/rustc`; `aff65346a9f85db2c8fd1d0c13b6dcd0bee76390` | **PRESENT**, Android Rust 1.73.0-dev, x86_64; need for the selected `sun` graph **UNTESTED** |
+| Bazel/Kleaf | `prebuilts/kernel-build-tools/bazel/linux-x86_64/bazel`; `434f141b6d22a773a163fa9c707b19b4d254d989` | **PRESENT**, Bazel 7.1.1; wrapper and module resolution **UNTESTED** |
+| Make | `prebuilts/build-tools/linux-x86/bin/make`; `d399f06c8cee351df2b93bac1e767f673d776c16` | **PRESENT**, GNU Make 4.3. `msm-kernel/build.config.msm.common` invokes `make`; absent system `make` in WSL `PATH` alone is not a missing toolchain finding |
+| Java | `prebuilts/jdk/jdk11/linux-x86/bin/java`; `f2f372463c74a896e3d8a0abb33e4667837458c2` | **PRESENT**, Android OpenJDK 11.0.15; `workspace.bzl` declares a local JDK repo |
+| GCC host prebuilt | `prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8`; `e0de596ee4e1128b36fd2be9ec04422360bf404f` | Host libraries/sysroot are **PRESENT**, but this project has no `bin` directory or observed GCC executable. System `gcc` is absent. A required cross-GCC path or version for these selected targets is **UNTESTED**, not proven missing |
+
+Kleaf's `bzlmod/bazel.MODULE.bazel` registers a Clang toolchain plus hermetic tools and a Python toolchain. Its local repositories for libcap, libcap-ng, lz4, toybox, zlib, zopfli, pigz, NDK r26, dtc and the inspected Bazel rule modules all have directories in this checkout. `remote_java_tools` directories are absent, but `workspace.bzl` makes those extra repositories optional with `include_remote_java_tools_repo=False` by default. The module file also declares versioned Bazel dependencies; no analysis was run to establish whether every resolution is fully local. **No observed Clang version conflict**; all other compatibility and generated outputs remain **UNTESTED**. No toolchain download is indicated by this inventory.
+
+## Hosted runner capacity
+
+The local measured apparent source is **151.83 GiB**, comprising `.repo` objects/metadata **141.95 GiB** and materialized checkout **9.88 GiB**. These are not network bytes, and future Bazel output/user cache, temporary fetches and Artifacts are **not measured**. For the unchanged 35-Git-project verifier plus a 20 GiB safety reserve, the present source alone requires **at least 171.83 GiB free** on the workspace filesystem before accounting for Bazel output or duplication. This is an admission *floor*, not a build capacity estimate; require a separately measured build peak and filesystem/inode margin before launching.
+
+The existing [Ubuntu 24.04 disk pilot](https://github.com/20592504720/KernelForge/actions/runs/44988567235) measured 99,241,204 KiB free after allowlisted cleanup (**94.64 GiB**), at least **77.19 GiB below** that floor even before build output. GitHub's current [hosted-runner reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) lists standard runner storage separately; actual per-job `df` must govern admission, since observed images and mounts can differ. The current 35-project full Git strategy is **BLOCKED for that measured pilot capacity**; the pilot is not evidence about a new job's exact free space.
+
+Potential Stage 6–8 optimizations, **NOT_IMPLEMENTED / NOT_MEASURED**: test immutable Commit-bound snapshots for low-risk prebuilt and external-tool projects, preserving mode/symlink semantics and validating extracted tree identity; retain real Git metadata for Common/MSM and every patch target, and for *all 35* projects while using the existing `source_sync=TESTED` verifier; avoid duplicating `.repo`, checkout and archive files; bound Bazel output/cache and measure peak bytes/inodes on authorized hardware. A smaller checkout cannot inherit the 35/35 Git-verifier claim. No compressed or snapshot footprint was measured, so no capacity saving is claimed.
+
+## Stage 5 acceptance matrix and scope
+
+| Gate / evidence | Current status | Stage owner | Stage 5 closure impact |
+| --- | --- | --- | --- |
+| Official OnePlus 13 source identity, Manifest and 35 HEADs | **TESTED**; original resume JSON/log plus independent local HEAD check, see `STAGE5_HANDOFF.md` | Stage 5 | This gate passed; does not imply compilation |
+| Build entry and tool binaries | **STATIC_AUDITED** here; no Bazel Query | Stage 5 preparation, Stage 8 execution | Audit delivered; parsed targets and full build stay open for Stage 8 |
+| Generic Patch Manager transaction on real ACK checkout | **TESTED** in the pinned official/SUSFS-off real-source probe documented in `STAGE5_THIRD_ROUND.md` | Stage 5 | A minimal generated comment patch/rollback, not third-party patch compatibility |
+| Pinned GKI KernelSU/BakaSU × SUSFS and Image | **TESTED 4/4 pinned** in [Run 45020470109](https://github.com/20592504720/KernelForge/actions/runs/45020470109); generic ACK 6.1 only | Stage 5 | Passing baseline; no PJZ110 inference |
+| BakaSU + SUSFS `latest_branch` | **BLOCKED: INCOMPATIBLE** in [job 137201998796](https://github.com/20592504720/KernelForge/actions/runs/45020470109/job/137201998796); rejected patch at `fs/exec.c` and `fs/namespace.c` | Stage 5 compatibility / possible Stage 6 follow-up | **Prevents unqualified Stage 5 closure** unless fixed and retested or user explicitly accepts a scoped exception |
+| TCP/ZRAM source, config and ARM64 object reporting | **TESTED on passing GKI jobs** per `STAGE5_THIRD_ROUND.md`; runtime **UNTESTED** | Stage 5 detector; runtime later | Detector evidence exists; no runtime claim |
+| OnePlus 13 full OKI Image, modules, DTBO, ABI/KMI, firmware and boot | **UNTESTED** | Stage 8 and physical-device validation | Deferred by approved roadmap; cannot claim full device readiness |
+| Ace 6 independent Profile / full source and build | Profile/lock **IMPLEMENTED**; full source/build/firmware **UNTESTED** | Stage 5 audit, Stage 8 build | Keep device boundary; no OnePlus 13 substitution |
+| BBG and Unicode | BBG **BLOCKED** by missing upstream headers; Unicode textual applicability checked, integration **NOT_IMPLEMENTED**, semantics **UNTESTED**; see `STAGE5_REPORT.md` | Stage 5 technical decision, Stage 6 compatibility work | Preserve blockers; no false integration claim |
+| Fengchi automatic integration; dual archive source; mirror/cache; full OKI workflow; guarded release | **NOT_IMPLEMENTED** | Stages 6–9 per `ROADMAP.md` | Explicitly outside this Stage 5 audit |
+
+**Decision:** Stage 5 remains **IN_PROGRESS**. The source-sync gate and this static feasibility audit do not waive the current `latest_branch` incompatibility or any untested full-build/device gate. No security options, patch checks or source locks were changed.
