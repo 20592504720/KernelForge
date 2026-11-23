@@ -24,6 +24,7 @@ _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
 _ROOT_MARK = ".kernelforge-ccache-root.json"
 _META = ".kernelforge-ccache-identity.json"
+_INVALID = ".kernelforge-cache-invalid.json"
 _ROOT_ID = "KernelForge-managed-ccache-only-v1"
 _ID_FIELDS = frozenset({
     "schema_version", "device", "kernel_version", "build_mode", "target_arch",
@@ -162,6 +163,23 @@ class CacheLease:
             "CCACHE_COMPILERCHECK": "content",
         }
 
+    def invalidate(self, reason: str = "BUILD_INPUTS_CHANGED_OR_FAILED") -> None:
+        """Quarantine a namespace after failed compilation or config mutation.
+
+        No cache files are deleted. Future opens fail until deliberate,
+        lease-aware explicit prune. This does NOT retroactively prove any hit.
+        """
+        _require(reason in ("BUILD_INPUTS_CHANGED_OR_FAILED", "CONFIG_CHANGED_DURING_BUILD"),
+                 "unsupported namespace invalidation reason")
+        _no_symlink_ancestors(self.controller.root / "locks" / f"{self.key}.lock")
+        with FileLock(self.controller.root / "locks" / f"{self.key}.lock",
+                      timeout=self.controller.timeout):
+            target = self.path / _INVALID
+            _require(self.path.is_dir() and not self.path.is_symlink(),
+                     "cannot invalidate missing/unsafe namespace")
+            target.write_text(json.dumps({"key": self.key, "reason": reason}) + "\n",
+                              encoding="utf-8")
+
     def close(self) -> None:
         if self.closed:
             return
@@ -227,7 +245,6 @@ class BuildCacheNamespaces:
         with FileLock(self.root / "locks" / "root.lock", timeout=self.timeout):
             self._ensure_root()
         _no_symlink_ancestors(self.root / "locks" / f"{key}.lock")
-        _no_symlink_ancestors(self.root / "locks" / f"{key}.lock")
         with FileLock(self.root / "locks" / f"{key}.lock", timeout=self.timeout):
             dest = self.namespace_path(key)
             _no_symlink_ancestors(dest)
@@ -238,6 +255,8 @@ class BuildCacheNamespaces:
                 expected = {"schema_version": 1, "key": key, "identity": identity}
                 _require(_strict_json(metadata) == expected,
                          "existing cache namespace identity mismatch; refusing reuse")
+                _require(not (dest / _INVALID).exists() and not (dest / _INVALID).is_symlink(),
+                         "invalidated cache namespace requires explicit safe prune")
             else:
                 dest.mkdir(parents=True, exist_ok=False)
                 try:

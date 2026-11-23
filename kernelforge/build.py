@@ -375,7 +375,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
                     raise BuildError(f"{mode} build timed out after {timeout} seconds")
         if cache_lease is not None and digest_file(cache_details[1]) != cache_details[2]:
             report["build_cache"]["status"] = "BLOCKED_CONFIG_CHANGED_DURING_BUILD"
-            raise BuildError("final .config changed during cached build; no cache reuse proof")
+            cache_lease.invalidate("CONFIG_CHANGED_DURING_BUILD")
+            raise BuildError("final .config changed during cached build; namespace quarantined")
         if report["build"]["exit_status"]:
             raise BuildError(f"{mode} build failed with exit code {report['build']['exit_status']}; see {log_path}")
         if (source_dir / 'Makefile').is_file():
@@ -391,6 +392,12 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         if (output_dir / 'versions.lock.json').is_file():
             report['version_lock'] = json.loads((output_dir / 'versions.lock.json').read_text(encoding='utf-8'))
         if cache_lease is not None:
+            if (report["build"].get("exit_status") not in (0, None) or
+                report.get("build_cache", {}).get("status") == "BLOCKED_CONFIG_CHANGED_DURING_BUILD"):
+                try:
+                    cache_lease.invalidate()
+                except Exception as quarantine_exc:
+                    report.setdefault("build_cache", {})["quarantine_error"] = str(quarantine_exc)
             cache_lease.close()
         if manager and managed_prepared:
             manager.release(managed_prepared)
