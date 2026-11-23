@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "stage": "7.1",
+  "kind": "GITHUB_SIDE_SCOPED_ACCEPTANCE",
+  "code_commit": "c277a2cafdc27392fd1c2b402d80f0796d34c269",
+  "code_tree": "c3813eb3e4c7d3c13ff32c12d090f909882a57c4",
+  "status": "GITHUB_TESTED_LOCAL_WSL2_PENDING",
+  "cloud_result": "REPOSITORY_PREFLIGHT_TESTED_WITH_BLOCKERS",
+  "evidence": {
+    "push_preflight_run": 45203492610,
+    "pr_preflight_run": 45203510015,
+    "push_validate_run": 45203492346,
+    "pr_validate_run": 45203509981,
+    "sm8750_audit_run": 45203510069,
+    "cloud_artifact_id": 14831289327
+  },
+  "software": {
+    "os": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python_versions": [
+      "3.11",
+      "3.12"
+    ],
+    "tests_per_matrix": 316,
+    "validate_matrix_total": 8,
+    "total_test_executions": 2528,
+    "failures": 0,
+    "errors": 0,
+    "preflight_tests_per_run": 12,
+    "preflight_runs": 2
+  },
+  "repository": {
+    "oneplus13_immutable_projects": 35,
+    "real_llvm_gcc_archive_layout": "UNTESTED",
+    "verified_release_mirror": "NOT_IMPLEMENTED",
+    "device_toolchain_pin": "MISSING",
+    "ccache_isolation": "NOT_IMPLEMENTED",
+    "stage7_fast_build": "NOT_IMPLEMENTED",
+    "local_wsl2": "PENDING"
+  },
+  "local_handoff": "docs/STAGE7_1_LOCAL_CODEX_HANDOFF.md",
+  "next_approval": "WAIT_LOCAL_WSL2_INVENTORY",
+  "full_build_authorized": false,
+  "source_sync_performed": false,
+  "main_touched": false,
+  "pr_merged": false,
+  "device_release_eligible": false
+}

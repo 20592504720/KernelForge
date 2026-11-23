@@ -1,6 +1,6 @@
 # Stage 7.1 — GitHub and WSL2 read-only toolchain/fast-build preflight
 
-**Stage 7.1 GitHub scope: IMPLEMENTED; GitHub CI verification pending.**
+**Stage 7.1 GitHub scope: TESTED; WSL2 local inventory PENDING.**
 This document is a precise inventory, not permission to run Bazel, download
 toolchains, sync Repo or compile OnePlus 13. Stage 1–6 scoped full acceptance
 is separately supported by [Run 45184293290](https://github.com/20592504720/KernelForge/actions/runs/45184293290).
@@ -76,3 +76,25 @@ explicit approval.
 Never mutate `main`, merge PR #1, change locked 35 Git SHAs, re-sync Repo,
 add unverified third-party patched toolchains, execute remote shell scripts,
 clear caches or publish flashable artifacts during Stage 7.1.
+
+## Actual GitHub execution evidence — 2026-11-23
+
+Commit `c277a2cafdc27392fd1c2b402d80f0796d34c269`, source tree `c3813eb3e4c7d3c13ff32c12d090f909882a57c4`:
+
+| Check | Run | Evidence |
+| --- | --- | --- |
+| Preflight Push | [#45203492610](https://github.com/20592504720/KernelForge/actions/runs/45203492610) | successful, dedicated 12/12 negative/read-only tests |
+| Preflight PR | [#45203510015](https://github.com/20592504720/KernelForge/actions/runs/45203510015) | successful, same 12/12 |
+| Full Push Validate | [#45203492346](https://github.com/20592504720/KernelForge/actions/runs/45203492346) | 4/4 success; 316 tests per environment |
+| Full PR Validate | [#45203509981](https://github.com/20592504720/KernelForge/actions/runs/45203509981) | 4/4 success; 316 tests per environment |
+| SM8750 source audit | [#45203510069](https://github.com/20592504720/KernelForge/actions/runs/45203510069) | manifest audit passed; separate heavy locked-sync job **SKIPPED by design** |
+
+Cloud inventory Artifact ID `14831289327` is valid JSON; result
+`REPOSITORY_PREFLIGHT_TESTED_WITH_BLOCKERS`. Verified field values:
+fixed source projects 35; OnePlus 13 toolchain and firmware pins missing,
+fast-build workflow not implemented, GitHub Release provenance not implemented,
+ccache isolation not implemented, stage-7 full OnePlus13 build untested.
+
+**Scope decision:** GitHub-only Stage 7.1 is ACCEPTED. Stage 7.1 as a whole
+awaits the explicit read-only WSL2 Codex report, not another cloud build or
+a second full Repo sync. No Stage 7.2 work or toolchain downloads were started.
