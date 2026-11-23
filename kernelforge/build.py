@@ -24,6 +24,7 @@ from .build_timestamp import resolve_build_timestamp, kernel_build_environment
 from .kernelsu import integrate, IntegrationError
 from . import development
 from .workspace import Workspace
+from .security import redact_diagnostic, redact_tree
 
 LOG = logging.getLogger(__name__)
 SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
@@ -104,8 +105,8 @@ def _safe_argv(argv: list[str]) -> list[str]:
             else:
                 safe.append(arg); redact_next = True
         else:
-            safe.append(arg)
-    return safe
+            safe.append(redact_diagnostic(arg))
+    return [redact_diagnostic(arg) for arg in safe]
 
 
 def _safe_environment(config_env: dict[str, str], overlay: dict[str, str] | None = None) -> dict[str, str]:
@@ -134,22 +135,57 @@ def _artifacts(source: Path, output: Path, patterns: list[str]) -> list[dict]:
             found[resolved] = path
     manifest = []
     for index, (resolved, path) in enumerate(sorted(found.items(), key=lambda pair: str(pair[0]))):
-        digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
         target_name = path.name if index == 0 else f"{index}-{path.name}"
         target = output / target_name
-        target.write_bytes(resolved.read_bytes())
-        copied_hash = hashlib.sha256(target.read_bytes()).hexdigest()
-        if copied_hash != digest:
-            raise BuildError(f"artifact copy SHA256 verification failed: {path}")
-        manifest.append({"source": str(path.relative_to(source)), "file": target.name, "size": target.stat().st_size, "sha256": digest})
+        # Exclusive creation prevents existing files, hardlinks and symlinks
+        # from being opened for write. No overwrite of an older build.
+        if target_name.casefold() in {"build.log", "build-report.json", ".build-report.json.tmp",
+                                      "patches.lock.json", "versions.lock.json"}:
+            raise BuildError("artifact name collides with reserved evidence file")
+        if output.is_symlink() or not output.is_dir():
+            raise BuildError("artifact output must be a real directory")
+        digest = hashlib.sha256()
+        size = 0
+        created = False
+        try:
+            with resolved.open("rb") as inp, target.open("xb") as dst:
+                created = True
+                for block in iter(lambda: inp.read(1024 * 1024), b""):
+                    digest.update(block)
+                    dst.write(block)
+                    size += len(block)
+            if digest_file(target) != digest.hexdigest():
+                raise BuildError(f"artifact copy SHA256 verification failed: {path}")
+        except BaseException as exc:
+            if created:
+                target.unlink(missing_ok=True)
+            if isinstance(exc, OSError):
+                raise BuildError(f"artifact publication failed: {target.name}: {exc.strerror}") from exc
+            raise
+        manifest.append({"source": str(path.relative_to(source)), "file": target.name, "size": size, "sha256": digest.hexdigest()})
     return manifest
 
 
 def _write_report(output: Path, report: dict) -> None:
     output.mkdir(parents=True, exist_ok=True)
-    temp = output / ".build-report.json.tmp"
-    temp.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    temp.replace(output / "build-report.json")
+    # Unique exclusive staging file; replace the directory entry, not the
+    # contents of any existing symlink. Retain diagnostic reports on errors.
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=output,
+                                     prefix=".build-report-", suffix=".tmp",
+                                     delete=False) as stream:
+        temp = Path(stream.name)
+        try:
+            json.dump(redact_tree(report), stream, indent=2, sort_keys=True)
+            stream.write("\n")
+        except BaseException:
+            stream.close()
+            temp.unlink(missing_ok=True)
+            raise
+    try:
+        temp.replace(output / "build-report.json")
+    finally:
+        temp.unlink(missing_ok=True)
 
 
 
@@ -249,9 +285,15 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
 
 
 def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
+    if output_dir.is_symlink():
+        raise BuildError("build output directory cannot be a symlink")
     output_dir = output_dir.resolve()
     workspace = workspace.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+    # Reject pre-existing output files and links before any source checkout.
+    # Output directories are per-build; callers must select a fresh location.
+    if any(output_dir.iterdir()):
+        raise BuildError("build output directory is not empty; choose a fresh directory")
     started_at, monotonic_start = _utc_now(), time.monotonic()
     mode = config.get("build", {}).get("mode", "unknown")
     report = {
@@ -274,6 +316,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         requested_stamp = config["build"].get("build_timestamp", "")
         if requested_stamp not in ("", None):
             resolve_build_timestamp(requested_stamp)
+        if config.get("device_profile") == "oneplus13-pjz110":
+            raise BuildError("OnePlus 13 official Repo/Kleaf build admission is BLOCKED; use a separately reviewed Stage 7.5 entry point")
         if config.get('device_profile'):
             from .source_provider import load_profile
             profile = load_profile(Path(__file__).resolve().parents[1], config['device_profile'])
@@ -385,7 +429,7 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             safe_env.update(cache_lease.environment())
             report["build"]["ccache_overlay_keys"] = sorted(cache_lease.environment())
         with (cache_lease if cache_lease is not None else nullcontext()):
-            with log_path.open("w", encoding="utf-8") as log:
+            with log_path.open("x", encoding="utf-8") as log:
                 log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
                 try:
                     result = subprocess.run(plan.argv, cwd=plan.cwd, env=safe_env, stdout=log, stderr=subprocess.STDOUT, check=False, timeout=timeout)
@@ -429,9 +473,10 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         if manager and managed_prepared:
             manager.release(managed_prepared)
         report["build"]["status"] = "failure"
-        report["error"] = f"{type(exc).__name__}: {exc}"
+        report["error"] = redact_diagnostic(f"{type(exc).__name__}: {exc}")
         if not log_path.exists():
-            log_path.write_text(report["error"] + "\n", encoding="utf-8")
+            with log_path.open("x", encoding="utf-8") as error_log:
+                error_log.write(redact_diagnostic(report["error"]) + "\n")
         _finish_report(report, monotonic_start)
         _write_report(output_dir, report)
         if isinstance(exc, BuildError):
@@ -442,7 +487,7 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     _finish_report(report, monotonic_start)
     _write_report(output_dir, report)
     LOG.info("Build succeeded; %d artifact(s)", len(report["artifacts"]))
-    return report
+    return redact_tree(report)
 
 
 def _finish_report(report: dict, monotonic_start: float) -> None:

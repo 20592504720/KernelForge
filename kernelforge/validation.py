@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -64,7 +64,10 @@ def validate_configs(root: Path) -> list[str]:
         data, errors = _read_json(path)
         problems.extend(errors)
         if not errors:
-            problems.extend(_schema_errors(data, schema, path.relative_to(root)))
+            issues = _schema_errors(data, schema, path.relative_to(root))
+            problems.extend(issues)
+            if issues:
+                continue
             manifest = root / data["features"]["patch_manifest"]
             if not manifest.is_file():
                 problems.append(f"{path.relative_to(root)} references missing patch manifest {manifest.relative_to(root)}")
@@ -92,13 +95,30 @@ def validate_manifests(root: Path) -> list[str]:
         problems.extend(errors)
         if errors:
             continue
-        problems.extend(_schema_errors(data, schema, path.relative_to(root)))
+        issues = _schema_errors(data, schema, path.relative_to(root))
+        problems.extend(issues)
+        if issues:
+            continue  # never interpret paths from invalid data
         identifiers = {item.get("id") for item in data.get("patches", [])}
+        if len(identifiers) != len(data.get("patches", [])):
+            problems.append(f"{path.relative_to(root)}: duplicate patch identifiers")
+            continue
         for entry in data.get("patches", []):
             missing = set(entry.get("depends_on", [])) - identifiers
             if missing:
                 problems.append(f"{path.relative_to(root)}: {entry['id']} has unknown dependencies {sorted(missing)}")
-            patch_path = root / path.parent / entry["file"]
+            relative = PurePosixPath(entry["file"])
+            parent = path.parent.resolve()
+            patch_path = path.parent.joinpath(*relative.parts)
+            # Reject links at every component, Windows drive/ADS syntax,
+            # and paths outside the particular manifest's own directory.
+            if (relative.is_absolute() or ".." in relative.parts or
+                    "\\" in entry["file"] or ":" in entry["file"] or
+                    root.resolve() not in parent.parents or
+                    any(p.is_symlink() for p in (patch_path, *patch_path.parents) if p != root.parent) or
+                    parent not in patch_path.resolve().parents):
+                problems.append(f"{path.relative_to(root)}: unsafe patch path")
+                continue
             if not patch_path.is_file():
                 problems.append(f"{path.relative_to(root)}: missing patch file {patch_path.relative_to(root)}")
                 continue

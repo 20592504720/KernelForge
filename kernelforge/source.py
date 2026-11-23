@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
 from .filesystem import retry_windows
+from .security import redact_diagnostic
 
 
 class SourceError(RuntimeError):
@@ -55,7 +56,7 @@ def _run_git(args: list[str], cwd: Path | None = None, timeout: int = 300) -> st
         raise SourceError(f"Git operation timed out after {timeout} seconds") from exc
     if result.returncode:
         # Do not echo remotes: they may embed credentials supplied by a caller.
-        detail = result.stderr.strip().splitlines()
+        detail = redact_diagnostic(result.stderr).strip().splitlines()
         if args[0] == 'apply':
             detail = [line for line in detail if line.startswith('error:')] or detail
             raise SourceError(f"git apply failed (exit {result.returncode}): {'; '.join(detail)}")
@@ -79,7 +80,7 @@ def _resolve_fetch_ref(repository: str, ref: str, timeout: int) -> str:
         if result.returncode == 0 and result.stdout.strip():
             return candidate
         if result.returncode:
-            network_errors.extend(result.stderr.strip().splitlines())
+            network_errors.extend(redact_diagnostic(result.stderr).strip().splitlines())
     if network_errors:
         raise SourceError(f"Git ref lookup failed: {network_errors[-1]}")
     raise SourceError(f"branch or tag not found: {ref}")
