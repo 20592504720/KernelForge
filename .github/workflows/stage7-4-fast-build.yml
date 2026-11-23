@@ -43,6 +43,7 @@ jobs:
             --build-timestamp "$REQUESTED_TIME" \
             --report "$RUNNER_TEMP/stage7-4-admission.json"
           sha256sum "$RUNNER_TEMP/stage7-4-admission.json" > "$RUNNER_TEMP/stage7-4-admission.sha256"
+          printf 'commit=%s\\ntree=%s\\nref=%s\\n' "$GITHUB_SHA" "$(git rev-parse HEAD^{tree})" "$GITHUB_REF" > "$RUNNER_TEMP/stage7-4-code-identity.txt"
           echo "Read-only source-lock policy evidence. No kernel compilation, source sync, or release." >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve policy report only (not kernel Image)
         if: always()
@@ -52,5 +53,6 @@ jobs:
           path: |
             ${{ runner.temp }}/stage7-4-admission.json
             ${{ runner.temp }}/stage7-4-admission.sha256
+            ${{ runner.temp }}/stage7-4-code-identity.txt
           if-no-files-found: warn
           retention-days: 7
