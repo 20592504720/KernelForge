@@ -2,7 +2,7 @@
   "schema_version": 1,
   "stage": "7.3",
   "branch": "stage1/initial-foundation",
-  "validation_source_commit": "da354853622b4b92812e3789d1907c1cb86db014",
+  "validation_source_commit": "3b763168f4eb6d4ef4dc7b124a192e3c80b9f691",
   "status": "GITHUB_SCOPED_COMPLETE_LOCAL_WSL2_CCACHE_PENDING",
   "implementation": {
     "compiler_output_cache": "ISOLATED_OPT_IN_NAMESPACE",
@@ -32,27 +32,31 @@
     "oneplus13_device_cache_authorized": false,
     "actual_ccache_binary_invoked": false,
     "real_ccache_hit_rate": "UNTESTED",
-    "bazel_sandbox_interception": "UNTESTED"
+    "bazel_sandbox_interception": "UNTESTED",
+    "namespace_parent_symlink_protection": "FIXTURE_TESTED_INSPECT_PRUNE_INVALIDATE"
   },
   "ci": {
-    "dedicated_push_run": 45222209601,
-    "dedicated_pr_run": 45222227609,
-    "dedicated_tests_per_environment": 28,
+    "dedicated_push_run": 45222983286,
+    "dedicated_pr_run": 45223004594,
+    "dedicated_tests_per_environment": 29,
     "dedicated_matrix_environment_runs": 8,
-    "dedicated_total_executions": 224,
-    "validate_push_run": 45222209370,
-    "validate_pr_run": 45222227557,
-    "validate_tests_per_environment": 366,
+    "dedicated_total_executions": 232,
+    "validate_push_run": 45222983051,
+    "validate_pr_run": 45223004312,
+    "validate_tests_per_environment": 367,
     "validate_matrix_environment_runs": 8,
-    "validate_total_executions": 2928,
+    "validate_total_executions": 2936,
     "failures": 0,
     "errors": 0,
-    "sm8750_manifest_pr_run": 45222227628,
-    "sm8750_locked_sync": "SKIPPED_BY_DESIGN"
+    "sm8750_manifest_pr_run": 45223004355,
+    "sm8750_locked_sync": "SKIPPED_BY_DESIGN",
+    "full_matrix_platform_skips": 148,
+    "full_matrix_non_skipped_executions": 2788
   },
   "historical_intermediate_ci_fixed": [
     "Windows source/cache overlap canonical path enforcement",
-    "Stage 7.3 test helper runtime_env argument consistency"
+    "Stage 7.3 test helper runtime_env argument consistency",
+    "Stage7.3 protected device-profile helper fixture signature"
   ],
   "local_handoff": "docs/STAGE7_3_LOCAL_CODEX_HANDOFF.md",
   "local_status": "PENDING",
