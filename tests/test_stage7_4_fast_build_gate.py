@@ -166,6 +166,25 @@ class Stage74AdmissionTests(unittest.TestCase):
                                "--report", str(report)]), 2)
         self.assertFalse(report.exists())
 
+    def test_valid_report_must_not_be_written_into_repository(self):
+        target = self.root / "accidental-source-report.json"
+        self.assertEqual(main(["--repo-root", str(self.root),
+                               "--reviewed-lock-sha256", self.sha(),
+                               "--report", str(target)]), 2)
+        self.assertFalse(target.exists())
+
+    def test_valid_report_outside_source_and_no_overwrite(self):
+        with tempfile.TemporaryDirectory() as outside:
+            report = Path(outside) / "read-only-evidence.json"
+            args = ["--repo-root", str(self.root),
+                    "--reviewed-lock-sha256", self.sha(),
+                    "--report", str(report)]
+            self.assertEqual(main(args), 0)
+            original = report.read_bytes()
+            self.assertFalse(json.loads(original)["build_eligible"])
+            self.assertEqual(main(args), 2)
+            self.assertEqual(report.read_bytes(), original)
+
     def test_manual_workflow_does_not_compose_automatic_kernel_job(self):
         yaml = (ROOT / ".github/workflows/stage7-4-fast-build.yml").read_text()
         self.assertIn("workflow_dispatch:", yaml)
