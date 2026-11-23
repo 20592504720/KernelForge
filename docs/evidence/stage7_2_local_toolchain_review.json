@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "scope": "Stage 7.2 local WSL2 read-only toolchain and mirror review",
+  "branch": "stage1/initial-foundation",
+  "review_base_commit": "b70f624b0814573efe91f0ea2f90ab879216c4e8",
+  "review_base_tree": "8bafc063aa5be60313d1e91fa4d07fb2383faf41",
+  "local_cherry_pick_commit_before_report": "618b95b44ff8f2169ff9c593b72cfd97e39c4c28",
+  "workspace": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
+  "raw_evidence": {
+    "tool_probe": "E:\\内核构建\\reports\\stage7_2_direct_tool_probe.json",
+    "tool_probe_sha256": "c63860c37ec774834294a42733cbb6c362309a8d6027e7b5510a6544ee5bb4a0",
+    "source_resource_probe": "E:\\内核构建\\reports\\stage7_2_source_resource_probe.json",
+    "source_resource_probe_sha256": "f20589f9ec5a4ad010e09840449ccaab2e40f3540521d89390d0e315b20e4e6e"
+  },
+  "toolchain_source": {
+    "status": "TESTED",
+    "repository": "https://git.codelinaro.org/clo/la/kernelplatform/prebuilts-master/clang/host/linux-x86",
+    "locked_git_commit": "b099698c583b8361ca771f3cc8d6af6f729f39b3",
+    "actual_git_head": "b099698c583b8361ca771f3cc8d6af6f729f39b3",
+    "llvm_base_revision_in_source_info": "82e851a407c52d65ce65e7aa58453127e67d42a0",
+    "runtime_llvm_source_commit": "477610d4d0d988e69dbc3fae4fe86bff3f07f2b5",
+    "android_version_file_sha256": "bab1fce86fdb4c5ad643cf94baeeda6b5f67f14cf5081aacb0d5aa8bd145289f",
+    "metadata_sha256": "83cb76e06a53032de3f36d9a743e1267e28f8b3c84090e2f108f38660ce97c4c",
+    "notice_sha256": "f96f763beb66a7ba7a667647fc64c0226ace875e590c831fdd9579ec1c1d91e1"
+  },
+  "direct_executables": {
+    "clang": {
+      "status": "TESTED",
+      "path": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang",
+      "version": "Android r510928 clang 18.0.0",
+      "sha256": "dc739fc44bb889146bd47732912cad457200af7de7c2fb5a7509b7a9974d6d67",
+      "elf_machine": "x86_64 (62)",
+      "version_exit_code": 0,
+      "default_target_triple": "x86_64-unknown-linux-gnu",
+      "target_query_exit_code": 0,
+      "dynamic_library_result": "not a dynamic executable; no missing shared library reported"
+    },
+    "ld_lld": {
+      "status": "TESTED",
+      "path": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/ld.lld",
+      "symlink_target": "lld",
+      "version": "LLD 18.0.0",
+      "resolved_binary_sha256": "27fdf99341929eab1f615a3172169b8dadd117b76a05b0abfa0a21873d1626a0",
+      "elf_machine": "x86_64 (62)",
+      "version_exit_code": 0,
+      "missing_dynamic_libraries": []
+    },
+    "llvm_nm": {
+      "status": "TESTED",
+      "path": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/llvm-nm",
+      "version": "LLVM 18.0.0",
+      "sha256": "06e6634e0abe46ce464e09907955d5202451f7c545896e4c56162b721e74e3a6",
+      "elf_machine": "x86_64 (62)",
+      "version_exit_code": 0,
+      "missing_dynamic_libraries": []
+    },
+    "make": {
+      "status": "TESTED",
+      "path": "kernel_platform/prebuilts/build-tools/linux-x86/bin/make",
+      "version": "GNU Make 4.3",
+      "sha256": "a9472ab2dc5ab512bd946ca73dc84e4d911df4ad028f48bdbfaf3a500a88ffee",
+      "elf_machine": "x86_64 (62)",
+      "version_exit_code": 0,
+      "missing_dynamic_libraries": []
+    }
+  },
+  "mirror_archive": {
+    "status": "BLOCKED_NO_VERIFIED_RELEASE",
+    "selected_release_url": null,
+    "release_id": null,
+    "asset_id": null,
+    "uploader": null,
+    "asset_size_bytes": null,
+    "complete_archive_sha256": null,
+    "independent_byte_equivalence": "UNTESTED",
+    "whole_bundle_redistribution_permission": "UNTESTED",
+    "evidence": "Pinned CodeLinaro Git checkout and per-file hashes do not establish a complete release archive or its redistribution rights; local METADATA has license_type RESTRICTED and an LGPL note.",
+    "action": "Reuse the pinned existing toolchain; do not create a mirror or archive lock."
+  },
+  "resources": {
+    "status": "TESTED",
+    "sample_time_utc": "2026-11-23T16:12:14.922812+00:00",
+    "wsl_mem_total_bytes": 4045045760,
+    "wsl_mem_available_bytes": 3482624000,
+    "wsl_swap_total_bytes": 1073741824,
+    "wsl_swap_free_bytes": 1073741824,
+    "windows_e_total_bytes": 371516764160,
+    "windows_e_available_bytes": 198056513536,
+    "minimum_e_reserve_bytes": 53687091200,
+    "reserve_satisfied": true,
+    "ext4_reported_free_bytes": 859982655488,
+    "note": "ext4 reported free capacity is virtual and must not replace Windows host E: free space."
+  },
+  "not_executed": ["Bazel/Bazelisk", "repo sync", "kernel build", "software install", "large download", "mirror creation"],
+  "arm64_cross_compilation": "UNTESTED"
+}
