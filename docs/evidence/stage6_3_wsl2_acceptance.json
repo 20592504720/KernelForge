@@ -1,0 +1,777 @@
+{
+  "schema_version": 1,
+  "stage": "6.3",
+  "status": "PARTIAL_TESTED_WITH_BLOCKERS",
+  "repo_branch": "stage1/initial-foundation",
+  "remote_commit": "b23f6f60b4cdb01385cacbe9915978e47d7ef15f",
+  "local_commit": "7449ac8028fda352519e3b79f68ab1eb046d468c",
+  "source_tree": "3fe65d903fc3140853728cce247caf15e2579bb1",
+  "source_workspace": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
+  "manifest_checkout": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/.repo/manifests",
+  "manifest_commit": "f8e50677874c65b6da41057d2f39be7b4ef3c08a",
+  "manifest_sha256": "3c4f547f4926d449094023ab6bb33047fbdc9d1308464c4242b369cc6cf3290a",
+  "host_e_free_bytes": 198412206080,
+  "source_audit": {
+    "status": "PASS",
+    "project_count": 35,
+    "matched_heads": 35,
+    "root_project": {
+      "commit_sha": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
+      "head_identity": "TESTED",
+      "name": "android_kernel_modules_and_devicetree_oneplus_sm8750",
+      "path": "./",
+      "tree_sha": "8cb71dcf592a530ffaafaf3c2b588f9094a0fd7e"
+    },
+    "project_commit_tree_records": [
+      {
+        "commit_sha": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
+        "head_identity": "TESTED",
+        "name": "android_kernel_modules_and_devicetree_oneplus_sm8750",
+        "path": "./",
+        "tree_sha": "8cb71dcf592a530ffaafaf3c2b588f9094a0fd7e"
+      },
+      {
+        "commit_sha": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
+        "head_identity": "TESTED",
+        "name": "android_kernel_common_oneplus_sm8750",
+        "path": "kernel_platform/common",
+        "tree_sha": "06a9ffb77abf7b350c6fe4b9249cd70417840e41"
+      },
+      {
+        "commit_sha": "6028f47faddaa27700f8dd3a1d83906ea8f27170",
+        "head_identity": "TESTED",
+        "name": "android_kernel_oneplus_sm8750",
+        "path": "kernel_platform/msm-kernel",
+        "tree_sha": "38733d6a32e3df62cc6019835d74adc5e1a862ff"
+      },
+      {
+        "commit_sha": "7104d80549523ce9d9c5b95ec7cab8aba88afdb3",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/build/bazel_common_rules",
+        "path": "kernel_platform/build/bazel_common_rules",
+        "tree_sha": "62adeeb2125f7e9bcd554528d55b38280e776b8a"
+      },
+      {
+        "commit_sha": "b76f8570a1a3480a158f6bc69590dbf326a444d0",
+        "head_identity": "TESTED",
+        "name": "kernel/common-modules/trusty",
+        "path": "kernel_platform/common-modules/trusty",
+        "tree_sha": "a9248fef41c9a1cd6669a8fe95fc1ead16adb02f"
+      },
+      {
+        "commit_sha": "1699b2281164661387bcab62e08b1248f7908c49",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazel-skylib",
+        "path": "kernel_platform/external/bazel-skylib",
+        "tree_sha": "ff4f2948d51ace255426885412990bc9489474cb"
+      },
+      {
+        "commit_sha": "f6003e1e3763f8aad9fb9acae79cfa5fff9ae988",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-apple_support",
+        "path": "kernel_platform/external/bazelbuild-apple_support",
+        "tree_sha": "e2c4bbeb184f0be8b3b7b1603fc3f5f5110234cc"
+      },
+      {
+        "commit_sha": "5fa460f7563e307ed8396540aaf2e257f353e908",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-bazel-central-registry",
+        "path": "kernel_platform/external/bazelbuild-bazel-central-registry",
+        "tree_sha": "ba37a3bec581b913ab4e651ca177ba0205d21358"
+      },
+      {
+        "commit_sha": "f0d9433341479772b8b645da1208377c2862627c",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-platforms",
+        "path": "kernel_platform/external/bazelbuild-platforms",
+        "tree_sha": "52f475abdac0c030d9740f8a6d333456d693dd15"
+      },
+      {
+        "commit_sha": "dc5e9e76198df0f60f7de1a8c2d947a2a972fa69",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-rules_cc",
+        "path": "kernel_platform/external/bazelbuild-rules_cc",
+        "tree_sha": "84236306d9322ff9cc3d3fbd45bbf1391c4250e2"
+      },
+      {
+        "commit_sha": "c9de4ea84567c22dc3e1aa555b6d468393df5c5d",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-rules_java",
+        "path": "kernel_platform/external/bazelbuild-rules_java",
+        "tree_sha": "bbcbc6947dcfb0db5620b5551499cd6c21befd61"
+      },
+      {
+        "commit_sha": "30733c530db3ec72b5c0cb2d30f798d6aaf1b499",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-rules_license",
+        "path": "kernel_platform/external/bazelbuild-rules_license",
+        "tree_sha": "39314478665e3c080e3df6fe4a97609182f089b5"
+      },
+      {
+        "commit_sha": "33b79a421797cfddf268309523a262f395211a59",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-rules_pkg",
+        "path": "kernel_platform/external/bazelbuild-rules_pkg",
+        "tree_sha": "ff0382b606ff284a465fb620254e4cae9c25b734"
+      },
+      {
+        "commit_sha": "3e22460c62b498cfaa6708003738a3bfaef9cd82",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/bazelbuild-rules_python",
+        "path": "kernel_platform/external/bazelbuild-rules_python",
+        "tree_sha": "a701fe110ba2e4dac2a58ff41f705fcb99575cb1"
+      },
+      {
+        "commit_sha": "6aa78bad656ffc106bb909774fee5fc2d86d4949",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/dtc",
+        "path": "kernel_platform/external/dtc",
+        "tree_sha": "adc1fbbeabe2622f4f01beefcafb064255a71d81"
+      },
+      {
+        "commit_sha": "336d1164b390131c4773b503771e9b53d9bb4f03",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/libcap",
+        "path": "kernel_platform/external/libcap",
+        "tree_sha": "c080b93bec7b3f5843b1a7008f2abededb27ffe1"
+      },
+      {
+        "commit_sha": "2bcc92ae19481dd2b8d3ce3abdfbbee49261abe6",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/libcap-ng",
+        "path": "kernel_platform/external/libcap-ng",
+        "tree_sha": "6a6715c842555e8921762be034c29526ce8edfa8"
+      },
+      {
+        "commit_sha": "124599333514066524f55f5f41fbf0d46212e598",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/lz4",
+        "path": "kernel_platform/external/lz4",
+        "tree_sha": "3ea9be4f6e085b404fa4c96e7c47ac973a6b2b46"
+      },
+      {
+        "commit_sha": "9bc9fa17d499ddde88b77820f6d063e16c0cdd42",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/pigz",
+        "path": "kernel_platform/external/pigz",
+        "tree_sha": "4518a732625ae080b8656fcc05ecb46779fb5eb3"
+      },
+      {
+        "commit_sha": "dd6f71c76fe1574cf358129be29afa245eff4e36",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/toybox",
+        "path": "kernel_platform/external/toybox",
+        "tree_sha": "217fde674e180888708363dd2af335465fb0064e"
+      },
+      {
+        "commit_sha": "6bf5c3d254fe5efc458ea616d18be131d9230f0e",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/virtio-media",
+        "path": "kernel_platform/external/virtio-media",
+        "tree_sha": "950a8fa2d737a9bc1b2a918d6ce1b68efb060097"
+      },
+      {
+        "commit_sha": "4f57254519623a55dcd5bedc454337f6352f2193",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/zlib",
+        "path": "kernel_platform/external/zlib",
+        "tree_sha": "ad4c8da28e495ff4c306bc3b4cca6070dbe3e1a3"
+      },
+      {
+        "commit_sha": "1e312f1cc3edc4cf7c489aa95a01f2878eb01fd7",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/zopfli",
+        "path": "kernel_platform/external/zopfli",
+        "tree_sha": "e0025a0ae967935ec8c3f00af7f9bae5dab5b6c0"
+      },
+      {
+        "commit_sha": "e700ae0a5f3b95470e37f4a0543b4d044e5edfb6",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/prebuilts/asuite",
+        "path": "kernel_platform/prebuilts/asuite",
+        "tree_sha": "b5a6e833d18ecc4b0abccff817fd63622674d6f9"
+      },
+      {
+        "commit_sha": "d399f06c8cee351df2b93bac1e767f673d776c16",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/prebuilts/build-tools",
+        "path": "kernel_platform/prebuilts/build-tools",
+        "tree_sha": "4e9b91282c6572be1dc3e75f4feb0e6ed47ce9ca"
+      },
+      {
+        "commit_sha": "70bc10de031e2d0ff7e76adb9746bf339bb135c0",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/prebuilts/clang-tools",
+        "path": "kernel_platform/prebuilts/clang-tools",
+        "tree_sha": "db385056c0bcb5e3cf89e79e86a3256ee376b297"
+      },
+      {
+        "commit_sha": "434f141b6d22a773a163fa9c707b19b4d254d989",
+        "head_identity": "TESTED",
+        "name": "kernel/prebuilts/build-tools",
+        "path": "kernel_platform/prebuilts/kernel-build-tools",
+        "tree_sha": "5b038078deabb559e2dc392510385db6fb5838c4"
+      },
+      {
+        "commit_sha": "39c0d89e553619d398797309398697764cf3547b",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/toolchain/prebuilts/ndk/r26",
+        "path": "kernel_platform/prebuilts/ndk-r26",
+        "tree_sha": "d2deeb7f53b4f98de8f738f572d213ba1f7e37d8"
+      },
+      {
+        "commit_sha": "aff65346a9f85db2c8fd1d0c13b6dcd0bee76390",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/prebuilts/rust",
+        "path": "kernel_platform/prebuilts/rust",
+        "tree_sha": "8bf39798c928f272ca88658a9bf5e089f22a01d5"
+      },
+      {
+        "commit_sha": "0d6bd67313f94bd03fc54c350b9de54d94442ee7",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/tools/tradefederation/prebuilts",
+        "path": "kernel_platform/prebuilts/tradefed",
+        "tree_sha": "b6f4d1c7998cb81fac7225e644378a3cd718677d"
+      },
+      {
+        "commit_sha": "5fa28e8bc7f708d49a5cd42c8baaa4e8c03e08ef",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/system/tools/mkbootimg",
+        "path": "kernel_platform/tools/mkbootimg",
+        "tree_sha": "f4914bb90e8c68de25f0fabb021e00fc126b73b2"
+      },
+      {
+        "commit_sha": "af9da234ce5045467014f4e7b53798e8feb2339b",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/external/python/absl-py",
+        "path": "kernel_platform/external/python/absl-py",
+        "tree_sha": "43142271eee9dca918030c3217fdcc1f4c9f5318"
+      },
+      {
+        "commit_sha": "f2f372463c74a896e3d8a0abb33e4667837458c2",
+        "head_identity": "TESTED",
+        "name": "kernel_platform/prebuilts/jdk/jdk11",
+        "path": "kernel_platform/prebuilts/jdk/jdk11",
+        "tree_sha": "249e8598ff73ce2f54f3aef21a5eac1b4cbbf738"
+      },
+      {
+        "commit_sha": "b099698c583b8361ca771f3cc8d6af6f729f39b3",
+        "head_identity": "TESTED",
+        "name": "kernelplatform/prebuilts-master/clang/host/linux-x86",
+        "path": "kernel_platform/prebuilts/clang/host/linux-x86",
+        "tree_sha": "1c4c894e84c679ee22a0b7a3bc7f90aa8ca80dac"
+      },
+      {
+        "commit_sha": "e0de596ee4e1128b36fd2be9ec04422360bf404f",
+        "head_identity": "TESTED",
+        "name": "kernelplatform/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8",
+        "path": "kernel_platform/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8",
+        "tree_sha": "6db9c90992138349f32e8e29d2a7207dd87cea58"
+      }
+    ],
+    "repo_linkfiles": [
+      {
+        "destination": "kernel_platform/.source_date_epoch_dir",
+        "expected_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/common",
+        "expected_type": "directory",
+        "is_symlink": true,
+        "raw_target": "common",
+        "resolved_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/common",
+        "status": "TESTED",
+        "target_type": "directory"
+      },
+      {
+        "destination": "kernel_platform/build_with_bazel.py",
+        "expected_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/msm-kernel/build_with_bazel.py",
+        "expected_type": "regular_file",
+        "is_symlink": true,
+        "raw_target": "msm-kernel/build_with_bazel.py",
+        "resolved_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/msm-kernel/build_with_bazel.py",
+        "status": "TESTED",
+        "target_type": "regular_file"
+      }
+    ],
+    "root_tree_entries": 20684,
+    "root_child_file_overlaps": []
+  },
+  "tracked_link_inventory": {
+    "counts": {
+      "broken_target": 29,
+      "gitlinks": 0,
+      "materialized_symlinks": 1206,
+      "target_hash_mismatch": 0,
+      "target_outside_workspace": 0,
+      "tracked_symlinks": 1206,
+      "unmaterialized": 0
+    },
+    "blocked_archive_project_count": 14,
+    "per_project": [
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "android_kernel_common_oneplus_sm8750",
+        "symlinks": 68
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "android_kernel_oneplus_sm8750",
+        "symlinks": 117
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "android_kernel_modules_and_devicetree_oneplus_sm8750",
+        "symlinks": 278
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel/common-modules/trusty",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel/prebuilts/build-tools",
+        "symlinks": 2
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/build/bazel_common_rules",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazel-skylib",
+        "symlinks": 1
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-apple_support",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-bazel-central-registry",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-platforms",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-rules_cc",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-rules_java",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-rules_license",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-rules_pkg",
+        "symlinks": 1
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/bazelbuild-rules_python",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/dtc",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/libcap",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/libcap-ng",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/lz4",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/pigz",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/python/absl-py",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/toybox",
+        "symlinks": 6
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/virtio-media",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/zlib",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/external/zopfli",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/prebuilts/asuite",
+        "symlinks": 2
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/prebuilts/build-tools",
+        "symlinks": 165
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/prebuilts/clang-tools",
+        "symlinks": 2
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/prebuilts/jdk/jdk11",
+        "symlinks": 211
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernel_platform/prebuilts/rust",
+        "symlinks": 9
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/system/tools/mkbootimg",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/toolchain/prebuilts/ndk/r26",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "CANDIDATE",
+        "gitlinks": 0,
+        "project": "kernel_platform/tools/tradefederation/prebuilts",
+        "symlinks": 0
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernelplatform/prebuilts-master/clang/host/linux-x86",
+        "symlinks": 159
+      },
+      {
+        "archive_preflight": "BLOCKED_UNSUPPORTED_LINKS",
+        "gitlinks": 0,
+        "project": "kernelplatform/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8",
+        "symlinks": 185
+      }
+    ],
+    "broken_target_details": [
+      {
+        "path": "android_kernel_modules_and_devicetree_oneplus_sm8750:kernel_platform/build/kernel/build-tools/path/linux-x86/mkdtboimg.py",
+        "raw_target": "../../../../../prebuilts/kernel-build-tools/linux-x86/bin/mkdtboimg.py",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/mkdtboimg.py"
+      },
+      {
+        "path": "android_kernel_modules_and_devicetree_oneplus_sm8750:vendor/oplus/kernel/audio/bazel/mtk",
+        "raw_target": "../mtk/",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/vendor/oplus/kernel/audio/mtk"
+      },
+      {
+        "path": "android_kernel_modules_and_devicetree_oneplus_sm8750:vendor/oplus/kernel/dfr/soc/oplus/dfr/include",
+        "raw_target": "../../include/",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/vendor/oplus/kernel/dfr/soc/include"
+      },
+      {
+        "path": "kernel_platform/prebuilts/rust:darwin-x86/stable/rust-analyzer",
+        "raw_target": "../1.77.1.p1/bin/rust-analyzer",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/darwin-x86/1.77.1.p1/bin/rust-analyzer"
+      },
+      {
+        "path": "kernel_platform/prebuilts/rust:darwin-x86/stable/rustfmt",
+        "raw_target": "../1.77.1.p1/bin/rustfmt",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/darwin-x86/1.77.1.p1/bin/rustfmt"
+      },
+      {
+        "path": "kernel_platform/prebuilts/rust:linux-musl-x86/stable/rust-analyzer",
+        "raw_target": "../1.77.1.p1/bin/rust-analyzer",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-musl-x86/1.77.1.p1/bin/rust-analyzer"
+      },
+      {
+        "path": "kernel_platform/prebuilts/rust:linux-musl-x86/stable/rustfmt",
+        "raw_target": "../1.77.1.p1/bin/rustfmt",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-musl-x86/1.77.1.p1/bin/rustfmt"
+      },
+      {
+        "path": "kernel_platform/prebuilts/rust:windows-x86/stable/rust-analyzer.exe",
+        "raw_target": "../1.77.1.p1/bin/rust-analyzer.exe",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/windows-x86/1.77.1.p1/bin/rust-analyzer.exe"
+      },
+      {
+        "path": "kernel_platform/prebuilts/rust:windows-x86/stable/rustfmt.exe",
+        "raw_target": "../1.77.1.p1/bin/rustfmt.exe",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/windows-x86/1.77.1.p1/bin/rustfmt.exe"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-addr2line",
+        "raw_target": "../clang-r522817/bin/llvm-addr2line",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-addr2line"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-ar",
+        "raw_target": "../clang-r522817/bin/llvm-ar",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-ar"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-as",
+        "raw_target": "../clang-r522817/bin/llvm-as",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-as"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-cov",
+        "raw_target": "../clang-r522817/bin/llvm-cov",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-cov"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-cxxfilt",
+        "raw_target": "../clang-r522817/bin/llvm-cxxfilt",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-cxxfilt"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-dis",
+        "raw_target": "../clang-r522817/bin/llvm-dis",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-dis"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-dwarfdump",
+        "raw_target": "../clang-r522817/bin/llvm-dwarfdump",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-dwarfdump"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-link",
+        "raw_target": "../clang-r522817/bin/llvm-link",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-link"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-modextract",
+        "raw_target": "../clang-r522817/bin/llvm-modextract",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-modextract"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-nm",
+        "raw_target": "../clang-r522817/bin/llvm-nm",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-nm"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-objcopy",
+        "raw_target": "../clang-r522817/bin/llvm-objcopy",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-objcopy"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-objdump",
+        "raw_target": "../clang-r522817/bin/llvm-objdump",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-objdump"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-profdata",
+        "raw_target": "../clang-r522817/bin/llvm-profdata",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-profdata"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-ranlib",
+        "raw_target": "../clang-r522817/bin/llvm-ranlib",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-ranlib"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-readelf",
+        "raw_target": "../clang-r522817/bin/llvm-readelf",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-readelf"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-readobj",
+        "raw_target": "../clang-r522817/bin/llvm-readobj",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-readobj"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-size",
+        "raw_target": "../clang-r522817/bin/llvm-size",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-size"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-strings",
+        "raw_target": "../clang-r522817/bin/llvm-strings",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-strings"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-strip",
+        "raw_target": "../clang-r522817/bin/llvm-strip",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-strip"
+      },
+      {
+        "path": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-symbolizer",
+        "raw_target": "../clang-r522817/bin/llvm-symbolizer",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-symbolizer"
+      }
+    ]
+  },
+  "archive_fixture": {
+    "status": "TEST_FIXTURE_ONLY",
+    "comparisons": [
+      {
+        "local_git_archive_sha256": "b1de68de184ef25d6d937519cc8a940c90b2a7ef9c56ec251331c0eb66b8aa25",
+        "negative_checks": {
+          "execute_bit": {
+            "expected_fragment_found": true,
+            "reason": "Git/archive executable mode differs",
+            "status": "TESTED"
+          },
+          "missing_file": {
+            "expected_fragment_found": true,
+            "reason": "Git/archive file set differs: missing=1 extra=0",
+            "status": "TESTED"
+          },
+          "modified_file": {
+            "expected_fragment_found": true,
+            "reason": "Git/archive file bytes differ",
+            "status": "TESTED"
+          }
+        },
+        "project": "kernel_platform/external/bazelbuild-platforms",
+        "proof": {
+          "archive_root": "",
+          "build_input_eligible": false,
+          "bytes_verified": 36799,
+          "copyfile_linkfile": "UNTESTED",
+          "device_boot": "UNTESTED",
+          "files_verified": 25,
+          "git_tree_equivalence": "TESTED",
+          "git_tree_sha": "52f475abdac0c030d9740f8a6d333456d693dd15",
+          "locked_commit": "f0d9433341479772b8b645da1208377c2862627c",
+          "mode_equivalence": "TESTED",
+          "patch_manager_eligible": false,
+          "project": "kernel_platform/external/bazelbuild-platforms",
+          "reference_kind": "LOCAL_PINNED_GIT_OBJECTS",
+          "schema_version": 1,
+          "workspace_35_project_equivalence": "UNTESTED"
+        },
+        "status": "TEST_FIXTURE_ONLY"
+      },
+      {
+        "local_git_archive_sha256": "1fe9c458865792de5103d03ce4954e95bf2492c0e830cc5d91ea5254d29fc5ee",
+        "negative_checks": {},
+        "project": "kernel_platform/external/bazelbuild-rules_license",
+        "proof": {
+          "archive_root": "",
+          "build_input_eligible": false,
+          "bytes_verified": 267851,
+          "copyfile_linkfile": "UNTESTED",
+          "device_boot": "UNTESTED",
+          "files_verified": 98,
+          "git_tree_equivalence": "TESTED",
+          "git_tree_sha": "39314478665e3c080e3df6fe4a97609182f089b5",
+          "locked_commit": "30733c530db3ec72b5c0cb2d30f798d6aaf1b499",
+          "mode_equivalence": "TESTED",
+          "patch_manager_eligible": false,
+          "project": "kernel_platform/external/bazelbuild-rules_license",
+          "reference_kind": "LOCAL_PINNED_GIT_OBJECTS",
+          "schema_version": 1,
+          "workspace_35_project_equivalence": "UNTESTED"
+        },
+        "status": "TEST_FIXTURE_ONLY"
+      },
+      {
+        "local_git_archive_sha256": "6b5263e068ddfe2c27cfd1c83089ebc04deb04c79fe535125631a2efea9df550",
+        "negative_checks": {},
+        "project": "kernel_platform/external/zopfli",
+        "proof": {
+          "archive_root": "",
+          "build_input_eligible": false,
+          "bytes_verified": 718672,
+          "copyfile_linkfile": "UNTESTED",
+          "device_boot": "UNTESTED",
+          "files_verified": 50,
+          "git_tree_equivalence": "TESTED",
+          "git_tree_sha": "e0025a0ae967935ec8c3f00af7f9bae5dab5b6c0",
+          "locked_commit": "1e312f1cc3edc4cf7c489aa95a01f2878eb01fd7",
+          "mode_equivalence": "TESTED",
+          "patch_manager_eligible": false,
+          "project": "kernel_platform/external/zopfli",
+          "reference_kind": "LOCAL_PINNED_GIT_OBJECTS",
+          "schema_version": 1,
+          "workspace_35_project_equivalence": "UNTESTED"
+        },
+        "status": "TEST_FIXTURE_ONLY"
+      }
+    ],
+    "independent_vendor_archive": "UNTESTED"
+  },
+  "full_workspace_byte_equivalence": "UNTESTED",
+  "device_abi_kmi": "UNTESTED",
+  "full_oki_build": "UNTESTED",
+  "device_boot_root": "UNTESTED",
+  "evidence_files": [
+    "stage6.3-oneplus13-workspace-audit.json",
+    "stage6.3-archive-fixture-results.json",
+    "stage6.3-layout-diagnostics-final.json",
+    "stage6.3-oneplus13-workspace-audit.stderr.log",
+    "stage6.3-archive-fixture.stderr.log",
+    "stage6.3-layout-diagnostics-final.stderr.log"
+  ],
+  "notes": [
+    "Existing source tree was not modified or synced.",
+    "29 tracked symlink targets are absent; targets remain inside workspace and link blob hashes match Git. Causes and build impact are not verified.",
+    "14 project Git trees contain symlinks and are unsupported by current archive equivalence preflight.",
+    "Three successful archive comparisons used locally generated git archive fixtures only; they are not independent vendor archives."
+  ]
+}
