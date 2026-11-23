@@ -1,0 +1,200 @@
+name: Stage 1-6 full acceptance (one-shot)
+on:
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - .github/stage6-full-acceptance-request.json
+permissions:
+  contents: read
+concurrency:
+  group: stage1-6-full-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  preflight:
+    name: One-shot request and immutable base
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - name: Verify exact Stage 1-6 scope, branch, parent, and marker-only commit
+        run: python3 scripts/stage6_full_request.py
+      - name: Identify immutable acceptance snapshot
+        run: |
+          git rev-parse HEAD
+          git rev-parse HEAD^{tree}
+          git status --short
+
+  evidence:
+    name: Stages 1-6 evidence and locked SM8750 profiles
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m kernelforge validate
+      - name: Replay all submitted immutable source evidence and safety limitations
+        run: python scripts/stage6_acceptance.py --output "$RUNNER_TEMP/stage6-evidence.json"
+      - name: Verify both SM8750 device manifests without a new 35-project sync
+        run: python scripts/audit_sm8750.py "$RUNNER_TEMP/sm8750-manifest-audit.json"
+      - name: Preserve evidence reports
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: stage1-6-reconciled-evidence
+          path: |
+            ${{ runner.temp }}/stage6-evidence.json
+            ${{ runner.temp }}/sm8750-manifest-audit.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  software:
+    name: Full Stage 1-6 software suite (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    needs: preflight
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '${{ matrix.python-version }}'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Compile/check all Python source and repository configs
+        run: |
+          python -m compileall -q kernelforge scripts tests
+          python -m kernelforge validate
+      - name: Check syntax of every workflow
+        run: python -c "import yaml; from pathlib import Path; [yaml.safe_load(p.read_text(encoding='utf-8')) for p in Path('.github/workflows').glob('*.yml')]"
+      - name: Run all unit/integration tests (Windows isolated process)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -u scripts/windows_test_launcher.py
+          $code = $LASTEXITCODE
+          Write-Host "STAGE1_6_WINDOWS_EXIT=$code"
+          exit $code
+      - name: Run all unit/integration tests (Linux)
+        if: runner.os != 'Windows'
+        run: python -m unittest discover -s tests -v
+
+  pinned-gki:
+    name: ACK 6.1 actual ARM64 compilation and full Image (${{ matrix.name }})
+    needs: [preflight, evidence, software]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - {name: official-susfs-off, provider: official, susfs: false, newer: false}
+          - {name: official-susfs-on, provider: official, susfs: true, newer: false}
+          - {name: bakasu-susfs-off, provider: bakasu, susfs: false, newer: false}
+          - {name: bakasu-susfs-on, provider: bakasu, susfs: true, newer: false}
+          - {name: bakasu-reviewed-new-susfs-on, provider: bakasu, susfs: true, newer: true}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Install reviewed LLVM17 and GNU11 real GKI build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y flex bison libelf-dev libssl-dev clang-17 lld-17 llvm-17 gcc-11 g++-11 rsync dwarves
+      - run: echo /usr/lib/llvm-17/bin >> "$GITHUB_PATH"
+      - name: Inspect compiler and host resource limits
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          clang --version
+          ld.lld --version
+          llvm-nm --version
+          df -h "$RUNNER_TEMP"
+          df -i "$RUNNER_TEMP"
+      - name: Verify immutable Git sources, patches, final Kconfig, ARM64 objects, vmlinux and Image
+        shell: bash
+        env:
+          PROVIDER: ${{ matrix.provider }}
+          WITH_SUSFS: ${{ matrix.susfs }}
+          REVIEWED_NEW: ${{ matrix.newer }}
+        run: |
+          set -Eeuo pipefail
+          args=(--provider "$PROVIDER" --pinned-baseline --full-kernel
+                --image-timeout-seconds 14400
+                --workspace "$RUNNER_TEMP/stage1-6-gki")
+          if [ "$WITH_SUSFS" = true ]; then args+=(--susfs); fi
+          if [ "$REVIEWED_NEW" = true ]; then
+            args+=(--bakasu-commit 2734e0bc155759955880f5fb99be640fc5b92156)
+          fi
+          python scripts/validate_upstreams.py "${args[@]}"
+      - name: Retain source locks, build errors, object hashes, Kconfig and Image
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: stage1-6-real-gki-${{ matrix.name }}
+          path: ${{ runner.temp }}/stage1-6-gki/report
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Print reproducible build diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          python -c "import os; from pathlib import Path; p=Path(os.environ['RUNNER_TEMP'])/'stage1-6-gki/report'; [(print(f.name),print(f.read_text(errors='replace')[-20000:])) for f in p.glob('*.json')]"
+          python -c "import os; from pathlib import Path; p=Path(os.environ['RUNNER_TEMP'])/'stage1-6-gki/report/source-check.log'; print(p.read_text(errors='replace')[-20000:] if p.exists() else 'No build log')"
+          df -h "$RUNNER_TEMP"
+
+  finalize:
+    name: Aggregate Stage 1-6 outcome (fail closed)
+    if: always()
+    needs: [preflight, evidence, software, pinned-gki]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Preserve strict full acceptance ledger
+        shell: bash
+        env:
+          PRE: ${{ needs.preflight.result }}
+          EVIDENCE: ${{ needs.evidence.result }}
+          SOFTWARE: ${{ needs.software.result }}
+          GKI: ${{ needs.pinned-gki.result }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          {
+            echo "# One-shot Stage 1–6 full acceptance"
+            echo "Source commit: $SHA"
+            echo "Run: $RUN_URL"
+            echo
+            echo "| Gate | Status |"
+            echo "| --- | --- |"
+            echo "| request | $PRE |"
+            echo "| committed source evidence | $EVIDENCE |"
+            echo "| full Windows/Linux software suite | $SOFTWARE |"
+            echo "| five fixed ACK6.1 real Image builds | $GKI |"
+            echo
+            echo "DFR include remains BLOCKED_UNDETERMINED."
+            echo "Independent vendor archives and OnePlus13 full OKI/ABI/KMI/boot/Root are UNTESTED."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          printf '{"schema_version":1,"source_sha":"%s","preflight":"%s","evidence":"%s","software":"%s","gki":"%s","device_release_eligible":false}\\n' \
+            "$SHA" "$PRE" "$EVIDENCE" "$SOFTWARE" "$GKI" > "$RUNNER_TEMP/stage1-6-outcome.json"
+          if [ "$PRE" != success ] || [ "$EVIDENCE" != success ] || [ "$SOFTWARE" != success ] || [ "$GKI" != success ]; then
+            echo "STAGE1_6_FULL_ACCEPTANCE_FAILURE_OR_INCOMPLETE" >&2
+            exit 1
+          fi
+          echo "STAGE1_6_SCOPED_GATES_PASSED_WITH_DEFERRED_BLOCKERS"
+      - name: Publish outcome even if incomplete
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: stage1-6-full-outcome
+          path: ${{ runner.temp }}/stage1-6-outcome.json
+          if-no-files-found: warn
+          retention-days: 30

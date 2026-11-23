@@ -74,8 +74,12 @@ def main():
     parser.add_argument('--bakasu-commit',type=parse_exact_bakasu_commit,
                         help='exact BakaSU Commit with --provider bakasu --susfs --pinned-baseline')
     parser.add_argument('--full-kernel',action='store_true')
+    parser.add_argument('--image-timeout-seconds',type=int,default=3600,
+                        help='real Image timeout 300..14400 seconds; hosted runner hard limits still apply')
     parser.add_argument('--workspace',type=Path,required=True)
     args=parser.parse_args()
+    if not 300 <= args.image_timeout_seconds <= 14400:
+        parser.error('--image-timeout-seconds must be 300..14400')
     try:
         pinned_provider=choose_pinned_provider_commit(args.provider, args.susfs, args.pinned_baseline, args.bakasu_commit)
     except ValueError as exc:
@@ -207,7 +211,7 @@ def main():
         result['kernel_compile_reason']=('Full Image build requested' if args.full_kernel else 'Full Image build not requested; host resources recorded separately')
         if args.full_kernel:
             step='complete Image build'
-            run(command+['-j2','Image'],timeout=3600)
+            run(command+['-j2','Image'],timeout=args.image_timeout_seconds)
             image=source/'arch/arm64/boot/Image'
             if not image.is_file() or not image.stat().st_size:
                 raise ValueError('Image build returned without a nonempty Image')

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "stage": "6.5",
+  "kind": "PRE_RUN_STATIC_ACCEPTANCE_CONTRACT",
+  "status": "PREPARED_PENDING_FULL_ONE_SHOT",
+  "branch": "stage1/initial-foundation",
+  "stage_status": {
+    "stage1": "SOFTWARE_TESTED",
+    "stage2": "SOFTWARE_TESTED_VENDOR_BUILD_UNTESTED",
+    "stage3": "FIXTURE_TESTED_UPSTREAM_DISTRIBUTIONS_UNTESTED",
+    "stage4": "REVIEWED_PINNED_COMBINATIONS",
+    "stage5": "SCOPED_GENERIC_GKI_AND_LOCKED_SM8750_SOURCE",
+    "stage6_1": "COMPLETED",
+    "stage6_2": "COMPLETED_ARCHIVE_QUARANTINED",
+    "stage6_3": "SCOPED_COMPLETE_WITH_BLOCKERS",
+    "stage6_4": "SOFTWARE_SCOPED_COMPLETE",
+    "stage6_5": "STATIC_REPORT_PREPARED"
+  },
+  "evidence": {
+    "stage64_push_run": 45181004477,
+    "stage64_pr_run": 45181018825,
+    "historical_exact_bakasu_object_run": 45105067150,
+    "sm8750_source_lock": "manifests/oneplus13-pjz110-sm8750-source.lock.json",
+    "raw_byte_equal_projects": 34,
+    "clean_normalized_projects": 35,
+    "broken_links_in_restricted_paths": {
+      "not_required": 28,
+      "undetermined": 1
+    }
+  },
+  "full_acceptance": {
+    "expected_request_file": ".github/stage6-full-acceptance-request.json",
+    "software_os": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python_versions": [
+      "3.11",
+      "3.12"
+    ],
+    "pinned_gki_variants": [
+      "official-susfs-off",
+      "official-susfs-on",
+      "bakasu-susfs-off",
+      "bakasu-susfs-on",
+      "bakasu-reviewed-new-susfs-on"
+    ],
+    "full_gki_image_requested": true,
+    "new_sm8750_sync": false,
+    "run_id": null,
+    "conclusion": "PENDING"
+  },
+  "open_blockers": [
+    "DFR_INCLUDE_BLOCKED_UNDETERMINED",
+    "INDEPENDENT_VENDOR_ARCHIVE_UNTESTED",
+    "LATEST_BAKASU_UNREVIEWED",
+    "ONEPLUS13_OKI_ABI_KMI_MODULES_BOOT_ROOT_UNTESTED"
+  ],
+  "release_eligible": false
+}
