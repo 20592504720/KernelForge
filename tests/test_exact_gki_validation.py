@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 from scripts.validate_upstreams import (
     BASELINE, choose_pinned_provider_commit, parse_exact_bakasu_commit,
 )
@@ -62,6 +64,33 @@ class ExactGkiValidationTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('requires --provider bakasu', result.stderr)
             self.assertFalse(folder.exists())
+
+    def test_bad_cli_ref_fails_before_workspace_created(self):
+        for bad in ('main', 'latest_branch', CANDIDATE[:12]):
+            with self.subTest(value=bad), tempfile.TemporaryDirectory() as tmp:
+                folder = Path(tmp) / 'must-not-create'
+                cmd = [sys.executable, str(ROOT / 'scripts/validate_upstreams.py'),
+                       '--provider', 'bakasu', '--susfs', '--pinned-baseline',
+                       '--bakasu-commit', bad, '--workspace', str(folder)]
+                result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('40-hex', result.stderr)
+                self.assertFalse(folder.exists())
+
+    def test_workflow_rejects_bad_sha_before_any_download_step(self):
+        workflow = yaml.load(
+            (ROOT / '.github/workflows/upstream-validation.yml').read_text(encoding='utf-8'),
+            Loader=yaml.BaseLoader,
+        )
+        jobs = workflow['jobs']
+        self.assertIn("inputs.exact_bakasu_commit == ''", jobs['sources']['if'])
+        self.assertIn("inputs.exact_bakasu_commit != ''", jobs['exact_bakasu']['if'])
+        first, *remaining = jobs['exact_bakasu']['steps']
+        self.assertEqual(first['name'], 'Reject invalid SHA before checkout or dependency install')
+        self.assertIn('^[0-9a-fA-F]{40}$', first['run'])
+        self.assertIn('exit 2', first['run'])
+        self.assertTrue(any('actions/checkout@' in step.get('uses', '') for step in remaining))
+        self.assertTrue(any('pip install' in step.get('run', '') for step in remaining))
 
 
 if __name__ == '__main__':

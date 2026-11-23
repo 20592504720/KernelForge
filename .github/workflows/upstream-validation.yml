@@ -78,12 +78,21 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
+      - name: Reject invalid SHA before checkout or dependency install
+        env:
+          BAKASU_COMMIT: ${{ inputs.exact_bakasu_commit }}
+        shell: bash
+        run: |
+          if [[ ! "$BAKASU_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo 'exact_bakasu_commit must be a full 40-hex Commit SHA' >&2
+            exit 2
+          fi
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
-      - name: Enforce exact reference and mode without network access
+      - name: Confirm exact reference in Python
         env:
           BAKASU_COMMIT: ${{ inputs.exact_bakasu_commit }}
         shell: bash
