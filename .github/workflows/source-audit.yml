@@ -4,7 +4,6 @@ on:
     branches: [stage1/initial-foundation]
     paths:
       - .github/workflows/source-audit.yml
-      - .github/stage6-full-ci-request.json
   pull_request:
     branches: [main]
     paths:
