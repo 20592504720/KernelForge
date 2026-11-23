@@ -10,6 +10,7 @@ import shlex
 import subprocess
 import time
 from datetime import datetime, timezone
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Protocol
 
@@ -18,6 +19,7 @@ from .source import checkout
 from .patch_manager import apply_series
 from .toolchain import check_tools
 from .toolchains import ToolchainManager, ToolchainManagerError
+from .build_cache import BuildCacheNamespaces, BuildCacheError, canonical_digest, digest_file
 from .kernelsu import integrate, IntegrationError
 from . import development
 from .workspace import Workspace
@@ -149,6 +151,92 @@ def _write_report(output: Path, report: dict) -> None:
     temp.replace(output / "build-report.json")
 
 
+
+def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
+                           source_dir: Path, source_sha: str, plan: Plan,
+                           prepared: dict | None, report: dict, versions: dict | None):
+    """Cache namespace admission, NOT proof of ccache binary interception."""
+    policy = config["build"].get("ccache", {})
+    if not policy or policy.get("enabled") is not True:
+        return None, None
+    if config.get("device_profile"):
+        raise BuildError("device-profile build cache needs Stage 7.4 verified OKI source-lock admission")
+    if not prepared or prepared.get("audit", {}).get("version_check") != "passed":
+        raise BuildError("ccache requires actual verified managed toolchain CC binary")
+    requested = config.get("source", {}).get("ref")
+    if not isinstance(requested, str) or not re.fullmatch(r"[0-9a-f]{40}", requested) or requested != source_sha:
+        raise BuildError("ccache requires exact pinned source Commit; moving refs are not admitted")
+    cfile = (source_dir / config.get("kernelsu", {}).get("kernel_directory", ".") / ".config").resolve()
+    if source_dir.resolve() not in cfile.parents or not cfile.is_file():
+        raise BuildError("ccache requires final .config inside pinned kernel tree")
+    config_hash = digest_file(cfile)
+    compiler_hash = digest_file(Path(prepared["executables"]["CC"]))
+    ksu, sus = config.get("kernelsu", {}), config.get("susfs", {})
+    provider, root_sha, sus_sha = "none", None, None
+    if ksu.get("enabled"):
+        if not versions or versions.get("status") != "locked":
+            raise BuildError("ccache requires exact Root versions.lock")
+        provider = "bakasu" if ksu.get("provider") == "bakssu" else ksu.get("provider")
+        root_sha = versions["upstreams"]["kernelsu"]["commit_sha"]
+    if sus.get("enabled"):
+        if not versions or "susfs" not in versions.get("upstreams", {}):
+            raise BuildError("ccache requires exact SUSFS source lock")
+        sus_sha = versions["upstreams"]["susfs"]["commit_sha"]
+    adapter = config["build"][config["build"]["mode"]]
+    identity = {
+        "schema_version": 1,
+        "device": config.get("device", {}).get("id") or "generic-kernel",
+        "kernel_version": config.get("kernel_version") or "unversioned",
+        "build_mode": config["build"]["mode"],
+        "target_arch": adapter["toolchain_profile"]["target_arch"],
+        "source_repository": config["source"]["repository"],
+        "source_commit": source_sha,
+        "manifest_lock_sha256": canonical_digest({
+            "generic_no_vendor_manifest": True,
+            "kernel_source_commit": source_sha,
+            "repository": config["source"]["repository"]
+        }),
+        "compiler_sha256": compiler_hash,
+        "compiler_version": prepared["audit"]["version"],
+        "root_provider": provider,
+        "root_commit": root_sha,
+        "susfs_enabled": bool(sus.get("enabled", False)),
+        "susfs_commit": sus_sha,
+        "patch_lock_sha256": canonical_digest(report.get("patch_lock", {"no_patches": True})),
+        "config_sha256": config_hash,
+        "build_arguments_sha256": canonical_digest({
+            "adapter": adapter, "targets": plan.targets,
+            "jobs": config["build"]["jobs"], "defconfig": config.get("defconfig"),
+            "validation": config.get("validation"), "environment": plan.environment
+        }),
+    }
+    cache_root = Path(policy.get("directory", ".kernelforge-build-cache/ccache")).expanduser()
+    if not cache_root.is_absolute():
+        cache_root = workspace / cache_root
+    controller = BuildCacheNamespaces(
+        cache_root, max_size_mib=policy.get("max_size_mib", 1024),
+        forbidden_roots=(source_dir, output_dir, Path(prepared["root"])),
+        timeout=policy.get("lock_timeout_seconds", 30))
+    try:
+        lease = controller.open(identity)
+    except (BuildCacheError, OSError) as exc:
+        raise BuildError(f"ccache namespace admission refused: {exc}") from exc
+    record = {
+        "status": "NAMESPACE_READY_INTERCEPTION_UNTESTED",
+        "key": lease.key, "path": str(lease.path),
+        "compiler_sha256": compiler_hash,
+        "effective_config_sha256": config_hash,
+        "source_commit": source_sha,
+        "root_provider": provider, "root_commit": root_sha,
+        "susfs_commit": sus_sha,
+        "ccache_max_size_mib": controller.max_size_mib,
+        "physical_disk_quota_enforced": False,
+        "cache_hit_rate": "UNTESTED", "ccache_binary_executed": False,
+        "device_level_cache_authorized": False,
+    }
+    return lease, (record, cfile, config_hash)
+
+
 def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     output_dir = output_dir.resolve()
     workspace = workspace.resolve()
@@ -166,6 +254,7 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     log_path = output_dir / "build.log"
     managed_prepared = None
     manager = None
+    cache_lease = None
     versions = None
     try:
         if mode not in ADAPTERS:
@@ -265,15 +354,28 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             if not config.get('validation'):
                 raise BuildError('development build requires real Kconfig and Kbuild validation commands; checks remain UNTESTED')
         report["build"]["toolchain_environment"] = {"keys": sorted(managed_environment), "root": report.get("toolchain", {}).get("managed", {}).get("install_path")}
-        with log_path.open("w", encoding="utf-8") as log:
-            log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
-            try:
-                result = subprocess.run(plan.argv, cwd=plan.cwd, env=safe_env, stdout=log, stderr=subprocess.STDOUT, check=False, timeout=timeout)
-                report["build"]["exit_status"] = result.returncode
-            except subprocess.TimeoutExpired:
-                report["build"]["timed_out"] = True
-                report["build"]["exit_status"] = 124
-                raise BuildError(f"{mode} build timed out after {timeout} seconds")
+        cache_lease, cache_details = _prepare_opt_in_ccache(
+            config, workspace, output_dir, source_dir, source_sha, plan,
+            managed_prepared, report, versions)
+        if cache_lease is not None:
+            report["build_cache"] = cache_details[0]
+            # Parent/adapter CCACHE_* settings cannot override the namespace.
+            safe_env = {k: v for k, v in safe_env.items() if not k.startswith("CCACHE_")}
+            safe_env.update(cache_lease.environment())
+            report["build"]["ccache_overlay_keys"] = sorted(cache_lease.environment())
+        with (cache_lease if cache_lease is not None else nullcontext()):
+            with log_path.open("w", encoding="utf-8") as log:
+                log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
+                try:
+                    result = subprocess.run(plan.argv, cwd=plan.cwd, env=safe_env, stdout=log, stderr=subprocess.STDOUT, check=False, timeout=timeout)
+                    report["build"]["exit_status"] = result.returncode
+                except subprocess.TimeoutExpired:
+                    report["build"]["timed_out"] = True
+                    report["build"]["exit_status"] = 124
+                    raise BuildError(f"{mode} build timed out after {timeout} seconds")
+        if cache_lease is not None and digest_file(cache_details[1]) != cache_details[2]:
+            report["build_cache"]["status"] = "BLOCKED_CONFIG_CHANGED_DURING_BUILD"
+            raise BuildError("final .config changed during cached build; no cache reuse proof")
         if report["build"]["exit_status"]:
             raise BuildError(f"{mode} build failed with exit code {report['build']['exit_status']}; see {log_path}")
         if (source_dir / 'Makefile').is_file():
@@ -288,6 +390,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             report['patch_lock'] = json.loads((output_dir / 'patches.lock.json').read_text(encoding='utf-8'))
         if (output_dir / 'versions.lock.json').is_file():
             report['version_lock'] = json.loads((output_dir / 'versions.lock.json').read_text(encoding='utf-8'))
+        if cache_lease is not None:
+            cache_lease.close()
         if manager and managed_prepared:
             manager.release(managed_prepared)
         report["build"]["status"] = "failure"
