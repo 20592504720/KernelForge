@@ -1,7 +1,15 @@
 # KernelForge Stage 7.4: manual fast-build admission
 
-Status: PARTIAL_SOFTWARE_IMPLEMENTED, CLOUD_CI_PENDING, REAL_KERNEL_BUILD_NOT_IMPLEMENTED.
+Status: SCOPED_SOFTWARE_TESTED, LOCAL_SOURCE_PENDING, REAL_KERNEL_BUILD_NOT_IMPLEMENTED.
 Development branch: stage1/initial-foundation. Keep PR #1 open; main unchanged.
+
+## Verified cloud software acceptance (2026-11-24)
+
+Fixed tested code Commit a0726175e355f2cffc238b9678855df57922d3e2 and Git Tree 9f957060f717bd5c46182716f1e8163195e4d439:
+- Push Validate: https://github.com/20592504720/KernelForge/actions/runs/45236764880 — 4/4 SUCCESS.
+- PR Validate: https://github.com/20592504720/KernelForge/actions/runs/45236780874 — 4/4 SUCCESS.
+- Each of 8 Windows/Linux x Python 3.11/3.12 jobs executed 400 tests (3,200 total); 21 new Stage 7.4 tests ran in every environment (168 executions). Windows has 37 platform-conditional skips per job, 148 skips total; 3,052 non-skipped executions, no test failures/errors.
+- CI proves offline policy, negative tests, workflow-static checks and software regression. It does not prove manual workflow execution, WSL2 runtime source admission, actual compiler call, kernel Image or device safety. Machine evidence: docs/evidence/stage7_4_cloud_acceptance.json. Later documentation-only commits with [skip ci] do not change the validated source code.
 
 ## This stage's actual implementation
 
