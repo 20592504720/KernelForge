@@ -1,8 +1,10 @@
 # Stage 7.5-A — Antigravity single-model first handoff
 
 **Executor / single model: Claude Opus 4.6.** Do not switch models mid-task.
-This handoff is the first LOCAL task for Stage 7.5. It is a READ-ONLY
-technical/build-admission audit, **not** authorization for an actual build.
+This is the first LOCAL task for Stage 7.5. First perform an explicitly
+sandboxed file-system and Git capability smoke test (only isolated probe
+resources may be created/modified/deleted). Then perform the read-only
+Kleaf/DFR admission audit. It is **not** authorization for a kernel build.
 See `docs/STAGE7_5_FAST_IMAGE_PLAN.md` for the acceptance contract.
 
 ## Mandatory context — do not reconstruct the project from scratch
@@ -45,6 +47,76 @@ WSL memory approximately 3.77 GiB RAM plus 1 GiB swap as previously sampled.
 Physical E: disk and ext4 capacity must be re-sampled.
 Kleaf candidates `sun_perf_dist` and `sun_consolidate_dist` are **UNVERIFIED
 HYPOTHESES**; do not assume these strings are real target labels.
+
+## Mandatory FIRST task (0) — local file, write/delete and Git smoke tests
+
+Before any source analysis or code changes, demonstrate the tools can actually
+open/read existing local files, create, write, re-read, modify, rename and
+delete **ONLY self-created disposable files**. Use a fresh unique test ID and
+report exact commands/tools, paths, checksums, exit codes, cleanup and failures.
+Never treat a response saying "success" as proof without reading back.
+
+0.1 **Windows native filesystem.** Confirm `E:\内核构建\project` and
+`E:\内核构建\reports` are accessible. READ ONLY open and SHA256-check
+existing `README.md` and `docs/STAGE7_4_LOCAL_CODEX_AUDIT.md`. In
+`E:\内核构建\reports`, create an initially absent uniquely named
+`stage7_5_antig_probe_<nonce>` subdirectory and a small `test.txt` inside.
+Write marker v1, read/hash and compare; update to marker v2 and verify actual
+changed contents; rename file, verify, delete **only that file** and remove
+**only the now-empty owned subdirectory**. All operations require explicit
+path+identity checks and non-symlink targets.
+
+0.2 **WSL2 filesystem and Windows mount.** Under `/tmp`, repeat the same
+create/read/edit/rename/unlink/rmdir sequence on a new disposable directory.
+Verify `/mnt/e/内核构建/project` resolves to the Windows project and existing
+files are readable with matching hashes. Create another uniquely named
+disposable file *under the reports directory*, verify the same bytes and hash
+can be read from Windows and from WSL2 `/mnt/e/内核构建/reports`; delete only
+this owned probe. Do NOT write anywhere under the 35-project source checkout.
+
+0.3 **Project write capability without source changes.** Snapshot
+`git status --porcelain` and current branch. Create ONE uniquely named
+untracked `.antigravity_stage7_5_probe_<nonce>.txt` at the project root,
+write/read/update/rename/delete it, ensure it is never git-added or committed,
+then compare full Git status before vs after byte-for-byte (excluding normal
+external changes; if external changes occur report them and stop). Probe
+must not collide with existing names or symlinks.
+
+0.4 **Git local + remote connection.** Record current Git branch, HEAD, Tree,
+worktree status, remote URL (redact credentials), and compare `main`,
+`stage1/initial-foundation` and PR #1 state. Confirm authenticated Git remote
+READ with `git ls-remote` or equivalent, verifying the returned feature
+branch SHA against the reported GitHub value. Check push credential
+availability without printing tokens or passwords. Remote WRITE/DELETE should
+be tested only if permission is available AND can be isolated: use a new unique
+`probe/stage7-5-antig-<nonce>` branch based on an explicitly checked existing
+remote feature HEAD; create/read/update/delete one owned marker file on that
+**temporary branch only**; then delete exactly that owned test branch and
+confirm absence. Do not use the local production working tree for remote
+probe commits. If safe isolation cannot be guaranteed or remote push/delete
+is denied, record `REMOTE_WRITE_OR_DELETE_UNTESTED` / `DENIED` and STOP
+the remote mutation test, not weaken protection or target existing branches.
+Git connectivity read-only is mandatory, remote-write test is conditional.
+
+0.5 **Capability matrix + cleanup.** Report separately:
+`WINDOWS_FILE_READ`, `WINDOWS_CREATE`, `WINDOWS_EDIT`,
+`WINDOWS_RENAME`, `WINDOWS_DELETE`, `WSL_FILE_READ`, `WSL_CREATE`,
+`WSL_EDIT`, `WSL_RENAME`, `WSL_DELETE`, `CROSS_ENV_FILE_READ`,
+`PROJECT_UNTRACKED_PROBE_CLEANED`, `GIT_LOCAL_READ`,
+`GIT_REMOTE_READ`, `GIT_REMOTE_WRITE`, `GIT_REMOTE_DELETE`.
+Each has TESTED / BLOCKED / DENIED / UNTESTED, with evidence. Ensure no
+probe file or branch remains. If local create/edit/delete fails or the
+project cannot be read, stop BEFORE the Kleaf/DFR work and report
+`STAGE7_5_ANTIGRAVITY_IO_BLOCKED`. Git remote write denial alone does not
+justify granting new permissions; it is a documented blocker for future
+remote commits.
+
+**Non-negotiable safe deletion:** never delete any pre-existing file, folder,
+commit, tag, report, log, branch, cache, `.git`, `.repo`, source or build output.
+No `rm -rf`, wildcard, recursive deletion, `sudo`, `git clean`,
+`git reset --hard`, force-push, or permission/protection changes. All probe
+creation must fail closed if the chosen path already exists; verify symlinks
+and absolute containment before every mutation. Do not persist passwords.
 
 ## Required tasks in order
 
@@ -105,8 +177,10 @@ Do not modify Root/SUSFS, Kconfig security settings or make a flashable ZIP.
 
 ## Required deliverables
 
-Save raw audit logs in `E:\内核构建\reports` without overwriting historical
-files. Produce:
+Save raw audit and capability-smoke logs in `E:\内核构建\reports` without overwriting historical
+files. Include the task-0 permission matrix, test marker SHA256, Git remote
+probe branch identity (if any), cleanup verification and all denied actions.
+Produce:
 
 1. `docs/STAGE7_5_LOCAL_TARGET_AUDIT.md`: exact target/Bazel wrapper/DFR
    source references, verified vs uncertain labels, build envelope,
@@ -125,6 +199,9 @@ state. Never destroy or overwrite existing evidence. If a conflict or
 unknown target arises, document it rather than guessing.
 
 ## Explicit STOP / forbidden operations in this handoff
+
+Apart from the narrowly scoped task-0 disposable probes, no writes/deletes
+are permitted outside new audit evidence; never delete any existing records.
 
 Do not run: Bazel build, Bazel cquery/aquery, repo sync, any full/partial kernel
 compile, kernel config update, patch application, source mutation, package
