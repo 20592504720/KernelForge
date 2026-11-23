@@ -224,6 +224,25 @@ class NamespaceTests(unittest.TestCase):
                     other.open(pinned())
                 self.assertEqual(list(outside.iterdir()), [])
 
+    def test_namespace_parent_symlink_is_never_followed_by_prune_or_inspect(self):
+        with self.manager.open(pinned()) as lease:
+            key = lease.key
+        top = self.manager.root / "namespaces"
+        actual = self.manager.root / "namespaces-physical"
+        top.rename(actual)
+        try:
+            top.symlink_to(actual, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            actual.rename(top)
+            self.skipTest("directory symlink unsupported on this host")
+        real_metadata = actual / key[:2] / key / ".kernelforge-ccache-identity.json"
+        self.assertTrue(real_metadata.exists())
+        with self.assertRaisesRegex(BuildCacheError, "symlink"):
+            self.manager.prune(key, dry_run=False)
+        with self.assertRaisesRegex(BuildCacheError, "symlink"):
+            self.manager.inspect(key)
+        self.assertTrue(real_metadata.exists())
+
     def test_cache_not_system_disk_quota_and_no_fake_hits(self):
         with self.manager.open(pinned()) as lease:
             status = self.manager.inspect(lease.key)

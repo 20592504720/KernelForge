@@ -176,6 +176,7 @@ class CacheLease:
         _no_symlink_ancestors(self.controller.root / "locks" / f"{self.key}.lock")
         with FileLock(self.controller.root / "locks" / f"{self.key}.lock",
                       timeout=self.controller.timeout):
+            _no_symlink_ancestors(self.path)
             target = self.path / _INVALID
             _require(self.path.is_dir() and not self.path.is_symlink(),
                      "cannot invalidate missing/unsafe namespace")
@@ -284,6 +285,7 @@ class BuildCacheNamespaces:
     def inspect(self, key: str) -> dict:
         """No cache scan or ccache launch; only validated metadata + lease names."""
         dest = self.namespace_path(key)
+        _no_symlink_ancestors(dest)
         path = dest / _META
         data = _strict_json(path)
         _require(data.get("key") == key and cache_key(data.get("identity")) == key,
@@ -309,6 +311,7 @@ class BuildCacheNamespaces:
                  "refusing to prune a cache root not owned by KernelForge")
         with FileLock(self.root / "locks" / f"{key}.lock", timeout=self.timeout):
             dest = self.namespace_path(key)
+            _no_symlink_ancestors(dest)
             status = self.inspect(key)
             _require(status["active_or_unreconciled_leases"] == 0,
                      "active or stale cache lease blocks cleanup")
