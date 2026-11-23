@@ -185,8 +185,9 @@ jobs:
             echo "DFR include remains BLOCKED_UNDETERMINED."
             echo "Independent vendor archives and OnePlus13 full OKI/ABI/KMI/boot/Root are UNTESTED."
           } | tee -a "$GITHUB_STEP_SUMMARY"
-          printf '{"schema_version":1,"source_sha":"%s","preflight":"%s","evidence":"%s","software":"%s","gki":"%s","device_release_eligible":false}\\n' \
+          printf '{"schema_version":1,"source_sha":"%s","preflight":"%s","evidence":"%s","software":"%s","gki":"%s","device_release_eligible":false}\n' \
             "$SHA" "$PRE" "$EVIDENCE" "$SOFTWARE" "$GKI" > "$RUNNER_TEMP/stage1-6-outcome.json"
+          python3 -m json.tool "$RUNNER_TEMP/stage1-6-outcome.json" >/dev/null
           if [ "$PRE" != success ] || [ "$EVIDENCE" != success ] || [ "$SOFTWARE" != success ] || [ "$GKI" != success ]; then
             echo "STAGE1_6_FULL_ACCEPTANCE_FAILURE_OR_INCOMPLETE" >&2
             exit 1
