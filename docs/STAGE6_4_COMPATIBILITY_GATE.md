@@ -1,6 +1,6 @@
 # Stage 6.4 — immutable KernelSU/BakaSU/SUSFS compatibility gate
 
-Status: **SCOPED_IMPLEMENTED; software CI pending** (updated by actual CI results, not by this document).
+Status: **SCOPED_IMPLEMENTED; first Windows/Linux CI successful; integration follow-up CI pending**.
 
 ## Exact reviewed matrix
 
@@ -42,6 +42,16 @@ manifest label never prove Git checkout integrity or compile success.
 The gate always returns `release_eligible=false` and
 `archive_build_input_eligible=false`. It does not replace the current
 integrator or turn a quarantined archive into a Git checkout.
+
+The opt-in real GKI source-validation entrypoint
+`scripts/validate_upstreams.py` now calls `review_pinned_request()`
+**before workspace creation or any download**. A pinned SUSFS request with a
+new/unreviewed provider SHA is rejected, including explicit exact-SHA
+overrides. This stops unchecked requests before paying for an upstream checkout.
+Moving branch probes and no-SUSFS builds retain experimental functionality,
+but their report records `NOT_ADMITTED_MOVING_OR_NO_SUSFS` and
+`release_eligible=false`. The existing integration selector still performs
+the independent actual-Git/patch-content checks.
 
 Negative/regression tests run in ordinary Windows/Linux `Validate` CI.
 Do not launch an 8-job GKI matrix, 35-project Repo sync, OnePlus OKI build,

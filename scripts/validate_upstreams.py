@@ -43,6 +43,29 @@ def choose_pinned_provider_commit(provider: str, susfs: bool, pinned_baseline: b
     return override if override is not None else BASELINE[provider]
 
 
+def review_pinned_request(provider: str, susfs: bool, pinned_baseline: bool, provider_commit: str) -> dict:
+    """Reject an unreviewed exact combination before any source downloads.
+
+    Non-pinned upstream probes remain possible as experimental diagnostics but
+    NEVER acquire reviewed/release status, regardless of their resolved SHA.
+    """
+    if not pinned_baseline or not susfs:
+        return {"status": "NOT_ADMITTED_MOVING_OR_NO_SUSFS", "release_eligible": False}
+    from kernelforge.compatibility_gate import (
+        evaluate_reviewed, OFFICIAL_REPO, BAKA_REPO, SUSFS_REPO, KERNEL_REPO,
+    )
+    def declared(sha, repository):
+        return {"repository": repository, "commit_sha": sha, "policy": "pinned",
+                "ref_type": "commit", "requested_ref": sha}
+    admission = evaluate_reviewed({
+        "android_gki": "android14-6.1",
+        "kernel": declared(BASELINE["kernel"], KERNEL_REPO),
+        "kernelsu": declared(provider_commit, OFFICIAL_REPO if provider == "official" else BAKA_REPO),
+        "susfs": declared(BASELINE["susfs"], SUSFS_REPO),
+    }, provider=provider, catalog=ROOT / "patches/compat/susfs/manifest.json")
+    return admission
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--provider',choices=['official','bakasu'],required=True)
@@ -57,11 +80,18 @@ def main():
         pinned_provider=choose_pinned_provider_commit(args.provider, args.susfs, args.pinned_baseline, args.bakasu_commit)
     except ValueError as exc:
         parser.error(str(exc))
+    # This offline gate runs before workspace creation and any upstream fetch.
+    try:
+        compatibility_admission = review_pinned_request(
+            args.provider, args.susfs, args.pinned_baseline, pinned_provider)
+    except ValueError as exc:
+        parser.error(str(exc))
     work=args.workspace.resolve(); output=work/'report'; output.mkdir(parents=True,exist_ok=True)
     result={'provider':args.provider,'status':'failure','kconfig':'UNTESTED','kbuild':'UNTESTED','kernel_compile':'UNTESTED','boot':'UNTESTED','root':'UNTESTED'}
     result.update(object_compilation='UNTESTED',susfs_enabled=args.susfs,
                   version_policy='pinned' if args.pinned_baseline else 'latest_branch',objects=[],
-                  requested_bakasu_commit=args.bakasu_commit)
+                  requested_bakasu_commit=args.bakasu_commit,
+                  compatibility_admission=compatibility_admission)
     started=datetime.now(timezone.utc)
     result.update(kernelforge_version=__version__,started_at=started.isoformat(),toolchain={})
     step='version resolution'

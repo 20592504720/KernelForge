@@ -12,6 +12,7 @@ import yaml
 from scripts.stage5_exact_request import EXPECTED, MARKER, REF, validate_request, reject_duplicate_fields
 from scripts.validate_upstreams import (
     BASELINE, choose_pinned_provider_commit, parse_exact_bakasu_commit,
+    review_pinned_request,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -78,6 +79,43 @@ class ExactGkiValidationTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn('40-hex', result.stderr)
                 self.assertFalse(folder.exists())
+
+
+    def test_stage64_admits_reviewed_pinned_combinations_before_fetch(self):
+        for provider, sha in (
+            ('official', BASELINE['official']),
+            ('bakasu', BASELINE['bakasu']),
+            ('bakasu', CANDIDATE),
+        ):
+            with self.subTest(provider=provider, sha=sha):
+                report = review_pinned_request(provider, True, True, sha)
+                self.assertEqual(report['status'], 'DECLARED_PINNED_TRIPLE_REVIEWED')
+                self.assertFalse(report['release_eligible'])
+                self.assertEqual(report['provider_commit'], sha)
+
+    def test_stage64_rejects_current_unreviewed_bakasu_commit(self):
+        current_unreviewed = '63ad1ea3a90455dee9d77163cdafb028d8a90416'
+        with self.assertRaisesRegex(ValueError, 'not reviewed'):
+            review_pinned_request('bakasu', True, True, current_unreviewed)
+
+    def test_moving_branch_probe_never_inherits_pinned_admission(self):
+        for provider in ('official', 'bakasu'):
+            for pinned, susfs in ((False, True), (True, False)):
+                report = review_pinned_request(provider, susfs, pinned, BASELINE[provider])
+                self.assertFalse(report['release_eligible'])
+                self.assertEqual(report['status'], 'NOT_ADMITTED_MOVING_OR_NO_SUSFS')
+
+    def test_unreviewed_exact_sha_cli_fails_before_workspace_created(self):
+        unknown_sha = '63ad1ea3a90455dee9d77163cdafb028d8a90416'
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / 'not-created'
+            cmd = [sys.executable, str(ROOT / 'scripts/validate_upstreams.py'),
+                   '--provider', 'bakasu', '--susfs', '--pinned-baseline',
+                   '--bakasu-commit', unknown_sha, '--workspace', str(folder)]
+            result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('not reviewed', result.stderr)
+            self.assertFalse(folder.exists())
 
     def test_workflow_rejects_bad_sha_before_any_download_step(self):
         workflow = yaml.load(
