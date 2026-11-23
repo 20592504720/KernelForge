@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "stage": "7.2",
+  "branch": "stage1/initial-foundation",
+  "source_commit": "e71946236d73332b7a8b0225eff677038fc6671b",
+  "status": "GITHUB_SCOPED_COMPLETE_REAL_ASSET_UNTESTED_LOCAL_REVIEW_PENDING",
+  "software_proof": {
+    "mirror_offline": {
+      "push_run_id": 45211041253,
+      "pr_run_id": 45211055295,
+      "platforms": [
+        "ubuntu-latest",
+        "windows-latest"
+      ],
+      "python_versions": [
+        "3.11",
+        "3.12"
+      ],
+      "tests_per_environment": 22,
+      "environment_runs": 8,
+      "total_test_executions": 176,
+      "failures": 0
+    },
+    "full_validate": {
+      "push_run_id": 45211041202,
+      "pr_run_id": 45211055338,
+      "tests_per_environment": 338,
+      "environment_runs": 8,
+      "total_test_executions": 2704,
+      "failures": 0
+    },
+    "sm8750_manifest": {
+      "pr_run_id": 45211055344,
+      "result": "SUCCESS_FULL_REPO_SYNC_NOT_RERUN"
+    }
+  },
+  "implementation": {
+    "manager": "REUSED_EXISTING",
+    "source_aliases": [
+      "llvm-release",
+      "gcc-release",
+      "reviewed-github-release"
+    ],
+    "release_metadata_id_check": "FIXTURE_TESTED",
+    "independently_pinned_SHA256": "FIXTURE_TESTED",
+    "unverified_asset_replaced": "REJECTED",
+    "mirror_sha256_mismatch": "BLOCKED_BEFORE_EXTRACT_NO_FALLBACK",
+    "pinned_origin_fallback": "FIXTURE_TESTED",
+    "cache_identity_separated_by_release_lock": "FIXTURE_TESTED",
+    "corrupted_cache_recovery": "FIXTURE_TESTED",
+    "https_api_downgrade": "BLOCKED",
+    "license_review": "DECLARATIVE_ONLY",
+    "real_github_release_asset": "UNTESTED",
+    "real_llvm_gcc_full_archive": "UNTESTED",
+    "oneplus13_runtime_compatible": "UNTESTED"
+  },
+  "local_handoff": "docs/STAGE7_2_LOCAL_CODEX_HANDOFF.md",
+  "blockers": [
+    "NO_REVIEWED_PUBLIC_ASSET_SHA256_LICENSE_BINDING",
+    "RUNTIME_VERSION_AND_TARGET_NEED_LOCAL_EVIDENCE",
+    "STAGE7_3_CCACHE_NOT_IMPLEMENTED",
+    "DFR_INCLUDE_UNDETERMINED",
+    "ONEPLUS13_FAST_BUILD_UNTESTED"
+  ],
+  "real_downloads_performed": false,
+  "toolchains_installed": false,
+  "source_sync_performed": false,
+  "device_release_eligible": false,
+  "approval": "MAY_COMPLETE_7_2_LOCAL_READ_ONLY_REVIEW; DO_NOT_PUBLISH_ASSETS_OR_BUILD_WITHOUT_SEPARATE_APPROVAL"
+}

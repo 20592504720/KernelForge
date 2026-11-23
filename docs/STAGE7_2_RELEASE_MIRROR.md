@@ -1,6 +1,6 @@
 # Stage 7.2 — reviewed Release mirror and pinned-byte fallback
 
-Status: IMPLEMENTED; real upstream archives and redistribution licenses UNTESTED.
+Status: GITHUB_SCOPED_COMPLETE_WITH_REAL_ASSET_UNTESTED; local toolchain/license evidence PENDING.
 
 ## Scope
 
@@ -63,3 +63,28 @@ only after Windows/Linux × Python 3.11/3.12 offline regression,
 whole repository Validate and SM8750 source audit pass.
 
 No Release created, no large downloads, no source sync, no PR #1 merge.
+
+## Completed CI evidence (2026-11-23)
+
+Final reviewed source commit: e71946236d73332b7a8b0225eff677038fc6671b.
+
+| Verification | GitHub Run | Result |
+| --- | --- | --- |
+| Release offline Push matrix | https://github.com/20592504720/KernelForge/actions/runs/45211041253 | 4/4 green; 22 tests each |
+| Release offline PR matrix | https://github.com/20592504720/KernelForge/actions/runs/45211055295 | 4/4 green; 22 tests each |
+| Full Push Validate | https://github.com/20592504720/KernelForge/actions/runs/45211041202 | 4/4 green; 338 tests each |
+| Full PR Validate | https://github.com/20592504720/KernelForge/actions/runs/45211055338 | 4/4 green; 338 tests each |
+| SM8750 Manifest audit | https://github.com/20592504720/KernelForge/actions/runs/45211055344 | successful; full Repo sync not rerun |
+
+Totals: 176 dedicated offline Release test executions and 2,704 full repository
+test executions, no errors/failures. The fixture tests exercise full
+ToolchainManager SHA256, secure ZIP extraction, installed tree cache hash,
+atomic replacement and fallback routing. The direct binary version runner
+is intentionally mocked in these tests; legacy toolchain version tests
+remain covered by the full repository Validate.
+
+The reviewed release asset identity has no real approved values in this
+repository yet. No new mirrors were downloaded or published and no OnePlus13
+runtime/compiler integration has been independently verified. This is a
+software-only, scoped Stage 7.2 acceptance, NOT a production mirror approval.
+The remaining local handoff is docs/STAGE7_2_LOCAL_CODEX_HANDOFF.md.
