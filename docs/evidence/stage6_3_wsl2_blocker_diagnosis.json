@@ -1,0 +1,1547 @@
+{
+  "abi_kmi": "UNTESTED",
+  "archive_link_proof": {
+    "archive_extraction_performed": false,
+    "comparisons": [
+      {
+        "archive_sha256_local_only": "62fde9c7e382ddf13c1b1ea44b4e854164b754c524d7604bc4a345b9cb8eaffc",
+        "head_unchanged": true,
+        "negative_checks": {
+          "execute_bit": {
+            "altered_entry": "docs/analysis_test_doc.md",
+            "rejection": "Git/archive file bytes, symlink target, or mode differ",
+            "status": "TESTED"
+          },
+          "file_bytes": {
+            "altered_entry": ".bazelci/presubmit.yml",
+            "rejection": "Git/archive file bytes, symlink target, or mode differ",
+            "status": "TESTED"
+          },
+          "link_target": {
+            "altered_entry": "tests/copy_directory/dir_with_symlink/symlink",
+            "rejection": "Git/archive file bytes, symlink target, or mode differ",
+            "status": "TESTED"
+          }
+        },
+        "project": "kernel_platform/external/bazel-skylib",
+        "proof": {
+          "archive_extraction_safe": "UNTESTED",
+          "archive_sha256": "62fde9c7e382ddf13c1b1ea44b4e854164b754c524d7604bc4a345b9cb8eaffc",
+          "build_input_eligible": false,
+          "bytes_verified": 503519,
+          "device_boot": "UNTESTED",
+          "git_tree_equivalence": "TESTED",
+          "git_tree_sha": "ff4f2948d51ace255426885412990bc9489474cb",
+          "independent_vendor_archive_provenance": "UNTESTED",
+          "locked_commit": "1699b2281164661387bcab62e08b1248f7908c49",
+          "patch_manager_eligible": false,
+          "project": "kernel_platform/external/bazel-skylib",
+          "reference_kind": "INDEPENDENT_PINNED_GIT_OBJECTS",
+          "regular_files_verified": 217,
+          "schema_version": 1,
+          "symlink_blobs_verified": 1,
+          "symlink_destinations_valid": "UNTESTED",
+          "symlink_targets_materialized": false,
+          "workspace_content_equivalence": "UNTESTED"
+        },
+        "status": "TEST_FIXTURE_ONLY"
+      },
+      {
+        "archive_sha256_local_only": "f5758b3ea3178074fc637ab993812703fcde9f325e7030426ff468c02b26245f",
+        "head_unchanged": true,
+        "negative_checks": {
+          "execute_bit": {
+            "altered_entry": "configure",
+            "rejection": "Git/archive file bytes, symlink target, or mode differ",
+            "status": "TESTED"
+          },
+          "file_bytes": {
+            "altered_entry": ".github/workflows/toybox.yml",
+            "rejection": "Git/archive file bytes, symlink target, or mode differ",
+            "status": "TESTED"
+          },
+          "link_target": {
+            "altered_entry": "tests/sha224sum.test",
+            "rejection": "Git/archive file bytes, symlink target, or mode differ",
+            "status": "TESTED"
+          }
+        },
+        "project": "kernel_platform/external/toybox",
+        "proof": {
+          "archive_extraction_safe": "UNTESTED",
+          "archive_sha256": "f5758b3ea3178074fc637ab993812703fcde9f325e7030426ff468c02b26245f",
+          "build_input_eligible": false,
+          "bytes_verified": 7289441,
+          "device_boot": "UNTESTED",
+          "git_tree_equivalence": "TESTED",
+          "git_tree_sha": "217fde674e180888708363dd2af335465fb0064e",
+          "independent_vendor_archive_provenance": "UNTESTED",
+          "locked_commit": "dd6f71c76fe1574cf358129be29afa245eff4e36",
+          "patch_manager_eligible": false,
+          "project": "kernel_platform/external/toybox",
+          "reference_kind": "INDEPENDENT_PINNED_GIT_OBJECTS",
+          "regular_files_verified": 640,
+          "schema_version": 1,
+          "symlink_blobs_verified": 6,
+          "symlink_destinations_valid": "UNTESTED",
+          "symlink_targets_materialized": false,
+          "workspace_content_equivalence": "UNTESTED"
+        },
+        "status": "TEST_FIXTURE_ONLY"
+      }
+    ],
+    "independent_vendor_archive_provenance": "UNTESTED",
+    "status": "TEST_FIXTURE_ONLY",
+    "symlink_creation_performed": false
+  },
+  "broken_link_category_counts": {
+    "clang_llvm_stable": 20,
+    "root_audio_mtk": 1,
+    "root_dfr_include": 1,
+    "root_mkdtboimg": 1,
+    "rust_linux_musl": 2,
+    "rust_non_linux_host": 4
+  },
+  "broken_link_count": 29,
+  "broken_link_risk_counts": {
+    "BLOCKED_UNDETERMINED": 24,
+    "VERIFIED_NOT_REQUIRED": 5
+  },
+  "broken_links": [
+    {
+      "category": "root_mkdtboimg",
+      "evidence": [
+        "kernel_platform/msm-kernel/msm_kernel_la.bzl:467",
+        "kernel_platform/msm-kernel/msm_kernel_la.bzl:499",
+        "kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/mkdtboimg"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "android_kernel_modules_and_devicetree_oneplus_sm8750:kernel_platform/build/kernel/build-tools/path/linux-x86/mkdtboimg.py",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../../../../../prebuilts/kernel-build-tools/linux-x86/bin/mkdtboimg.py",
+      "reason": "Referenced Python file is absent; an ELF mkdtboimg executable exists in the same prebuilt bin directory. sun has a nonempty DTBO list, but the actual tool label and invocation were not resolved by Bazel.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/mkdtboimg.py",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "root_audio_mtk",
+      "evidence": [
+        "kernel_platform/build/kernel/oplus/oplus_modules_define.bzl:10",
+        "vendor/oplus/kernel/audio/bazel/oplus_local_modules.bzl:7"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "android_kernel_modules_and_devicetree_oneplus_sm8750:vendor/oplus/kernel/audio/bazel/mtk",
+      "proposed_resolution": "No source change required for this scoped Linux sun build.",
+      "raw_target": "../mtk/",
+      "reason": "The sun platform sets bazel_support_platform=qcom; the audio dependency on MTK is guarded by bazel_support_platform == mtk. This result is scoped to the audited qcom sun target, not other devices.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/vendor/oplus/kernel/audio/mtk",
+      "risk": "VERIFIED_NOT_REQUIRED",
+      "target_exists": false
+    },
+    {
+      "category": "root_dfr_include",
+      "evidence": [
+        "vendor/oplus/kernel/dfr/soc/oplus/dfr/include",
+        "vendor/oplus/kernel/dfr/include"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "android_kernel_modules_and_devicetree_oneplus_sm8750:vendor/oplus/kernel/dfr/soc/oplus/dfr/include",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../../include/",
+      "reason": "Relative target resolves to nonexistent vendor/oplus/kernel/dfr/soc/include; vendor/oplus/kernel/dfr/include exists elsewhere. DFR sources use soc/oplus/dfr includes; build reachability remains unproven.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/vendor/oplus/kernel/dfr/soc/include",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "rust_non_linux_host",
+      "evidence": [
+        "WSL2 Linux x86_64 host identity",
+        "kernel_platform/prebuilts/rust/darwin-x86",
+        "kernel_platform/prebuilts/rust/windows-x86"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernel_platform/prebuilts/rust:darwin-x86/stable/rust-analyzer",
+      "proposed_resolution": "No source change required for this scoped Linux sun build.",
+      "raw_target": "../1.77.1.p1/bin/rust-analyzer",
+      "reason": "Missing stable shortcut targets are Darwin or Windows host binaries; this verification is for Linux x86_64 WSL/sun and cannot invoke those host executables.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/darwin-x86/1.77.1.p1/bin/rust-analyzer",
+      "risk": "VERIFIED_NOT_REQUIRED",
+      "target_exists": false
+    },
+    {
+      "category": "rust_non_linux_host",
+      "evidence": [
+        "WSL2 Linux x86_64 host identity",
+        "kernel_platform/prebuilts/rust/darwin-x86",
+        "kernel_platform/prebuilts/rust/windows-x86"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernel_platform/prebuilts/rust:darwin-x86/stable/rustfmt",
+      "proposed_resolution": "No source change required for this scoped Linux sun build.",
+      "raw_target": "../1.77.1.p1/bin/rustfmt",
+      "reason": "Missing stable shortcut targets are Darwin or Windows host binaries; this verification is for Linux x86_64 WSL/sun and cannot invoke those host executables.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/darwin-x86/1.77.1.p1/bin/rustfmt",
+      "risk": "VERIFIED_NOT_REQUIRED",
+      "target_exists": false
+    },
+    {
+      "category": "rust_linux_musl",
+      "evidence": [
+        "kernel_platform/prebuilts/rust/linux-musl-x86/stable",
+        "WSL2 Linux x86_64 glibc host identity"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernel_platform/prebuilts/rust:linux-musl-x86/stable/rust-analyzer",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../1.77.1.p1/bin/rust-analyzer",
+      "reason": "Missing stable shortcut targets are for Linux-musl. The current WSL host is glibc Linux x86_64, but a hermetic Bazel tool selection could still request musl; no Bazel analysis was run.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-musl-x86/1.77.1.p1/bin/rust-analyzer",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "rust_linux_musl",
+      "evidence": [
+        "kernel_platform/prebuilts/rust/linux-musl-x86/stable",
+        "WSL2 Linux x86_64 glibc host identity"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernel_platform/prebuilts/rust:linux-musl-x86/stable/rustfmt",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../1.77.1.p1/bin/rustfmt",
+      "reason": "Missing stable shortcut targets are for Linux-musl. The current WSL host is glibc Linux x86_64, but a hermetic Bazel tool selection could still request musl; no Bazel analysis was run.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-musl-x86/1.77.1.p1/bin/rustfmt",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "rust_non_linux_host",
+      "evidence": [
+        "WSL2 Linux x86_64 host identity",
+        "kernel_platform/prebuilts/rust/darwin-x86",
+        "kernel_platform/prebuilts/rust/windows-x86"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernel_platform/prebuilts/rust:windows-x86/stable/rust-analyzer.exe",
+      "proposed_resolution": "No source change required for this scoped Linux sun build.",
+      "raw_target": "../1.77.1.p1/bin/rust-analyzer.exe",
+      "reason": "Missing stable shortcut targets are Darwin or Windows host binaries; this verification is for Linux x86_64 WSL/sun and cannot invoke those host executables.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/windows-x86/1.77.1.p1/bin/rust-analyzer.exe",
+      "risk": "VERIFIED_NOT_REQUIRED",
+      "target_exists": false
+    },
+    {
+      "category": "rust_non_linux_host",
+      "evidence": [
+        "WSL2 Linux x86_64 host identity",
+        "kernel_platform/prebuilts/rust/darwin-x86",
+        "kernel_platform/prebuilts/rust/windows-x86"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernel_platform/prebuilts/rust:windows-x86/stable/rustfmt.exe",
+      "proposed_resolution": "No source change required for this scoped Linux sun build.",
+      "raw_target": "../1.77.1.p1/bin/rustfmt.exe",
+      "reason": "Missing stable shortcut targets are Darwin or Windows host binaries; this verification is for Linux x86_64 WSL/sun and cannot invoke those host executables.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/windows-x86/1.77.1.p1/bin/rustfmt.exe",
+      "risk": "VERIFIED_NOT_REQUIRED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-addr2line",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-addr2line",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-addr2line",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-ar",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-ar",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-ar",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-as",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-as",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-as",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-cov",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-cov",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-cov",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-cxxfilt",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-cxxfilt",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-cxxfilt",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-dis",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-dis",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-dis",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-dwarfdump",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-dwarfdump",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-dwarfdump",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-link",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-link",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-link",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-modextract",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-modextract",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-modextract",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-nm",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-nm",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-nm",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-objcopy",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-objcopy",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-objcopy",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-objdump",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-objdump",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-objdump",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-profdata",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-profdata",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-profdata",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-ranlib",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-ranlib",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-ranlib",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-readelf",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-readelf",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-readelf",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-readobj",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-readobj",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-readobj",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-size",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-size",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-size",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-strings",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-strings",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-strings",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-strip",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-strip",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-strip",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    },
+    {
+      "category": "clang_llvm_stable",
+      "evidence": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38"
+      ],
+      "git_mode": "120000",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-symbolizer",
+      "proposed_resolution": "Resolve the exact sun Bazel dependency graph before any source change; preserve the pinned checkout.",
+      "raw_target": "../clang-r522817/bin/llvm-symbolizer",
+      "reason": "Pinned Clang project does not contain clang-r522817; this symlink points there. The sun configuration and Kleaf version list select r510928, which is present and executable. Full Bazel dependency reachability has not been resolved.",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-symbolizer",
+      "risk": "BLOCKED_UNDETERMINED",
+      "target_exists": false
+    }
+  ],
+  "build_impact": "BLOCKED_UNDETERMINED",
+  "device_boot": "UNTESTED",
+  "full_oki_build": "UNTESTED",
+  "project_branch_at_audit": "stage1/initial-foundation",
+  "raw_evidence": [
+    {
+      "path": "E:\\内核构建\\reports\\stage6.3-layout-diagnostics-final.json",
+      "sha256": "f2b6382c1ad4cfaa0e7460d008bdc1862715f0ae470eda845ac4bdc5254a1bd5"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage6.3-worktree-hash-audit.json",
+      "sha256": "5e44bf07d2dda0db7eeac4bad2fc883150bd4d4a74c50e6cb7b469d0467ef39f"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage6.3-lz4-clean-check.json",
+      "sha256": "bf2e821ec51dd4f4971a24b3e7c3050490798b51d6bc96126432221079ad9a79"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage6.3-real-link-archive-fixture-results.json",
+      "sha256": "e3ebc0f68a60029f074178be983eb27b19b694e798bda9ccba8f7bc6c9d26658"
+    }
+  ],
+  "schema_version": 1,
+  "scope": "Stage 6.3 WSL2 read-only pinned Repo workspace diagnosis; no build or vendor archive provenance proof",
+  "source_lock_status": "TESTED",
+  "tracked_worktree": {
+    "clean_filtered_match": true,
+    "mismatch_cause": "Git .gitattributes text/eol=crlf worktree conversion on Windows project files; all 33 match the Git blob after the declared clean filter, but raw bytes differ.",
+    "mismatch_project": "kernel_platform/external/lz4",
+    "missing_tracked": 0,
+    "project_count": 35,
+    "projects": [
+      {
+        "actual_commit": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 1372875597,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 82305,
+          "symlink": 68,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
+        "name": "android_kernel_common_oneplus_sm8750",
+        "path": "kernel_platform/common",
+        "tracked_head_files": 82373,
+        "tracked_index_files": 82373,
+        "tree_sha": "06a9ffb77abf7b350c6fe4b9249cd70417840e41",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "6028f47faddaa27700f8dd3a1d83906ea8f27170",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 1376448542,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 78053,
+          "symlink": 117,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "6028f47faddaa27700f8dd3a1d83906ea8f27170",
+        "name": "android_kernel_oneplus_sm8750",
+        "path": "kernel_platform/msm-kernel",
+        "tracked_head_files": 78170,
+        "tracked_index_files": 78170,
+        "tree_sha": "38733d6a32e3df62cc6019835d74adc5e1a862ff",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 549537954,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 20406,
+          "symlink": 278,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
+        "name": "android_kernel_modules_and_devicetree_oneplus_sm8750",
+        "path": "./",
+        "tracked_head_files": 20684,
+        "tracked_index_files": 20684,
+        "tree_sha": "8cb71dcf592a530ffaafaf3c2b588f9094a0fd7e",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "b76f8570a1a3480a158f6bc69590dbf326a444d0",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 251697,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 35,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "b76f8570a1a3480a158f6bc69590dbf326a444d0",
+        "name": "kernel/common-modules/trusty",
+        "path": "kernel_platform/common-modules/trusty",
+        "tracked_head_files": 35,
+        "tracked_index_files": 35,
+        "tree_sha": "a9248fef41c9a1cd6669a8fe95fc1ead16adb02f",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "434f141b6d22a773a163fa9c707b19b4d254d989",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 240581620,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 995,
+          "symlink": 2,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "434f141b6d22a773a163fa9c707b19b4d254d989",
+        "name": "kernel/prebuilts/build-tools",
+        "path": "kernel_platform/prebuilts/kernel-build-tools",
+        "tracked_head_files": 997,
+        "tracked_index_files": 997,
+        "tree_sha": "5b038078deabb559e2dc392510385db6fb5838c4",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "7104d80549523ce9d9c5b95ec7cab8aba88afdb3",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 51924,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 27,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "7104d80549523ce9d9c5b95ec7cab8aba88afdb3",
+        "name": "kernel_platform/build/bazel_common_rules",
+        "path": "kernel_platform/build/bazel_common_rules",
+        "tracked_head_files": 27,
+        "tracked_index_files": 27,
+        "tree_sha": "62adeeb2125f7e9bcd554528d55b38280e776b8a",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "1699b2281164661387bcab62e08b1248f7908c49",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 503519,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 217,
+          "symlink": 1,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "1699b2281164661387bcab62e08b1248f7908c49",
+        "name": "kernel_platform/external/bazel-skylib",
+        "path": "kernel_platform/external/bazel-skylib",
+        "tracked_head_files": 218,
+        "tracked_index_files": 218,
+        "tree_sha": "ff4f2948d51ace255426885412990bc9489474cb",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "f6003e1e3763f8aad9fb9acae79cfa5fff9ae988",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 358402,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 99,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "f6003e1e3763f8aad9fb9acae79cfa5fff9ae988",
+        "name": "kernel_platform/external/bazelbuild-apple_support",
+        "path": "kernel_platform/external/bazelbuild-apple_support",
+        "tracked_head_files": 99,
+        "tracked_index_files": 99,
+        "tree_sha": "e2c4bbeb184f0be8b3b7b1603fc3f5f5110234cc",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "5fa460f7563e307ed8396540aaf2e257f353e908",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 6111927,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 6173,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "5fa460f7563e307ed8396540aaf2e257f353e908",
+        "name": "kernel_platform/external/bazelbuild-bazel-central-registry",
+        "path": "kernel_platform/external/bazelbuild-bazel-central-registry",
+        "tracked_head_files": 6173,
+        "tracked_index_files": 6173,
+        "tree_sha": "ba37a3bec581b913ab4e651ca177ba0205d21358",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "f0d9433341479772b8b645da1208377c2862627c",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 36799,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 25,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "f0d9433341479772b8b645da1208377c2862627c",
+        "name": "kernel_platform/external/bazelbuild-platforms",
+        "path": "kernel_platform/external/bazelbuild-platforms",
+        "tracked_head_files": 25,
+        "tracked_index_files": 25,
+        "tree_sha": "52f475abdac0c030d9740f8a6d333456d693dd15",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "dc5e9e76198df0f60f7de1a8c2d947a2a972fa69",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 934958,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 163,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "dc5e9e76198df0f60f7de1a8c2d947a2a972fa69",
+        "name": "kernel_platform/external/bazelbuild-rules_cc",
+        "path": "kernel_platform/external/bazelbuild-rules_cc",
+        "tracked_head_files": 163,
+        "tracked_index_files": 163,
+        "tree_sha": "84236306d9322ff9cc3d3fbd45bbf1391c4250e2",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "c9de4ea84567c22dc3e1aa555b6d468393df5c5d",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 105994,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 38,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "c9de4ea84567c22dc3e1aa555b6d468393df5c5d",
+        "name": "kernel_platform/external/bazelbuild-rules_java",
+        "path": "kernel_platform/external/bazelbuild-rules_java",
+        "tracked_head_files": 38,
+        "tracked_index_files": 38,
+        "tree_sha": "bbcbc6947dcfb0db5620b5551499cd6c21befd61",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "30733c530db3ec72b5c0cb2d30f798d6aaf1b499",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 267851,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 98,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "30733c530db3ec72b5c0cb2d30f798d6aaf1b499",
+        "name": "kernel_platform/external/bazelbuild-rules_license",
+        "path": "kernel_platform/external/bazelbuild-rules_license",
+        "tracked_head_files": 98,
+        "tracked_index_files": 98,
+        "tree_sha": "39314478665e3c080e3df6fe4a97609182f089b5",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "33b79a421797cfddf268309523a262f395211a59",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 1356604,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 306,
+          "symlink": 1,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "33b79a421797cfddf268309523a262f395211a59",
+        "name": "kernel_platform/external/bazelbuild-rules_pkg",
+        "path": "kernel_platform/external/bazelbuild-rules_pkg",
+        "tracked_head_files": 307,
+        "tracked_index_files": 307,
+        "tree_sha": "ff0382b606ff284a465fb620254e4cae9c25b734",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "3e22460c62b498cfaa6708003738a3bfaef9cd82",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 1647424,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 869,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "3e22460c62b498cfaa6708003738a3bfaef9cd82",
+        "name": "kernel_platform/external/bazelbuild-rules_python",
+        "path": "kernel_platform/external/bazelbuild-rules_python",
+        "tracked_head_files": 869,
+        "tracked_index_files": 869,
+        "tree_sha": "a701fe110ba2e4dac2a58ff41f705fcb99575cb1",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "6aa78bad656ffc106bb909774fee5fc2d86d4949",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 862619,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 314,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "6aa78bad656ffc106bb909774fee5fc2d86d4949",
+        "name": "kernel_platform/external/dtc",
+        "path": "kernel_platform/external/dtc",
+        "tracked_head_files": 314,
+        "tracked_index_files": 314,
+        "tree_sha": "adc1fbbeabe2622f4f01beefcafb064255a71d81",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "336d1164b390131c4773b503771e9b53d9bb4f03",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 802554,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 298,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "336d1164b390131c4773b503771e9b53d9bb4f03",
+        "name": "kernel_platform/external/libcap",
+        "path": "kernel_platform/external/libcap",
+        "tracked_head_files": 298,
+        "tracked_index_files": 298,
+        "tree_sha": "c080b93bec7b3f5843b1a7008f2abededb27ffe1",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "2bcc92ae19481dd2b8d3ce3abdfbbee49261abe6",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 1613498,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 92,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "2bcc92ae19481dd2b8d3ce3abdfbbee49261abe6",
+        "name": "kernel_platform/external/libcap-ng",
+        "path": "kernel_platform/external/libcap-ng",
+        "tracked_head_files": 92,
+        "tracked_index_files": 92,
+        "tree_sha": "6a6715c842555e8921762be034c29526ce8edfa8",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "124599333514066524f55f5f41fbf0d46212e598",
+        "content_status": "BLOCKED",
+        "counts": {
+          "bytes_hashed": 1670851,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 193,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 33,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "124599333514066524f55f5f41fbf0d46212e598",
+        "name": "kernel_platform/external/lz4",
+        "path": "kernel_platform/external/lz4",
+        "tracked_head_files": 193,
+        "tracked_index_files": 193,
+        "tree_sha": "3ea9be4f6e085b404fa4c96e7c47ac973a6b2b46",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "9bc9fa17d499ddde88b77820f6d063e16c0cdd42",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 266573,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 15,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "9bc9fa17d499ddde88b77820f6d063e16c0cdd42",
+        "name": "kernel_platform/external/pigz",
+        "path": "kernel_platform/external/pigz",
+        "tracked_head_files": 15,
+        "tracked_index_files": 15,
+        "tree_sha": "4518a732625ae080b8656fcc05ecb46779fb5eb3",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "af9da234ce5045467014f4e7b53798e8feb2339b",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 1102866,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 98,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "af9da234ce5045467014f4e7b53798e8feb2339b",
+        "name": "kernel_platform/external/python/absl-py",
+        "path": "kernel_platform/external/python/absl-py",
+        "tracked_head_files": 98,
+        "tracked_index_files": 98,
+        "tree_sha": "43142271eee9dca918030c3217fdcc1f4c9f5318",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "dd6f71c76fe1574cf358129be29afa245eff4e36",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 7289441,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 640,
+          "symlink": 6,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "dd6f71c76fe1574cf358129be29afa245eff4e36",
+        "name": "kernel_platform/external/toybox",
+        "path": "kernel_platform/external/toybox",
+        "tracked_head_files": 646,
+        "tracked_index_files": 646,
+        "tree_sha": "217fde674e180888708363dd2af335465fb0064e",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "6bf5c3d254fe5efc458ea616d18be131d9230f0e",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 501358,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 56,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "6bf5c3d254fe5efc458ea616d18be131d9230f0e",
+        "name": "kernel_platform/external/virtio-media",
+        "path": "kernel_platform/external/virtio-media",
+        "tracked_head_files": 56,
+        "tracked_index_files": 56,
+        "tree_sha": "950a8fa2d737a9bc1b2a918d6ce1b68efb060097",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "4f57254519623a55dcd5bedc454337f6352f2193",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 2110207,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 159,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "4f57254519623a55dcd5bedc454337f6352f2193",
+        "name": "kernel_platform/external/zlib",
+        "path": "kernel_platform/external/zlib",
+        "tracked_head_files": 159,
+        "tracked_index_files": 159,
+        "tree_sha": "ad4c8da28e495ff4c306bc3b4cca6070dbe3e1a3",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "1e312f1cc3edc4cf7c489aa95a01f2878eb01fd7",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 718672,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 50,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "1e312f1cc3edc4cf7c489aa95a01f2878eb01fd7",
+        "name": "kernel_platform/external/zopfli",
+        "path": "kernel_platform/external/zopfli",
+        "tracked_head_files": 50,
+        "tracked_index_files": 50,
+        "tree_sha": "e0025a0ae967935ec8c3f00af7f9bae5dab5b6c0",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "e700ae0a5f3b95470e37f4a0543b4d044e5edfb6",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 94579389,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 17,
+          "symlink": 2,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "e700ae0a5f3b95470e37f4a0543b4d044e5edfb6",
+        "name": "kernel_platform/prebuilts/asuite",
+        "path": "kernel_platform/prebuilts/asuite",
+        "tracked_head_files": 19,
+        "tracked_index_files": 19,
+        "tree_sha": "b5a6e833d18ecc4b0abccff817fd63622674d6f9",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "d399f06c8cee351df2b93bac1e767f673d776c16",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 890904138,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 6597,
+          "symlink": 165,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "d399f06c8cee351df2b93bac1e767f673d776c16",
+        "name": "kernel_platform/prebuilts/build-tools",
+        "path": "kernel_platform/prebuilts/build-tools",
+        "tracked_head_files": 6762,
+        "tracked_index_files": 6762,
+        "tree_sha": "4e9b91282c6572be1dc3e75f4feb0e6ed47ce9ca",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "70bc10de031e2d0ff7e76adb9746bf339bb135c0",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 176705505,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 255,
+          "symlink": 2,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "70bc10de031e2d0ff7e76adb9746bf339bb135c0",
+        "name": "kernel_platform/prebuilts/clang-tools",
+        "path": "kernel_platform/prebuilts/clang-tools",
+        "tracked_head_files": 257,
+        "tracked_index_files": 257,
+        "tree_sha": "db385056c0bcb5e3cf89e79e86a3256ee376b297",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "f2f372463c74a896e3d8a0abb33e4667837458c2",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 315254344,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 227,
+          "symlink": 211,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "f2f372463c74a896e3d8a0abb33e4667837458c2",
+        "name": "kernel_platform/prebuilts/jdk/jdk11",
+        "path": "kernel_platform/prebuilts/jdk/jdk11",
+        "tracked_head_files": 438,
+        "tracked_index_files": 438,
+        "tree_sha": "249e8598ff73ce2f54f3aef21a5eac1b4cbbf738",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "aff65346a9f85db2c8fd1d0c13b6dcd0bee76390",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 1861807496,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 2508,
+          "symlink": 9,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "aff65346a9f85db2c8fd1d0c13b6dcd0bee76390",
+        "name": "kernel_platform/prebuilts/rust",
+        "path": "kernel_platform/prebuilts/rust",
+        "tracked_head_files": 2517,
+        "tracked_index_files": 2517,
+        "tree_sha": "8bf39798c928f272ca88658a9bf5e089f22a01d5",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "5fa28e8bc7f708d49a5cd42c8baaa4e8c03e08ef",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 254229,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 23,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "5fa28e8bc7f708d49a5cd42c8baaa4e8c03e08ef",
+        "name": "kernel_platform/system/tools/mkbootimg",
+        "path": "kernel_platform/tools/mkbootimg",
+        "tracked_head_files": 23,
+        "tracked_index_files": 23,
+        "tree_sha": "f4914bb90e8c68de25f0fabb021e00fc126b73b2",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "39c0d89e553619d398797309398697764cf3547b",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 88860256,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 2456,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "39c0d89e553619d398797309398697764cf3547b",
+        "name": "kernel_platform/toolchain/prebuilts/ndk/r26",
+        "path": "kernel_platform/prebuilts/ndk-r26",
+        "tracked_head_files": 2456,
+        "tracked_index_files": 2456,
+        "tree_sha": "d2deeb7f53b4f98de8f738f572d213ba1f7e37d8",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "0d6bd67313f94bd03fc54c350b9de54d94442ee7",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 115419594,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 23,
+          "symlink": 0,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "0d6bd67313f94bd03fc54c350b9de54d94442ee7",
+        "name": "kernel_platform/tools/tradefederation/prebuilts",
+        "path": "kernel_platform/prebuilts/tradefed",
+        "tracked_head_files": 23,
+        "tracked_index_files": 23,
+        "tree_sha": "b6f4d1c7998cb81fac7225e644378a3cd718677d",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "b099698c583b8361ca771f3cc8d6af6f729f39b3",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 3296295263,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 7851,
+          "symlink": 159,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "b099698c583b8361ca771f3cc8d6af6f729f39b3",
+        "name": "kernelplatform/prebuilts-master/clang/host/linux-x86",
+        "path": "kernel_platform/prebuilts/clang/host/linux-x86",
+        "tracked_head_files": 8010,
+        "tracked_index_files": 8010,
+        "tree_sha": "1c4c894e84c679ee22a0b7a3bc7f90aa8ca80dac",
+        "unmerged_index_stages": 0
+      },
+      {
+        "actual_commit": "e0de596ee4e1128b36fd2be9ec04422360bf404f",
+        "content_status": "TESTED",
+        "counts": {
+          "bytes_hashed": 195858509,
+          "gitlink": 0,
+          "missing": 0,
+          "overlay_conflict": 0,
+          "regular": 3400,
+          "symlink": 185,
+          "unreadable": 0,
+          "wrong_blob": 0,
+          "wrong_mode": 0,
+          "wrong_type": 0
+        },
+        "index_changed": 0,
+        "index_extra": 0,
+        "index_missing": 0,
+        "locked_commit": "e0de596ee4e1128b36fd2be9ec04422360bf404f",
+        "name": "kernelplatform/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8",
+        "path": "kernel_platform/prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8",
+        "tracked_head_files": 3585,
+        "tracked_index_files": 3585,
+        "tree_sha": "6db9c90992138349f32e8e29d2a7207dd87cea58",
+        "unmerged_index_stages": 0
+      }
+    ],
+    "raw_blob_mismatches": 33,
+    "raw_byte_equal_projects": 34,
+    "repo_linkfiles": [
+      {
+        "destination": "kernel_platform/.source_date_epoch_dir",
+        "expected_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/common",
+        "expected_type": "directory",
+        "is_symlink": true,
+        "raw_target": "common",
+        "resolved_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/common",
+        "status": "TESTED",
+        "target_type": "directory"
+      },
+      {
+        "destination": "kernel_platform/build_with_bazel.py",
+        "expected_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/msm-kernel/build_with_bazel.py",
+        "expected_type": "regular_file",
+        "is_symlink": true,
+        "raw_target": "msm-kernel/build_with_bazel.py",
+        "resolved_target": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/msm-kernel/build_with_bazel.py",
+        "status": "TESTED",
+        "target_type": "regular_file"
+      }
+    ],
+    "repo_metadata": "EXCLUDED",
+    "root_child_overlap": 0,
+    "status": "BLOCKED",
+    "untracked_files": "UNTESTED",
+    "wrong_executable_mode": 0,
+    "wrong_symlink_type": 0
+  },
+  "workspace": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750"
+}
