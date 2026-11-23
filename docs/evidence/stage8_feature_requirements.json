@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "stage": "8",
+  "status": "REQUESTED_PLANNING_ONLY",
+  "recorded_date": "2026-11-24",
+  "reference_screenshots": [
+    "third_party_feature_list",
+    "third_party_actions_workflows"
+  ],
+  "reference_repo": "https://github.com/cctv18/oppo_oplus_realme_sm8750",
+  "reference_claims_not_kernel_forge_proof": true,
+  "primary_device": "oneplus13-pjz110",
+  "primary_soc": "SM8750",
+  "features": [
+    {
+      "id": "F01",
+      "title": "Official PJZ110 OKI and GKI",
+      "priority": "P0",
+      "origin": "original",
+      "scope": "Full locked 35-project OKI modules, DTB/DTBO, ABI/KMI, firmware, Image, boot. GKI separate; not automatic no-wipe.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F02",
+      "title": "Additional SM8750 kernel variants",
+      "priority": "P2",
+      "origin": "screenshot",
+      "scope": "6.6.30 OnePlus13, 6.6.56 OnePlus13T, 6.6.57 Pad2Pro, 6.6.66/6.6.89 OnePlus13, 6.6.118 shown in Actions. Each requires own source and device gate.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F03",
+      "title": "MT6991 OnePlus Ace5 Supreme",
+      "priority": "P2",
+      "origin": "screenshot",
+      "scope": "Separate MediaTek 6.6.50 source/toolchain/vendor target; not SM8750-compatible by assertion.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F04",
+      "title": "Root providers and SUSFS",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Official KernelSU, BakaSU, ReSukiSU, SukiSU Ultra, KernelSU-Next. One pinned provider per build, exact hook/kernel/SUSFS compatibility.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F05",
+      "title": "Hooks",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Kprobes, manual, syscall/tracepoint and SUSFS inline checked per upstream commit. Struck-through legacy screenshot item is NOT automatically supported.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F06",
+      "title": "Fengchi governor",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Vendor original scx/HMBIRD and its sched modules/KABI; preserve stable OEM scheduling by default.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F07",
+      "title": "ccache-ECS",
+      "priority": "P2",
+      "origin": "merged",
+      "scope": "Stage 7.3 cache policy already exists. Shared preseed and ~6-min claims need trusted byte provenance and comparable cold/warm benchmarks; no automatic user-cache deletion.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F08",
+      "title": "Compiler O2",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Opt-in, measurable optimization with unchanged security flags CFI/KCFI and OEM ABI/KMI.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F09",
+      "title": "Compression and ZRAM",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "LZ4 1.10.0, zstd 1.5.7 kernel-compatible backports; built-in ZRAM versus zram.ko, actual runtime tests.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F10",
+      "title": "TCP algorithms",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Existing BBR/Westwood/BBG plus Brutal; BBG source/meaning to be reviewed. Per-algorithm Kconfig and behavior.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F11",
+      "title": "Netfilter configuration",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "ipset, iptables, IPv4/IPv6 advanced networking capabilities conditional on vendor kernel and userspace.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F12",
+      "title": "ADIOS I/O",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Optional Linux 6.6 block-mq and UFS/OEM driver compatibility tests.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F13",
+      "title": "Droidspaces",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Namespaces, seccomp, cgroups, networking, OverlayFS and actual container runtime requirements.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F14",
+      "title": "Mountify",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Root/module requirements, source pin and Android-version validation.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F15",
+      "title": "Re:Kernel/Freezer/NoActive",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Userspace interfaces, measured power behavior, compatibility and rollback.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F16",
+      "title": "Baseband-guard",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Audit partition protection source/license and safe OTA/recovery carve-outs; cannot promise total protection from wipes.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F17",
+      "title": "GKI F2FS data preservation",
+      "priority": "P3",
+      "origin": "new_pending",
+      "scope": "Experimental no-wipe compatibility study only. Backup and explicit device tests; no data-safety guarantee.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F18",
+      "title": "NetHunter monitor mode",
+      "priority": "P3",
+      "origin": "new_pending",
+      "scope": "Optional driver/firmware/USB wireless compatibility, not asserted on built-in WiFi.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F19",
+      "title": "kexec",
+      "priority": "P3",
+      "origin": "new_pending",
+      "scope": "Secure boot/signature, SELinux, rollback and physical-device impact study.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F20",
+      "title": "Unicode zero-width request",
+      "priority": "P2",
+      "origin": "original",
+      "scope": "Preserved, not implemented until source and precise behavior are established.",
+      "implemented_by_this_commit": false
+    },
+    {
+      "id": "F21",
+      "title": "Actions/build versions and delivery",
+      "priority": "P0",
+      "origin": "merged",
+      "scope": "Independent pinned Run IDs, source/patch lock, artifact sha, modules and ABI verification. Public release gated in Stage 9.",
+      "implemented_by_this_commit": false
+    }
+  ],
+  "subphases": [
+    "8.1_device_source_matrix",
+    "8.2_official_oki_baseline",
+    "8.3_root_susfs",
+    "8.4_fengchi_cpu_io",
+    "8.5_compression_network",
+    "8.6_app_container_security",
+    "8.7_experimental_gki_nethunter_kexec",
+    "8.8_extended_version_and_mt6991_matrix",
+    "8.9_stage8_acceptance"
+  ],
+  "deferrals": [
+    "no_verified_Mt6991_toolchain_build",
+    "no_nonwipe_data_guarantee",
+    "no_trusted_public_ccache_preseed",
+    "no_firmware_ABI_KMI_or_device_boot_claim",
+    "no_actual_Stage8_build_executed"
+  ],
+  "scope_original_preserved": true,
+  "stage8_started": false,
+  "flash_authorized": false
+}
