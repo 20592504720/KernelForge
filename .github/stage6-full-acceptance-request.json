@@ -21,5 +21,5 @@
   "sm8750_evidence_replay": true,
   "oki_vendor_build": false,
   "device_release": false,
-  "base_commit": "9d5fa021907485aba0a97b7c588c99472d42810f"
+  "base_commit": "c65d470af5d38dd96e021a8ff41d3b7b20f6236c"
 }
