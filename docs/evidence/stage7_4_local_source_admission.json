@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "stage": "7.4",
+  "scope": "WSL2 read-only source admission and offline unit test",
+  "branch": "stage1/initial-foundation",
+  "remote_review_commit": "3603b1e72855cfbadeb1f9808e96df6abd154003",
+  "local_review_commit": "a7082a28f4871a5cb0174504555241c5fafffbeb",
+  "identical_review_tree": "7fbea2c60b4cd5be4d3e5d0bb26e0d76a2a74ece",
+  "report_sha256": "072a7a0b6fd3a72b703fd48a349afc33cc0427489bd38deeabc2009baac627ac",
+  "source_lock_sha256": "7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e",
+  "source_workspace": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
+  "source_gate": {
+    "status": "TESTED",
+    "exit_code": 0,
+    "result": "SOURCE_LOCK_TESTED_BUILD_BLOCKED",
+    "projects_checked": 35,
+    "project_heads_matching": 35,
+    "all_project_heads_match": true,
+    "tracked_worktrees_clean": true,
+    "manifest_commit": "f8e50677874c65b6da41057d2f39be7b4ef3c08a",
+    "selected_manifest_commit": "f8e50677874c65b6da41057d2f39be7b4ef3c08a",
+    "build_eligible": false,
+    "build_started": false,
+    "ccache_enabled": false
+  },
+  "capacity": {
+    "host_e_free_bytes": 197966118912,
+    "host_e_reserve_gib": 50,
+    "ext4_reported_free_bytes": 859964493824,
+    "ext4_free_inodes": 66821537,
+    "ext4_reserve_gib": 20,
+    "both_reserves_satisfied": true
+  },
+  "timestamp_preflight_preview": {
+    "utc_iso8601": "2026-11-23T21:34:29Z",
+    "source_date_epoch": 1795469669,
+    "mode": "current_utc",
+    "actual_bazel_compiler_environment": "UNTESTED"
+  },
+  "wsl2_unit_tests": {
+    "status": "BLOCKED",
+    "ran": 21,
+    "passed": 18,
+    "failed": 3,
+    "exit_code": 1,
+    "failed_tests": [
+      "test_dirty_tracked_source_blocks_even_if_all_commits_match",
+      "test_disk_reserve_stops_before_source_git_checks",
+      "test_project_mismatch_is_not_overridden_by_manifest_match"
+    ],
+    "observed_error": "WSL_PHYSICAL_HOST_DISK_REQUIRED",
+    "interpretation": "Three fixture tests expect later rejection but WSL host-disk requirement rejects first; tests were not modified or bypassed."
+  },
+  "raw_evidence": [
+    {"path": "E:\\内核构建\\reports\\stage7_4_local_source_gate.json", "sha256": "7072fbfbbf95d80c68946e78ffd102e5daad9e033ad06955f978dea994e2348f"},
+    {"path": "E:\\内核构建\\reports\\stage7_4_local_source_gate.log", "sha256": "2a76aa327904e32a7895218e2f39b2c90a1dd9defa2af1f8f197c2a5cad3c313"},
+    {"path": "E:\\内核构建\\reports\\stage7_4_local_unit.log", "sha256": "7505e8b24fae5bb25e4d3b381507770acd3dac2dca4f8e69e78c79d8f399845d"}
+  ],
+  "untested": ["Kleaf target and DFR", "Bazel timestamp propagation", "Image/vmlinux", "vendor modules and ABI/KMI", "boot and Root"],
+  "source_sync_executed": false,
+  "kernel_compilation_executed": false,
+  "source_or_cache_modified": false
+}
