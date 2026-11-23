@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
                 for issue in errors:
                     logging.error("build config: %s", issue.message)
                 return 2
-            report = run_build(config, args.workspace.resolve(), args.output.resolve())
+            report = run_build(config, args.workspace, args.output)
             logging.info("Build succeeded; %d real artifact(s) recorded", len(report["artifacts"]))
             return 0
         except (OSError, json.JSONDecodeError, KeyError, BuildError) as exc:

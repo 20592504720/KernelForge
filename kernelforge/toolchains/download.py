@@ -8,6 +8,7 @@ import uuid
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
+from ..security import redact_diagnostic
 
 
 MAX_DOWNLOAD_BYTES = 8 * 1024**3
@@ -73,4 +74,4 @@ def download(url: str, destination: Path, *, timeout: float = 60, retries: int =
             if attempt >= retries:
                 break
             time.sleep(min(0.1 * (attempt + 1), 1.0))
-    raise DownloadError(f"download failed after {retries + 1} attempt(s): {last_error}") from last_error
+    raise DownloadError(redact_diagnostic(f"download failed after {retries + 1} attempt(s): {last_error}")) from last_error

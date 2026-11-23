@@ -285,8 +285,9 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
 
 
 def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
-    if output_dir.is_symlink():
-        raise BuildError("build output directory cannot be a symlink")
+    output_dir = output_dir.absolute()
+    if any(path.is_symlink() for path in (output_dir, *output_dir.parents)):
+        raise BuildError("build output directory cannot have symlink components")
     output_dir = output_dir.resolve()
     workspace = workspace.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -481,7 +482,7 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         _write_report(output_dir, report)
         if isinstance(exc, BuildError):
             raise
-        raise BuildError(str(exc)) from exc
+        raise BuildError(redact_diagnostic(str(exc))) from exc
     if manager and managed_prepared:
         manager.release(managed_prepared)
     _finish_report(report, monotonic_start)
