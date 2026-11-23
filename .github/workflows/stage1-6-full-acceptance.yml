@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 2
       - name: Verify exact Stage 1-6 scope, branch, parent, and marker-only commit
         run: python3 scripts/stage6_full_request.py
       - name: Identify immutable acceptance snapshot

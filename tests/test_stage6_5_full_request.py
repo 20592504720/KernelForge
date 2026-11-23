@@ -54,6 +54,8 @@ class Stage65RequestTests(unittest.TestCase):
         self.assertEqual(len(combos), 5)
         self.assertEqual(set(c['name'] for c in combos), set(EXPECTED['gki_combinations']))
         self.assertEqual(jobs['pinned-gki']['needs'], ['preflight', 'evidence', 'software'])
+        first_checkout = jobs['preflight']['steps'][0]
+        self.assertEqual(first_checkout['with']['fetch-depth'], '2')
         self.assertIn('--full-kernel', next(step['run'] for step in jobs['pinned-gki']['steps']
                                             if step.get('name', '').startswith('Verify immutable Git')))
         self.assertIn('if: always()', 'if: always()')  # aggregate completion gate is mandatory

@@ -81,3 +81,15 @@ and artifacts; never silently scope it out or start Stage 7 automatically.
 
 Do not modify `main`, merge PR #1, re-sync 35 projects, rewrite historical
 source SHA locks or start a device release.
+
+## First trigger preflight diagnosis (not a kernel failure)
+
+[Run 45183774937](https://github.com/20592504720/KernelForge/actions/runs/45183774937)
+was rejected before all software, evidence and real GKI jobs. The GitHub
+checkout action used shallow `fetch-depth: 1`, so the exact-parent
+`git rev-parse HEAD^` invariant could not inspect the parent commit. The
+aggregate gate correctly FAILED and all downstream jobs SKIPPED. This is
+**zero substantive Stage 1–6 test evidence**, not a failed kernel compile.
+The one-shot preflight now fetches depth 2, with a regression assertion. A
+new marker-only request is required for the actual first full attempt; do not
+rerun the failed artifact as if its acceptance were complete.
