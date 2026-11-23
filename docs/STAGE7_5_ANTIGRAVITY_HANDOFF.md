@@ -53,7 +53,11 @@ Read `README.md`, `docs/ROADMAP.md`, `docs/STAGE7_4_LOCAL_CODEX_AUDIT.md`,
 `docs/evidence/stage7_4_local_source_admission.json`,
 `docs/STAGE7_5_FAST_IMAGE_PLAN.md`,
 `scripts/stage7_5_artifact_evidence.py`,
-and `docs/STAGE8_SCOPED_ACCEPTANCE.md`. Verify local/remote Git branch,
+`docs/STAGE7_5_PINNED_OEM_STATIC_AUDIT.md`, and
+`docs/STAGE8_SCOPED_ACCEPTANCE.md`. The pinned OEM static audit already
+identifies candidate `sun_perf`/`sun_consolidate` macro labels and
+actual DFR DDK source files, but **not** a verified runtime Bazel action graph.
+Verify local/remote Git branch,
 HEAD, Tree, status and source-lock hash. If a safe cherry-pick is needed,
 record the exact commits and compare Trees; do not force-reset.
 For this first audit, do not modify the actual 35-project source or caches.
