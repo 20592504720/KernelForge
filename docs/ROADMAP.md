@@ -1,5 +1,9 @@
 # Roadmap
 
+
+> **Evidence update (2026-11-23):** Fixed ACK 6.1 / BakaSU `2734e0bc...` / SUSFS `756abbf...` passed real 67-object ARM64 + relocatable-link verification ([Run 45105067150](https://github.com/20592504720/KernelForge/actions/runs/45105067150)); full Image/boot remain untested. After Windows test-runner isolation, both [Push Validate 45108869968](https://github.com/20592504720/KernelForge/actions/runs/45108869968) and [PR Validate 45108874520](https://github.com/20592504720/KernelForge/actions/runs/45108874520) passed all four OS/Python combinations, with 187 tests on each Windows job and exits 0. Stage 5 is **READY_FOR_SCOPED_ACCEPTANCE**, not formally completed until the user accepts treating dynamic `latest_branch` as ongoing maintenance (BLOCKED) and deferring OnePlus 13 full device/OKI compilation to Stage 8. See [final gate](STAGE5_FINAL_ACCEPTANCE_GATE.md).
+
+
 > **Status clarification (2026-11-23):** OnePlus 13 official `source_sync=TESTED` (35/35) is documented in [Stage 5 handoff](STAGE5_HANDOFF.md). The latest checked real-source GKI matrix was 7/8, with BakaSU+SUSFS `latest_branch` patch conflict; Stage 5 overall is not yet accepted. See [evidence reconciliation](STAGE5_EVIDENCE_RECONCILIATION.md). Older "WSL source sync is running" lines below are historical and superseded for that single gate. Later Stages 6–9 remain planning only.
 
 

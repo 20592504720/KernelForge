@@ -67,3 +67,29 @@ Keep the workflow run evidence separate from the original OnePlus 13 35/35 sourc
 A **narrow isolation/diagnostic candidate** has been submitted: `scripts/windows_test_launcher.py` launches the existing full test runner as an isolated Windows process with `CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW`, consolidates child stdout/stderr for faithful logging and forwards its exact exit code. Windows 3.11/3.12 both use PowerShell to invoke this wrapper; the script explicitly outputs `WINDOWS_SHELL_CHILD_EXIT`. The original runner prints `WINDOWS_TEST_SUMMARY` (actual `wasSuccessful()`, 183 case count, failures/errors/remaining worker threads, chosen exit code), and its SIGINT handler cannot swallow a normally returning prior handler. Offline unit tests verify a successful child, failure, interrupted child and spawn failure. **No unit test is skipped, suppressed or converted into a success.** A real GitHub Windows runner result is necessary before claiming this is fixed; no kernel source, patch, provider list, GKI workflow or E-drive data is changed.
 
 **Stage 5: IN_PROGRESS.** Scoped real GKI source/67-object/relocatable-link acceptance is TESTED; dynamic `latest_branch` stays BLOCKED; device/full OKI remains the Stage 8 UNTESTED track.
+
+
+## 2026-11-23: Windows CI isolation verified — two independent green runs
+
+**New verified status:** Windows CI **TESTED** for both Python 3.11 and 3.12 on the current source Tree. This outcome supersedes the earlier `BLOCKED` Windows entries **only for the current isolated test runner**. Prior 3/4 and 2/4 runs remain historical failure evidence and must not be erased.
+
+- **Test source Commit** `1a84d0f087f0b8d8f1dad29379d39f9fd1587cc5`; Git Tree `44e3eaa82aba069da647012f3fd1f3b2358c9511`.
+- [Push Validate Run 45108869968](https://github.com/20592504720/KernelForge/actions/runs/45108869968): **4/4 matrix jobs SUCCESS** — Ubuntu Python 3.11/3.12 and Windows Python 3.11/3.12.
+- [PR Validate Run 45108874520](https://github.com/20592504720/KernelForge/actions/runs/45108874520): independently **4/4 matrix jobs SUCCESS**, same exact test source Commit.
+- Both Windows Python versions reported `Ran 187 tests ... OK`, **zero errors, zero failures, zero unexpected successes and zero remaining worker threads** in each of both runs. Windows3.11 job IDs `137476379415` (Push) and `137476393328` (PR), Windows3.12 `137476379457` (Push) and `137476393601` (PR).
+- Each of four Windows job logs shows `WINDOWS_TEST_SUMMARY ... passed=True ... ran=187 ... workers=[] exit=0`, `WINDOWS_LAUNCH_EXIT child_exit=0` and `WINDOWS_SHELL_CHILD_EXIT=0`. **No test suite was bypassed.** The Windows isolated launcher is thereby actually TESTED under GitHub Actions, rather than merely statically audited.
+- The exact **source** of earlier runner-delivered `SIGINT` events remains unknown; the available positive evidence establishes that the process-group isolation eliminated observed failures on these two runs, not a universal proof of root cause or permanent reliability on future runner images.
+
+**Separate, previously accepted real GKI evidence**: [Run 45105067150](https://github.com/20592504720/KernelForge/actions/runs/45105067150), 67/67 signed-by-report SHA256 ARM64 ELF objects and `ld.lld -r` relocatable integration-check, `unresolved_root_hooks=[]`, exact ACK+BakaSU+SUSFS triplet, final CFI/Shadow Call Stack kept: **TESTED for this source/object/link scope**. Generic full `vmlinux`, Image, OnePlus13 OEM OKI, module ABI/KMI, firmware, boot/Root **remain UNTESTED**; they were not run again in these Validate jobs.
+
+### Scope-limited Stage 5 acceptance decision — pending explicit approval
+
+**Technical acceptance gates now satisfied** for the *immutable reviewed source triplet* + current GitHub/Windows/Linux unit-test matrix + 35/35 OnePlus 13 source-sync / Kleaf static audit. No GKI rerun or WSL2 source mutation is needed for this limited claim.
+
+**Still separate or unresolved:**
+- Moving `latest_branch` is not automatically supported; prior BakaSU HEAD `63ad1ea...` was blocked by strict full-Commit fail-closed policy even though its kernel Git Tree matched the reviewed pinned SHA. Classify as `BLOCKED: DYNAMIC_UPSTREAM_MONITORING` and move to later compatibility maintenance **only if approved**. Do not imply all future moving BakaSU/SUSFS revisions pass.
+- Full OnePlus13 OKI/Image, DTB/DTBO, ABI/KMI, module/firmware, device boot and Root functionality are **UNTESTED** and are explicitly Stage 8/device gates in `ROADMAP.md`.
+- BBG/Unicode/Fengchi and source-archive feature work remain later-stage feature obligations. The accepted GKI object/link test is not those features.
+- `main` unchanged; PR #1 open/unmerged. No device flash/release is authorized.
+
+**Recommendation:** `READY_FOR_SCOPED_ACCEPTANCE`; keep formal Stage 5 `IN_PROGRESS` until the owner explicitly accepts this boundary. Approval would close the stage **only as source-level/generic GKI/CI readiness**, not as full device-kernel readiness. If the owner requires permanently green `latest_branch`, Stage 5 stays open for recurring upstream-compatibility work by definition.

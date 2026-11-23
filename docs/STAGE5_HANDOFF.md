@@ -513,3 +513,10 @@ Run `45105067186` completed 3/4: Windows Python 3.11 was interrupted by an exter
 
 
 2026-11-23 Windows CI isolation: Run `45106947923` Linux 2/2 passing; Windows3.11 completed 183 tests OK but step exited 1 without a recorded test failure; Windows3.12 got a recorded SIGINT/KeyboardInterrupt during Toolchain source adapter tests. An opt-in full-suite Windows isolated-process-group launcher now includes explicit child, test, and PowerShell exit records. It **must be validated on GitHub Actions before status changes**. Details: [STAGE5_FINAL_ACCEPTANCE_GATE.md](STAGE5_FINAL_ACCEPTANCE_GATE.md#2026-11-23-windows-ci-two-sided-interruption-analysis--full-suite-isolation-candidate). GKI exact version passed prior Run `45105067150`, no retest authorized; Stage 5 stays IN_PROGRESS.
+
+
+## 2026-11-23: Windows CI resolved in current pinned run; Stage 5 scope decision ready
+
+[Two independent complete-green Validate runs](STAGE5_FINAL_ACCEPTANCE_GATE.md#2026-11-23-windows-ci-isolation-verified--two-independent-green-runs) now prove the isolated full Windows test launcher works in real GitHub Actions: Push Run `45108869968` and PR Run `45108874520`, **each 4/4 green** on Commit `1a84d0f087f0b8d8f1dad29379d39f9fd1587cc5`, Tree `44e3eaa82aba069da647012f3fd1f3b2358c9511`. Windows Python3.11/3.12 executed **187 tests each** per run, `OK`, exact child and shell exit 0, no outstanding worker threads, no skipped tests. Historical Windows `SIGINT` sender not definitively identified; prior failures remain historical evidence and the current CI gate is TESTED. GKI Run `45105067150` remains 67/67 ARM64 objects plus relocatable link TESTED for the exact pinned BakaSU+SUSFS+ACK6.1, without full Image; no heavy rerun requested.
+
+**Stage 5 recommendation: READY_FOR_SCOPED_ACCEPTANCE, formal status IN_PROGRESS pending owner scope decision.** Dynamic `latest_branch` is not verified as universally compatible and remains BLOCKED as a separate monitoring concern; device/OKI/boot/Root remain UNTESTED Stage8 goals. No main write, PR merge, release or user-owned WSL source edit occurred.
