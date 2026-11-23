@@ -46,3 +46,21 @@ Current `scripts/validate_upstreams.py` supports old `--pinned-baseline` or movi
 **Local Codex parallel task (previously assigned):** inspect existing WSL/test/cache readiness and available exact source refs **read-only**, then supply the function/API, signature, headers and SHA report if those bytes are available; no source mutation or download without a separate resource decision. Once an adapter is approved and committed on `stage1/initial-foundation`, Codex performs the distinct lightweight local regression after matching new remote HEAD/Tree. Real generic GKI compilation is a separate explicitly controlled CI gate; full OnePlus 13 OKI build, ABI, firmware and boot remain deferred/unverified.
 
 No modifications to `main`, PR merge, toolchain caches, lock files, WSL sources, runner jobs or device images were made by this audit.
+
+
+## 2026-11-23 follow-up: exact SUSFS API proof and narrowly pinned adapter candidate
+
+**Updated decision: SOURCE/API STATIC_AUDITED; exact-identity selector candidate IMPLEMENTED; ARM64 COMPILE/LINK UNTESTED.** This paragraph supersedes the earlier statement above that the exact GitLab SUSFS `fs/susfs.c` definitions had not been inspected.
+
+The public GitHub mirror [Zhanfg/susfs4ksu at exact commit](https://github.com/Zhanfg/susfs4ksu/tree/756abbf2d81557e36664fc67dffaee26d3dfc57c) exposes Git commit **`756abbf2d81557e36664fc67dffaee26d3dfc57c`**, with tree `4ce75cf1edc60f451399c04d475a8e5bba9371b8`. This is the **same exact Git commit identity** as the locked original GitLab upstream; it is not a floating mirror branch. Exact-commit file inspection established:
+
+- `kernel_patches/fs/susfs.c` (Git blob `f84b8a4471e1b68599dab0ef714841db76f6a32a`) defines global `int susfs_add_sus_type(const char *secctx, u32 type_value)` near line 58 and `int susfs_add_sus_avd_allowed_by_type(u32 s_type, u32 t_type, u32 c_type, u32 orig_avd_allowed)` near line 121.
+- BakaSU exactly at `2734e0bc155759955880f5fb99be640fc5b92156` has matching explicit `extern int` signatures in `kernel/selinux/sepolicy.c`, gated by `CONFIG_KSU_SUSFS`.
+- The same pinned SUSFS source has `CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER` implementation in `fs/susfs.c`; the upstream `50_add_susfs_in_gki-android14-6.1.patch` contains `obj-$(CONFIG_KSU_SUSFS) += susfs.o` in `fs/Makefile`. These facts address the previously identified **missing API definition** concern **at the source level only**.
+- The local Codex audit confirms original SUSFS patch's Git object / LF bytes SHA256 equals locked `4c74f1862ad5a4851bd201e334c1149b9776e774274574ce58aa23a1da318364`; its Windows CRLF checkout must not be used as the source-of-truth for that digest.
+
+The compatibility manifest's **provider list is narrowly extended only for the exact BakaSU `2734e0bc...` Commit**, with no edits to kernel or SUSFS SHA, old provider entries, patch bytes, existing SHA256s, selection function or fail-closed rules. Targeted unit fixtures additionally assert precise selection and rejection on wrong source identities, and rejection on altered patch bytes. This makes the specific candidate reachable for **future real-source Linux integration testing**; it does **not** mean that the changed SELinux Hide/Kbuild semantics, object compilation, unresolved symbols, full vmlinux or runtime are accepted. All of these gates stay `UNTESTED`.
+
+The original CI Run `45020470109` remains **FAILED 7/8 historical evidence** and is not retroactively changed. Its moving branch can drift; the next *real* integration probe must lock an explicit `2734e0bc...` provider SHA or retain audited immutable source objects rather than infer this exact pair from `latest_branch`. Do not trigger an unsized 8-job GKI matrix or SM8750 re-sync just to test the selector.
+
+**Local Codex follow-up:** after verifying the new development HEAD and clean Tree, run targeted unit and negative tests on the updated manifest, report exact version/Tree and outcomes. A later isolated Linux ACK 6.1 ARM64 object/link test remains mandatory before `BakaSU 2734e0bc + SUSFS 756abbf` can be declared `TESTED`.

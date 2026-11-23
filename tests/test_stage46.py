@@ -158,6 +158,34 @@ class CompatibilityTests(unittest.TestCase):
             self.assertEqual(self.select(),(self.original,None))
             self.identities[index]=original
 
+    def test_new_bakasu_exact_candidate_selection_is_fixture_only(self):
+        # This proves strict selector behavior, NOT real ARM64 compilation.
+        newer = '2734e0bc155759955880f5fb99be640fc5b92156'
+        self.assertIn(newer, self.meta['provider_commits'])
+        original_provider = self.identities[1]
+        self.identities[1] = newer
+        selected, selected_meta = self.select()
+        self.assertEqual(selected, self.adapted.resolve())
+        self.assertIn(newer, selected_meta['provider_commits'])
+        for index in (0, 2):
+            correct = self.identities[index]
+            self.identities[index] = 'f' * 40
+            self.assertEqual(self.select(), (self.original, None))
+            self.identities[index] = correct
+        self.identities[1] = 'f' * 40
+        self.assertEqual(self.select(), (self.original, None))
+        self.identities[1] = original_provider
+
+    def test_new_bakasu_still_rejects_tampered_original_or_adapter(self):
+        self.identities[1] = '2734e0bc155759955880f5fb99be640fc5b92156'
+        self.original.write_text('tampered', encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'upstream patch hash'):
+            self.select()
+        self.original.write_bytes(self.adapted.read_bytes())
+        self.adapted.write_text('tampered', encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'SHA256'):
+            self.select()
+
     def test_adapter_hash_tamper_blocks(self):
         self.adapted.write_text('tampered')
         with self.assertRaisesRegex(ValueError,'SHA256'): self.select()

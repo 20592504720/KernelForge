@@ -7,18 +7,20 @@
   "susfs_commit": "756abbf2d81557e36664fc67dffaee26d3dfc57c",
   "provider_commits": [
     "2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4",
-    "7b65bde0710b5e7c6f755545cb15a4abd417f3a8"
+    "7b65bde0710b5e7c6f755545cb15a4abd417f3a8",
+    "2734e0bc155759955880f5fb99be640fc5b92156"
   ],
   "upstream_patch_sha256": "4c74f1862ad5a4851bd201e334c1149b9776e774274574ce58aa23a1da318364",
   "file": "android14-6.1-498f91c-756abbf.patch",
   "sha256": "82903768ca26a1eb3385c0a6337eb07f4ccf31c223e26bb321717e57c78510dd",
-  "reason": "Only include-context differences: exec lacks GENKSYMS/dma-buf context; namespace lacks trace/hooks/blk.h. All upstream +/- code lines retained.",
+  "reason": "Only include-context differences: exec lacks GENKSYMS/dma-buf context; namespace lacks trace/hooks/blk.h. All upstream +/- code lines retained. Exact BakaSU 2734e0bc source/API reviewed against SUSFS 756abbf; compile/link remain UNTESTED.",
   "verification": {
     "applicability": "TESTED on 27 exact Git blob targets",
-    "object_compilation": "TESTED: exact official/BakaSU baselines; ARM64 objects and relocatable link; run 44896399426",
-    "scope": "Historical Clang14 object smoke check only: original GKI KCFI was unavailable. Hardened acceptance requires current Clang17 workflow and final hardening gates.",
+    "object_compilation": "TESTED only for the two original provider commits on the pinned GKI baseline; BakaSU 2734e0bc155759955880f5fb99be640fc5b92156 remains UNTESTED for compilation/link",
+    "scope": "Exact new BakaSU SHA is permitted as a source/API-reviewed candidate to test the unchanged context adapter on the same ACK 6.1 and SUSFS commits; do not infer vmlinux, Image, boot or Root success. Old upstream patch bytes, review hash, source identity checks and safety features remain mandatory.",
     "boot": "UNTESTED",
-    "root": "UNTESTED"
+    "root": "UNTESTED",
+    "new_bakasu_source_api": "STATIC_AUDITED: the exact SUSFS Git commit 756abbf2d81557e36664fc67dffaee26d3dfc57c, accessible on GitHub mirror Zhanfg/susfs4ksu, defines global int susfs_add_sus_type(const char*,u32) and int susfs_add_sus_avd_allowed_by_type(u32,u32,u32,u32); new BakaSU sepolicy.c has matching externs, and upstream SUSFS patch builds fs/susfs.o. Kernel compile and link UNTESTED."
   },
   "upstream": "https://gitlab.com/simonpunk/susfs4ksu/-/blob/756abbf2d81557e36664fc67dffaee26d3dfc57c/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch",
   "license": "GPL-3.0 (upstream repository license; see LICENSE.upstream)"
