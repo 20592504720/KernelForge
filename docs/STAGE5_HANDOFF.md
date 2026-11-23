@@ -501,3 +501,5 @@ This change is **STATIC_AUDITED / IMPLEMENTED candidate**, not proof that the ne
 
 
 2026-11-23 exact-BakaSU follow-up: [delta audit and opt-in single-matrix CI gate](STAGE5_BAKASU_SUSFS_DELTA_AUDIT.md#2026-11-23-latest-branch-drift-and-opt-in-exact-commit-ci-control). Previously auto-launched Run 45098970334 used BakaSU `63ad1ea...` (one translation-only commit beyond the reviewed `2734e0bc...`), leaving the latter's exact triple untested in real GKI. New manually dispatched single-combination path is implemented but NOT RUN; validation still required. The original 35/35 SM8750 source sync remains TESTED, Stage 5 IN_PROGRESS. No new heavy run was started.
+
+Stage 5 one-shot push dispatch preparation: see [reviewed fixed SHA and guarded input](STAGE5_BAKASU_SUSFS_DELTA_AUDIT.md#2026-11-23-controlled-single-commit-push-request-prepared-not-dispatched). No marker/CI run committed. Stage 5 remains IN_PROGRESS.

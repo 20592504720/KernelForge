@@ -1,5 +1,6 @@
 """Offline tests for manual exact-SHA GKI validation admission."""
 import argparse
+import json
 import subprocess
 import sys
 import tempfile
@@ -8,6 +9,7 @@ from pathlib import Path
 
 import yaml
 
+from scripts.stage5_exact_request import EXPECTED, MARKER, REF, validate_request, reject_duplicate_fields
 from scripts.validate_upstreams import (
     BASELINE, choose_pinned_provider_commit, parse_exact_bakasu_commit,
 )
@@ -91,6 +93,47 @@ class ExactGkiValidationTests(unittest.TestCase):
         self.assertIn('exit 2', first['run'])
         self.assertTrue(any('actions/checkout@' in step.get('uses', '') for step in remaining))
         self.assertTrue(any('pip install' in step.get('run', '') for step in remaining))
+
+    def test_push_request_is_only_heavy_ci_branch_trigger(self):
+        flow = yaml.load((ROOT / '.github/workflows/upstream-validation.yml').read_text(encoding='utf-8'),
+                         Loader=yaml.BaseLoader)
+        self.assertNotIn('pull_request', flow['on'])
+        self.assertEqual(flow['on']['push']['branches'], ['stage1/initial-foundation'])
+        self.assertEqual(flow['on']['push']['paths'], [MARKER])
+        self.assertIn("github.event_name != 'push'", flow['jobs']['sources']['if'])
+        exact = flow['jobs']['exact_bakasu']
+        self.assertIn("github.event_name == 'push'", exact['if'])
+        steps = exact['steps']
+        self.assertEqual(steps[0]['name'], 'Reject invalid SHA before checkout or dependency install')
+        idx = next(i for i, s in enumerate(steps) if 'stage5_exact_request.py' in s.get('run', ''))
+        checkout = next(i for i, s in enumerate(steps) if 'actions/checkout@' in s.get('uses', ''))
+        pip = next(i for i, s in enumerate(steps) if 'pip install' in s.get('run', ''))
+        self.assertLess(checkout, idx)
+        self.assertLess(idx, pip)
+        self.assertIn(EXPECTED['provider_commit'], steps[0]['env']['BAKASU_COMMIT'])
+        cmd = next(s['run'] for s in steps if s.get('name', '').startswith('Validate pinned BakaSU'))
+        self.assertNotIn('--full-kernel', cmd)
+        self.assertIn('--bakasu-commit', cmd)
+
+    def test_request_marker_fail_closed_and_exact_version(self):
+        validate_request(dict(EXPECTED), REF, {MARKER})
+        for field, wrong in [('provider_commit', '0'*40), ('kernel_commit', '0'*40),
+                             ('susfs_commit', '0'*40), ('full_kernel', True),
+                             ('request_id', 'other'), ('schema_version', 2)]:
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                validate_request({**EXPECTED, field: wrong}, REF, {MARKER})
+        for val, branch, changed in [
+            (dict(EXPECTED), 'refs/heads/main', {MARKER}),
+            (dict(EXPECTED), REF, set()),
+            ({**EXPECTED, 'extra': 1}, REF, {MARKER}),
+        ]:
+            with self.assertRaises(ValueError):
+                validate_request(val, branch, changed)
+
+    def test_duplicate_keys_rejected_before_build(self):
+        with self.assertRaisesRegex(ValueError, 'duplicate'):
+            json.loads('{"request_id":"foo","request_id":"bar"}',
+                       object_pairs_hook=reject_duplicate_fields)
 
 
 if __name__ == '__main__':
