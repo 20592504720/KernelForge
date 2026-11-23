@@ -6,7 +6,7 @@
   "remote_review_commit": "3603b1e72855cfbadeb1f9808e96df6abd154003",
   "local_review_commit": "a7082a28f4871a5cb0174504555241c5fafffbeb",
   "identical_review_tree": "7fbea2c60b4cd5be4d3e5d0bb26e0d76a2a74ece",
-  "report_sha256": "072a7a0b6fd3a72b703fd48a349afc33cc0427489bd38deeabc2009baac627ac",
+  "report_sha256": "8885df77f8fdc5f462f63a3bb8071e1730e18a94da88ee220f8ca0bbb3b1242b",
   "source_lock_sha256": "7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e",
   "source_workspace": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
   "source_gate": {
@@ -52,12 +52,107 @@
     "interpretation": "Three fixture tests expect later rejection but WSL host-disk requirement rejects first; tests were not modified or bypassed."
   },
   "raw_evidence": [
-    {"path": "E:\\内核构建\\reports\\stage7_4_local_source_gate.json", "sha256": "7072fbfbbf95d80c68946e78ffd102e5daad9e033ad06955f978dea994e2348f"},
-    {"path": "E:\\内核构建\\reports\\stage7_4_local_source_gate.log", "sha256": "2a76aa327904e32a7895218e2f39b2c90a1dd9defa2af1f8f197c2a5cad3c313"},
-    {"path": "E:\\内核构建\\reports\\stage7_4_local_unit.log", "sha256": "7505e8b24fae5bb25e4d3b381507770acd3dac2dca4f8e69e78c79d8f399845d"}
+    {
+      "path": "E:\\内核构建\\reports\\stage7_4_local_source_gate.json",
+      "sha256": "7072fbfbbf95d80c68946e78ffd102e5daad9e033ad06955f978dea994e2348f"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage7_4_local_source_gate.log",
+      "sha256": "2a76aa327904e32a7895218e2f39b2c90a1dd9defa2af1f8f197c2a5cad3c313"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage7_4_local_unit.log",
+      "sha256": "7505e8b24fae5bb25e4d3b381507770acd3dac2dca4f8e69e78c79d8f399845d"
+    }
   ],
-  "untested": ["Kleaf target and DFR", "Bazel timestamp propagation", "Image/vmlinux", "vendor modules and ABI/KMI", "boot and Root"],
+  "untested": [
+    "Kleaf target and DFR",
+    "Bazel timestamp propagation",
+    "Image/vmlinux",
+    "vendor modules and ABI/KMI",
+    "boot and Root"
+  ],
   "source_sync_executed": false,
   "kernel_compilation_executed": false,
-  "source_or_cache_modified": false
+  "source_or_cache_modified": false,
+  "historical_report_sha256": "072a7a0b6fd3a72b703fd48a349afc33cc0427489bd38deeabc2009baac627ac",
+  "final_revalidation": {
+    "status": "STAGE7_4_SOFTWARE_AND_SOURCE_ADMISSION_TESTED",
+    "remote_fix_commit": "8fb34afd627b1c7d3423089b7d438683bd99d735",
+    "local_test_commit": "5508d39ed64b69d285a6b439a41da02f9566ec86",
+    "test_tree": "737df8eedd83094049396063f132c99bcd39963b",
+    "sync_method": "cherry-pick only remote test fix; local history preserved",
+    "changed_code_files": [
+      "tests/test_stage7_4_fast_build_gate.py"
+    ],
+    "tests": {
+      "ran": 21,
+      "passed": 21,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "exit_code": 0,
+      "historical_failures_and_host_disk_negative_test_passed": true
+    },
+    "cloud_ci_run": 45272620184,
+    "cloud_ci_successful_jobs": 4,
+    "source_gate_exit_code": 0,
+    "source_gate": {
+      "build_eligible": false,
+      "build_started": false,
+      "ccache_enabled": false,
+      "device": "oneplus13-pjz110",
+      "flashable_release_eligible": false,
+      "kernel_version": "6.6",
+      "locked_projects": 35,
+      "manifest_commit": "f8e50677874c65b6da41057d2f39be7b4ef3c08a",
+      "remaining": [
+        "KLEAF_TARGET_AND_DFR_UNKNOWN",
+        "BAZEL_ACTION_ENV_UNTESTED",
+        "REAL_IMAGE_VMLINUX_UNTESTED",
+        "MODULE_ABI_KMI_UNTESTED",
+        "DEVICE_BOOT_ROOT_UNTESTED"
+      ],
+      "scope": "READ_ONLY_NO_COMPILATION",
+      "source_evidence": {
+        "all_project_heads_match": true,
+        "capacity": {
+          "host": {
+            "free_bytes": 197935972352,
+            "free_inodes": 1000000,
+            "path": "/mnt/e",
+            "reserve_gib": 50,
+            "total_bytes": 371516764160
+          },
+          "source": {
+            "free_bytes": 859955691520,
+            "free_inodes": 66821538,
+            "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
+            "reserve_gib": 20,
+            "total_bytes": 1081101176832
+          }
+        },
+        "checked_projects": 35,
+        "selected_manifest_sha": "f8e50677874c65b6da41057d2f39be7b4ef3c08a",
+        "tracked_worktrees_clean": true
+      },
+      "source_lock_sha256": "7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e",
+      "stage": "7.4",
+      "status": "SOURCE_LOCK_TESTED_BUILD_BLOCKED",
+      "timestamp_preflight_preview": {
+        "kbuild_build_timestamp": "2026-11-23 21:54:54 UTC",
+        "mode": "current_utc",
+        "requested": "",
+        "source_date_epoch": 1795470894,
+        "timezone": "UTC",
+        "utc_iso8601": "2026-11-23T21:54:54Z"
+      }
+    },
+    "raw_evidence_sha256": {
+      "stage7_4_fixed_revalidation_tests.log": "db3e502040eb3f2b1a2403bef7be2ff55064d3e7e2466973cdc774a8ff06121a",
+      "stage7_4_fixed_source_gate.json": "7d21340d6179410555d87d6d2a30d0ba70c4864f5bd98c5f762875eb907efaa3",
+      "stage7_4_fixed_source_gate.log": "e582d922f3a5e8461f01c2323eb56df8795d0f3b4a57e64f05090018ba06b578"
+    },
+    "historical_failure_evidence_preserved": true
+  }
 }
