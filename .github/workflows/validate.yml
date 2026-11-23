@@ -28,16 +28,16 @@ jobs:
       - run: python -m compileall -q kernelforge scripts tests
       - run: python -m kernelforge validate
       - run: python -c "import yaml; from pathlib import Path; [yaml.safe_load(p.read_text(encoding='utf-8')) for p in Path('.github/workflows').glob('*.yml')]"
-      # Keep all 183 tests on every Windows version. Isolate Python 3.11
-      # from cmd.exe batch Ctrl-C propagation; this is diagnostic, not a waiver.
-      - name: Run tests (Windows Python 3.11 — PowerShell diagnostic)
-        if: runner.os == 'Windows' && matrix.python-version == '3.11'
+      # Run the full suite on both Windows Pythons. The child is isolated
+      # from the workflow console and its exit status is propagated verbatim.
+      - name: Run tests (Windows isolated process group)
+        if: runner.os == 'Windows'
         shell: pwsh
-        run: python -u scripts/windows_test_runner.py
-      - name: Run tests (Windows other)
-        if: runner.os == 'Windows' && matrix.python-version != '3.11'
-        shell: cmd
-        run: python scripts/windows_test_runner.py
+        run: |
+          python -u scripts/windows_test_launcher.py
+          $code = $LASTEXITCODE
+          Write-Host "WINDOWS_SHELL_CHILD_EXIT=$code"
+          exit $code
       - name: Run tests (Unix)
         if: runner.os != 'Windows'
         run: python -m unittest discover -s tests -v
