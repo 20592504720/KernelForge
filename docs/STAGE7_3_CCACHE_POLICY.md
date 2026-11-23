@@ -1,6 +1,6 @@
 # Stage 7.3: protected compiler-output caching (ccache)
 
-Status: CLOUD_IMPLEMENTED; final cross-platform regressions pending.
+Status: GITHUB_SCOPED_COMPLETE_WITH_LOCAL_CCACHE_RUNTIME_PENDING.
 
 ## Scope distinction
 
@@ -75,3 +75,33 @@ Stage 7.3 is software-only until Windows/Linux x Python 3.11/3.12 dedicated
 offline fixture test and full Validate passes. Local WSL2 readiness is a
 separate read-only Codex handoff in docs/STAGE7_3_LOCAL_CODEX_HANDOFF.md.
 PR #1 remains open; main and 35 pinned project source files unchanged.
+
+## Cloud CI acceptance — fixed Stage 7.3 source
+
+Acceptance source Commit: da354853622b4b92812e3789d1907c1cb86db014.
+The following tests all completed successfully:
+
+| CI gate | Run | Result |
+| --- | --- | --- |
+| 7.3 dedicated Push | https://github.com/20592504720/KernelForge/actions/runs/45222209601 | 4/4, 28 tests per job |
+| 7.3 dedicated PR | https://github.com/20592504720/KernelForge/actions/runs/45222227609 | 4/4, 28 tests per job |
+| Full Validate Push | https://github.com/20592504720/KernelForge/actions/runs/45222209370 | 4/4, 366 tests per job |
+| Full Validate PR | https://github.com/20592504720/KernelForge/actions/runs/45222227557 | 4/4, 366 tests per job |
+| SM8750 Manifest | https://github.com/20592504720/KernelForge/actions/runs/45222227628 | Manifest audit success; locked-sync skipped by design |
+
+TOTAL: 224 dedicated cache-test executions and 2,928 full-repository
+test executions, zero failures/errors. All source-lock, ToolchainManager,
+legacy and new fixtures are retained. Windows path/canonicalization
+failure in intermediate CI was corrected; an internal test call was
+updated to include its new effective-environment argument, with final
+Windows and Linux matrices all green. Earlier failed runs do not count
+toward the accepted evidence.
+
+This scoped acceptance verifies software cache identity/namespace
+safety and generic fixture build-engine integration. It DOES NOT prove
+real ccache installed, compiler interception by Bazel/Kleaf, any cache
+hit rate, physical disk quotas or OnePlus13 real OKI build success.
+
+Required next action: docs/STAGE7_3_LOCAL_CODEX_HANDOFF.md. The local
+report should be scoped read-only or disposable fixtures, and cannot
+clear OnePlus device-cache, DFR, archive/license or boot blockers.
