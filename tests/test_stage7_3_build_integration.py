@@ -129,7 +129,7 @@ class Stage73BuildIntegration(unittest.TestCase):
         config["device_profile"] = "oneplus13-pjz110"
         with self.assertRaisesRegex(BuildError, "Stage 7.4"):
             _prepare_opt_in_ccache(config, self.base, self.base/"output",
-                                   self.base/"source", COMMIT, None, None, {}, None)
+                                   self.base/"source", COMMIT, None, None, {}, None, {})
 
     def test_wrong_cache_directory_overlap_never_creates_cache_data(self):
         config = self.config()
