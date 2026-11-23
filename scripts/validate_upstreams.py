@@ -27,18 +27,41 @@ BASELINE={'official':'2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4',
           'kernel':'498f91c17b0822a09aede17d26a63bf8c6813725'}
 
 
+def parse_exact_bakasu_commit(value: str) -> str:
+    """Accept an immutable 40-hex Git Commit; never accept a moving ref."""
+    if not isinstance(value, str) or not re.fullmatch(r'[0-9a-fA-F]{40}', value):
+        raise argparse.ArgumentTypeError('BakaSU override must be one full 40-hex Commit SHA')
+    return value.lower()
+
+
+def choose_pinned_provider_commit(provider: str, susfs: bool, pinned_baseline: bool, override: str | None) -> str:
+    """Keep the ACK/SUSFS baselines pinned when probing one exact BakaSU SHA."""
+    if override is not None and (provider != 'bakasu' or not susfs or not pinned_baseline):
+        raise ValueError('--bakasu-commit requires --provider bakasu --susfs --pinned-baseline')
+    if override is not None and not re.fullmatch(r'[0-9a-f]{40}', override):
+        raise ValueError('invalid exact BakaSU Commit')
+    return override if override is not None else BASELINE[provider]
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--provider',choices=['official','bakasu'],required=True)
     parser.add_argument('--susfs',action='store_true')
     parser.add_argument('--pinned-baseline',action='store_true')
+    parser.add_argument('--bakasu-commit',type=parse_exact_bakasu_commit,
+                        help='exact BakaSU Commit with --provider bakasu --susfs --pinned-baseline')
     parser.add_argument('--full-kernel',action='store_true')
     parser.add_argument('--workspace',type=Path,required=True)
     args=parser.parse_args()
+    try:
+        pinned_provider=choose_pinned_provider_commit(args.provider, args.susfs, args.pinned_baseline, args.bakasu_commit)
+    except ValueError as exc:
+        parser.error(str(exc))
     work=args.workspace.resolve(); output=work/'report'; output.mkdir(parents=True,exist_ok=True)
     result={'provider':args.provider,'status':'failure','kconfig':'UNTESTED','kbuild':'UNTESTED','kernel_compile':'UNTESTED','boot':'UNTESTED','root':'UNTESTED'}
     result.update(object_compilation='UNTESTED',susfs_enabled=args.susfs,
-                  version_policy='pinned' if args.pinned_baseline else 'latest_branch',objects=[])
+                  version_policy='pinned' if args.pinned_baseline else 'latest_branch',objects=[],
+                  requested_bakasu_commit=args.bakasu_commit)
     started=datetime.now(timezone.utc)
     result.update(kernelforge_version=__version__,started_at=started.isoformat(),toolchain={})
     step='version resolution'
@@ -46,7 +69,7 @@ def main():
         profile=ROOT/'configs/kernelsu'/('official-development.json' if args.provider=='official' else 'bakasu-development.json')
         config={'kernelsu':json.loads(profile.read_text(encoding='utf-8'))}
         if args.pinned_baseline:
-            config['kernelsu'].update(version_policy='pinned',ref_type='commit',ref=BASELINE[args.provider],expected_commit=BASELINE[args.provider])
+            config['kernelsu'].update(version_policy='pinned',ref_type='commit',ref=pinned_provider,expected_commit=pinned_provider)
         if args.susfs:
             config['susfs']={'enabled':True,'repository':'https://gitlab.com/simonpunk/susfs4ksu.git','version_policy':'latest_branch','android_gki':'android14-6.1','allow_bakasu_inline':True}
             if args.pinned_baseline:
