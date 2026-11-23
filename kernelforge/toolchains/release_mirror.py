@@ -126,8 +126,10 @@ def github_api_json(url: str) -> dict:
     })
     try:
         with urlopen(request, timeout=12) as r:
-            _require(urlsplit(r.geturl()).hostname == "api.github.com",
-                     "GitHub metadata request redirected to another host")
+            final = urlsplit(r.geturl())
+            _require(final.scheme == "https" and final.hostname == "api.github.com"
+                     and final.port in (None, 443) and not final.username and not final.password,
+                     "GitHub metadata request redirected outside authenticated HTTPS API")
             raw = r.read(2 * 1024 * 1024 + 1)
     except HTTPError as exc:
         if exc.code == 429 or 500 <= exc.code <= 599:

@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 from pathlib import Path
 
 from kernelforge.toolchains.manager import ToolchainManager, ToolchainManagerError, host_arch
@@ -303,6 +304,23 @@ class Stage72ReleaseLockNegative(unittest.TestCase):
         bad["expected_size"] += 1
         with self.assertRaises(ReleaseMirrorError):
             verify_release_spec(bad)
+
+    def test_github_api_http_downgrade_after_redirect_is_rejected(self):
+        from kernelforge.toolchains.release_mirror import github_api_json
+        class UnsafeResponse:
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return None
+            def geturl(self):
+                return "http://api.github.com/repos/ReviewedBuilder/Toolchains/releases/12199"
+            def read(self, limit):
+                return b"{}"
+        with patch("kernelforge.toolchains.release_mirror.urlopen",
+                   return_value=UnsafeResponse()) as mocked:
+            with self.assertRaisesRegex(ReleaseMirrorError, "authenticated HTTPS"):
+                github_api_json("https://api.github.com/repos/ReviewedBuilder/Toolchains/releases/12199")
+            mocked.assert_called_once()
 
     def test_release_schema_requires_reviewer_lock(self):
         root = Path(__file__).resolve().parents[1]
