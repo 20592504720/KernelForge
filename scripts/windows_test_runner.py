@@ -11,6 +11,8 @@ import os
 import sys
 import threading
 import unittest
+import signal
+import time
 from pathlib import Path
 
 
@@ -23,10 +25,38 @@ if workspace:
     import tempfile
     tempfile.tempdir=None
 
+# Preserve the original SIGINT behavior and surface asynchronous console
+# interrupts rather than misclassifying them as assertion failures or masking
+# them as a passing CI run.
+_current_test = {"name": "<not started>"}
+_old_sigint = signal.getsignal(signal.SIGINT)
+
+def _diagnose_sigint(signum, frame):
+    print(f"WINDOWS_TEST_INTERRUPT pid={os.getpid()} test={_current_test['name']} "
+          f"signal={signum} monotonic={time.monotonic():.3f}", file=sys.stderr, flush=True)
+    if callable(_old_sigint):
+        return _old_sigint(signum, frame)
+    raise KeyboardInterrupt
+
+signal.signal(signal.SIGINT, _diagnose_sigint)
+
+class DiagnosticResult(unittest.TextTestResult):
+    def startTest(self, test):
+        _current_test["name"] = test.id()
+        return super().startTest(test)
+
 suite = unittest.defaultTestLoader.discover(
     str(ROOT / "tests"), pattern="test*.py"
 )
-result = unittest.TextTestRunner(verbosity=2).run(suite)
+print(f"WINDOWS_TEST_START pid={os.getpid()} python={sys.version.split()[0]} "
+      f"tests={suite.countTestCases()} monotonic={time.monotonic():.3f}",
+      file=sys.stderr, flush=True)
+try:
+    result = unittest.TextTestRunner(verbosity=2, resultclass=DiagnosticResult).run(suite)
+except KeyboardInterrupt:
+    print(f"WINDOWS_TEST_ABORTED pid={os.getpid()} test={_current_test['name']} "
+          f"monotonic={time.monotonic():.3f}", file=sys.stderr, flush=True)
+    raise
 remaining = [thread.name for thread in threading.enumerate() if thread is not threading.main_thread()]
 if remaining:
     print(f"unittest left worker threads running: {remaining}", file=sys.stderr)

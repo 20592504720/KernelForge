@@ -28,8 +28,14 @@ jobs:
       - run: python -m compileall -q kernelforge scripts tests
       - run: python -m kernelforge validate
       - run: python -c "import yaml; from pathlib import Path; [yaml.safe_load(p.read_text(encoding='utf-8')) for p in Path('.github/workflows').glob('*.yml')]"
-      - name: Run tests (Windows)
-        if: runner.os == 'Windows'
+      # Keep all 183 tests on every Windows version. Isolate Python 3.11
+      # from cmd.exe batch Ctrl-C propagation; this is diagnostic, not a waiver.
+      - name: Run tests (Windows Python 3.11 — PowerShell diagnostic)
+        if: runner.os == 'Windows' && matrix.python-version == '3.11'
+        shell: pwsh
+        run: python -u scripts/windows_test_runner.py
+      - name: Run tests (Windows other)
+        if: runner.os == 'Windows' && matrix.python-version != '3.11'
         shell: cmd
         run: python scripts/windows_test_runner.py
       - name: Run tests (Unix)

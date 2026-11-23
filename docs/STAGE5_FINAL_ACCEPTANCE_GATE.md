@@ -38,3 +38,20 @@ The preflight implementation was also reproduced in an isolated container fixtur
 5. No `main` write, PR #1 merge, force push, source-lock rewrite, paid runner escalation or local E-drive deletion is authorized by this document.
 
 Keep the workflow run evidence separate from the original OnePlus 13 35/35 source-sync evidence. Stage 5 **IN_PROGRESS** until checked.
+
+
+## 2026-11-23 verified results — bounded GKI acceptance (supersedes request-only status)
+
+**Generic ACK 6.1 exact BakaSU+SUSFS acceptance: TESTED for objects/relocatable link; NOT a complete Image/boot test.**
+
+- [GitHub Run 45105067150](https://github.com/20592504720/KernelForge/actions/runs/45105067150), commit `5fb591438a12a7184d32cf496042baf289a7c0de`, tree `8d71f513cd922851a6cf18da502afff22a3bb28f`, status **success**. One `exact_bakasu` job `137464346250` passed; the `sources` eight-combination job was **SKIPPED**.
+- Artifact [real-bakasu-susfs-true-exact](https://github.com/20592504720/KernelForge/actions/runs/45105067150/artifacts/14787570448), id `14787570448`, GitHub-reported archive SHA256 `b9c727b641faca1b268cd8fb24f2e3754646a3be60334194479a6e0ddb818518`. User/Codex reports an independently matching local copy at `E:\\内核构建\\reports\\stage5-final-45105067150`; those local bytes were not reopened during this GitHub-side audit.
+- Independently parsed complete `real-source-report.json` from the job log: `status=success`, `version_policy=pinned`, `kconfig=TESTED`, `object_compilation=TESTED`, exactly **67 objects**, all `ELF64 ARM64 relocatable`, `status=TESTED`, with 67 SHA256 checksums. `integration-check.o` is a 24,121,824-byte ELF64 ARM64 relocatable object with SHA256 `9cf5c10656d5795f28d977468775efd9f476f0d12cbbc6885321e331674bfd63`. `unresolved_root_hooks=[]`, `acceptance.relocatable_link=TESTED`.
+- `required_final_configs` explicitly records `KSU=y`, `KSU_SUSFS=y`, `CFI_CLANG=y`, `SHADOW_CALL_STACK=y`, `RANDOMIZE_BASE=y`, `HARDENED_USERCOPY=y`, `FORTIFY_SOURCE=y`. Version lock and adapted SUSFS patch match the exact ACK6.1 `498f91c...`, BakaSU `2734e0bc...`, SUSFS `756abbf...` Git SHA triplet. No compatibility whitelist was widened by this evidence reconciliation.
+- `acceptance.full_vmlinux=UNTESTED`, `boot=UNTESTED`, `root=UNTESTED`; OnePlus 13 complete OKI, ABI/KMI and device evidence remain Stage 8, not this GKI result. The existing `latest_branch` failure is a separate moving-source policy issue and stays BLOCKED unless explicitly scoped out or a new exact source SHA is reviewed.
+
+**Independent Windows blocker:** [Validate Run 45105067186](https://github.com/20592504720/KernelForge/actions/runs/45105067186) completed **3/4**: both Linux 3.11/3.12 and Windows 3.12 succeeded; Windows Python 3.11 job `137464346892` was interrupted with `KeyboardInterrupt` and Windows exit `-1073741510` during `test_toolchains.ToolchainVersionTests.test_host_mismatch_rejected`. Prior run `45098970262` showed the **same asynchronous abort in a different test**, not an assertion failure. Windows Python 3.12 ran **183 tests OK**. No confirmed Windows 3.11 test-code defect or external signal sender has been isolated.
+
+**Follow-up CI diagnostic (not a demonstrated fix):** Change only Windows 3.11 test invocation from `cmd` to `pwsh` and log SIGINT/PID/in-progress test in `scripts/windows_test_runner.py`; keep full discovery and failures intact. The next CI run must be inspected; do not assert the 3.11 issue is repaired until it passes. No kernel source, patch bytes, source locks or full GKI workflow are changed. The lightweight `Validate` push workflow may execute automatically; do not rerun the costly real GKI job.
+
+**Stage closure:** The exact-source GKI verification gate is **SATISFIED for the agreed object/link scope**, but Stage 5 overall remains **IN_PROGRESS** until Windows CI is accepted and the user approves a written Stage 5 scope decision for moving `latest_branch` monitoring and Stage 8 device/full-build deferrals. Do not silently change either to TESTED.
