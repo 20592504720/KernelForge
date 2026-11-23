@@ -56,34 +56,140 @@
             "type": "string",
             "minLength": 1
           },
-          "kernel_versions": {"type": "array", "minItems": 1, "uniqueItems": true,
-            "items": {"enum": ["5.10", "5.15", "6.1", "6.6", "6.12"]}},
-          "android_gki": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
-          "architectures": {"type": "array", "minItems": 1, "uniqueItems": true,
-            "items": {"enum": ["arm64", "arm", "x86_64"]}},
-          "build_modes": {"type": "array", "minItems": 1, "uniqueItems": true,
-            "items": {"enum": ["gki", "vendor"]}},
-          "required_configs": {"type": "array", "uniqueItems": true,
-            "items": {"type": "string", "pattern": "^[A-Z0-9_]+$"}},
-          "adaptation": {"enum": ["git-apply-text-v1"]},
-          "verification": {"enum": ["TESTED", "UNTESTED"]},
+          "kernel_versions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "5.10",
+                "5.15",
+                "6.1",
+                "6.6",
+                "6.12"
+              ]
+            }
+          },
+          "android_gki": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "architectures": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "arm64",
+                "arm",
+                "x86_64"
+              ]
+            }
+          },
+          "build_modes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "gki",
+                "vendor"
+              ]
+            }
+          },
+          "required_configs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z0-9_]+$"
+            }
+          },
+          "adaptation": {
+            "enum": [
+              "git-apply-text-v1"
+            ]
+          },
+          "verification": {
+            "enum": [
+              "TESTED",
+              "UNTESTED"
+            ]
+          },
           "source_spec": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["repository", "version_policy"],
+            "required": [
+              "repository",
+              "version_policy"
+            ],
             "properties": {
-              "repository": {"type": "string", "pattern": "^https://"},
-              "version_policy": {"enum": ["pinned", "latest_release", "latest_prerelease", "latest_branch"]},
-              "ref_type": {"enum": ["commit", "tag", "branch"]},
-              "ref": {"type": "string", "minLength": 1},
-              "branch": {"type": "string", "minLength": 1},
-              "expected_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+              "repository": {
+                "type": "string",
+                "pattern": "^https://"
+              },
+              "version_policy": {
+                "enum": [
+                  "pinned",
+                  "latest_release",
+                  "latest_prerelease",
+                  "latest_branch"
+                ]
+              },
+              "ref_type": {
+                "enum": [
+                  "commit",
+                  "tag",
+                  "branch"
+                ]
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "branch": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expected_commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
             },
             "allOf": [
-              {"if": {"properties": {"version_policy": {"const": "pinned"}}},
-               "then": {"required": ["ref_type", "ref", "expected_commit"]}},
-              {"if": {"properties": {"version_policy": {"const": "latest_branch"}}},
-               "then": {"required": ["branch"]}}
+              {
+                "if": {
+                  "properties": {
+                    "version_policy": {
+                      "const": "pinned"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "ref_type",
+                    "ref",
+                    "expected_commit"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "version_policy": {
+                      "const": "latest_branch"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "branch"
+                  ]
+                }
+              }
             ]
           },
           "depends_on": {
@@ -111,8 +217,21 @@
           "license"
         ],
         "allOf": [
-          {"if": {"not": {"required": ["source_spec"]}},
-           "then": {"required": ["sha256", "upstream_commit"]}}
+          {
+            "if": {
+              "not": {
+                "required": [
+                  "source_spec"
+                ]
+              }
+            },
+            "then": {
+              "required": [
+                "sha256",
+                "upstream_commit"
+              ]
+            }
+          }
         ]
       }
     },
@@ -152,7 +271,12 @@
         }
       }
     },
-    "device_profile": {"enum": ["oneplus13-pjz110", "oneplus-ace6-plq110"]},
+    "device_profile": {
+      "enum": [
+        "oneplus13-pjz110",
+        "oneplus-ace6-plq110"
+      ]
+    },
     "kernel_version": {
       "enum": [
         "5.10",
@@ -581,6 +705,9 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "release_lock": {
+          "$ref": "#/$defs/reviewedReleaseLock"
         }
       },
       "allOf": [
@@ -628,6 +755,27 @@
                   ]
                 }
               }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source_type": {
+                "enum": [
+                  "llvm-release",
+                  "gcc-release",
+                  "reviewed-github-release"
+                ]
+              }
+            },
+            "required": [
+              "source_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "release_lock"
             ]
           }
         }
@@ -892,6 +1040,95 @@
           }
         }
       ]
+    },
+    "reviewedReleaseLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "release_id",
+        "asset_id",
+        "tag",
+        "asset_name",
+        "asset_size",
+        "uploader_id",
+        "sha256",
+        "license",
+        "license_reviewed"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "release_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "asset_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tag": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$"
+        },
+        "asset_name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,254}$"
+        },
+        "asset_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "uploader_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "license_reviewed": {
+          "const": true
+        },
+        "require_immutable": {
+          "type": "boolean"
+        },
+        "fallback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "sha256",
+            "source_commit",
+            "repository"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "pattern": "^https://"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "source_commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "repository": {
+              "type": "string",
+              "pattern": "^https://"
+            }
+          }
+        }
+      }
     }
   }
 }

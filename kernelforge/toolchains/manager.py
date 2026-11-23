@@ -19,6 +19,7 @@ from ..toolchain import _version_tuple
 from ..filesystem import atomic_replace
 from .archive import ArchiveError, extract
 from .download import DownloadError, download
+from .release_mirror import ReviewedGithubReleaseAdapter, ReleaseMirrorError
 from .locking import FileLock, LockTimeout
 
 LOG = logging.getLogger(__name__)
@@ -154,11 +155,14 @@ class ToolchainManager:
             raise ToolchainManagerError(f"unsupported toolchain mode: {mode}", phase="requirements")
         self.lock_timeout, self.downloader, self.extractor = lock_timeout, downloader, extractor
         archive_adapter = ArchiveSourceAdapter()
-        self.source_adapters = {name: archive_adapter for name in ("archive", "custom", "llvm-release", "gcc-release")}
+        reviewed_release = ReviewedGithubReleaseAdapter()
+        self.source_adapters = {"archive": archive_adapter, "custom": archive_adapter,
+                                "llvm-release": reviewed_release, "gcc-release": reviewed_release,
+                                "reviewed-github-release": reviewed_release}
         self.source_adapters.update(source_adapters or {})
 
     def _key(self, spec: dict) -> str:
-        identity = {key: spec.get(key) for key in ("kind", "name", "version", "minimum_version", "maximum_version", "host_arch", "target_arch", "source_type", "url", "sha256", "archive_format", "layout_root", "adapter_version", "executables", "version_executable", "version_args", "target_query_args", "cross_compile", "environment")}
+        identity = {key: spec.get(key) for key in ("kind", "name", "version", "minimum_version", "maximum_version", "host_arch", "target_arch", "source_type", "url", "sha256", "archive_format", "layout_root", "adapter_version", "executables", "version_executable", "version_args", "target_query_args", "cross_compile", "environment", "release_lock")}
         adapter = self.source_adapters.get(spec.get("source_type", "custom"))
         identity["source_adapter_version"] = getattr(adapter, "version", "1")
         payload = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
@@ -192,7 +196,7 @@ class ToolchainManager:
                     raise ToolchainManagerError("LOCAL_ONLY mode: no valid local toolchain or verified cache is available", phase="resolve")
                 result = self._download_install(spec, key, audit)
                 return self._lease_result(result, key) if lease else result
-        except (ToolchainManagerError, DownloadError, ArchiveError, LockTimeout, OSError, ValueError, json.JSONDecodeError) as exc:
+        except (ToolchainManagerError, ReleaseMirrorError, DownloadError, ArchiveError, LockTimeout, OSError, ValueError, json.JSONDecodeError) as exc:
             phase = getattr(exc, "phase", "resolve")
             audit["failure_phase"], audit["failure_reason"] = phase, str(exc)
             if isinstance(exc, ToolchainManagerError) and exc.audit:
@@ -211,6 +215,9 @@ class ToolchainManager:
             raise ToolchainManagerError(f"unsupported toolchain kind: {spec['kind']}", phase="requirements")
         if spec.get("source_type") and spec["source_type"] not in self.source_adapters and not (spec.get("local_path") or spec.get("local_root")):
             raise ToolchainManagerError(f"no source adapter registered for {spec['source_type']}", phase="requirements")
+        source_adapter = self.source_adapters.get(spec.get("source_type", "custom"))
+        if callable(getattr(source_adapter, "validate", None)):
+            source_adapter.validate(spec)
         for field in ("version", "minimum_version", "maximum_version"):
             if spec.get(field):
                 _version_key(spec[field])
@@ -441,6 +448,15 @@ class ToolchainManager:
             source_url, _archive_format, layout_root = source_adapter.resolve(spec)
             info = source_adapter.download(self, spec, staged_archive)
             audit["download_seconds"] = info.get("duration_seconds")
+            source_url = info.get("source_url", source_url)
+            if info.get("source_route"):
+                audit["source_route"] = info["source_route"]
+                audit["mirror_fallback"] = info["mirror_fallback"]
+                audit["mirror_provenance"] = info.get("mirror_provenance")
+                if info.get("mirror_failure_class"):
+                    audit["mirror_failure_class"] = info["mirror_failure_class"]
+                if info.get("fallback_source_commit"):
+                    audit["fallback_source_commit"] = info["fallback_source_commit"]
             verify_start = time.monotonic()
             actual = _digest(staged_archive); verification_seconds = round(time.monotonic() - verify_start, 3)
             expected = spec["sha256"].lower()
@@ -470,7 +486,9 @@ class ToolchainManager:
                 metadata = {"schema_version": self.METADATA_VERSION, "key": key, "kind": spec["kind"], "name": spec["name"], "version": details["version"],
                             "host_arch": audit["host_arch"], "target_arch": spec["target_arch"], "source_type": audit["source_type"], "source": _safe_source(source_url),
                             "expected_sha256": expected, "actual_sha256": actual, "verified_at": audit["verified_at"], "archive_format": _archive_format, "adapter_version": spec.get("adapter_version", "1"),
-                            "installed_tree_sha256": installed_digest, "executables": details["executables"], "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")}
+                            "installed_tree_sha256": installed_digest, "executables": details["executables"], "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+                            "source_route": audit.get("source_route"), "mirror_provenance": audit.get("mirror_provenance"),
+                            "mirror_fallback": audit.get("mirror_fallback", False)}
                 temp_meta = metadata_path.with_name(f".{key[:16]}.{uuid.uuid4().hex[:12]}.tmp")
                 temp_meta.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
                 atomic_replace(temp_meta, metadata_path)
