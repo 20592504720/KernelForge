@@ -15,6 +15,7 @@ import socket
 import time
 import uuid
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from .toolchains.locking import FileLock, LockTimeout
 
@@ -70,10 +71,16 @@ def verify_identity(identity: dict) -> dict:
         _require(_name(identity[field]), f"invalid build cache identity {field}")
     _require(identity["build_mode"] in ("gki", "vendor"), "unreviewed build cache mode")
     repo = identity["source_repository"]
-    _require(isinstance(repo, str) and repo.startswith("https://")
-             and "@" not in repo and "?" not in repo and "#" not in repo
-             and not any(c in repo for c in ("\r", "\n", "\t", "\\")),
-             "source repository identity must use credential-free HTTPS")
+    try:
+        parsed_repo = urlsplit(repo)
+        safe_repo = (parsed_repo.scheme == "https" and bool(parsed_repo.hostname)
+                     and not parsed_repo.username and not parsed_repo.password
+                     and parsed_repo.port in (None, 443) and not parsed_repo.query
+                     and not parsed_repo.fragment and bool(parsed_repo.path)
+                     and not any(c in repo for c in ("\r", "\n", "\t", "\\")))
+    except (ValueError, TypeError):
+        safe_repo = False
+    _require(safe_repo, "source repository identity must use credential-free HTTPS")
     _require(isinstance(identity["source_commit"], str)
              and _COMMIT.fullmatch(identity["source_commit"]) is not None,
              "source Commit must be immutable full lowercase SHA")
@@ -153,8 +160,6 @@ class CacheLease:
             "CCACHE_DIR": str(self.path),
             "CCACHE_MAXSIZE": f"{self.controller.max_size_mib}M",
             "CCACHE_COMPILERCHECK": "content",
-            "CCACHE_HARDLINK": "false",
-            "CCACHE_RECACHE": "false",
         }
 
     def close(self) -> None:
@@ -180,7 +185,8 @@ class BuildCacheNamespaces:
                  forbidden_roots: tuple[Path, ...] = (), timeout: float = 30):
         _require(type(max_size_mib) is int and 64 <= max_size_mib <= 8192,
                  "ccache max_size_mib must be 64..8192")
-        _require(0 < timeout <= 300, "ccache lock timeout must be 0..300 seconds")
+        _require(type(timeout) in (int, float) and 0 < timeout <= 300,
+             "ccache lock timeout must be 0..300 seconds")
         self.root = Path(root).expanduser().absolute()
         self.max_size_mib = max_size_mib
         self.timeout = timeout
@@ -217,8 +223,11 @@ class BuildCacheNamespaces:
         _no_symlink_ancestors(self.root)
         # Initial lock is inside the caller-selected root; no WSL source or
         # toolchain path is touched. The ownership marker must be validated.
+        _no_symlink_ancestors(self.root / "locks" / "root.lock")
         with FileLock(self.root / "locks" / "root.lock", timeout=self.timeout):
             self._ensure_root()
+        _no_symlink_ancestors(self.root / "locks" / f"{key}.lock")
+        _no_symlink_ancestors(self.root / "locks" / f"{key}.lock")
         with FileLock(self.root / "locks" / f"{key}.lock", timeout=self.timeout):
             dest = self.namespace_path(key)
             _no_symlink_ancestors(dest)
@@ -240,6 +249,7 @@ class BuildCacheNamespaces:
                     dest.rmdir()
                     raise
             use = self.root / "uses"
+            _no_symlink_ancestors(use)
             use.mkdir(parents=True, exist_ok=True)
             token = use / f"{key}.{uuid.uuid4().hex}.use"
             with token.open("x", encoding="utf-8") as f:
@@ -256,6 +266,7 @@ class BuildCacheNamespaces:
         _require(data.get("key") == key and cache_key(data.get("identity")) == key,
                  "cache namespace metadata digest mismatch")
         use = self.root / "uses"
+        _no_symlink_ancestors(use)
         return {
             "key": key, "path": str(dest),
             "metadata_verified": True,

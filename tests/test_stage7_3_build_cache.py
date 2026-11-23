@@ -93,7 +93,7 @@ class IdentityTests(unittest.TestCase):
             p = Path(td) / "clang"
             p.write_bytes(b"trusted")
             expected = digest_file(p)
-            self.assertEqual(expected, canonical_digest("trusted")[:0] + __import__("hashlib").sha256(b"trusted").hexdigest())
+            self.assertEqual(expected, __import__("hashlib").sha256(b"trusted").hexdigest())
             p.write_bytes(b"modified")
             self.assertNotEqual(expected, digest_file(p))
 
@@ -204,6 +204,23 @@ class NamespaceTests(unittest.TestCase):
         result = self.manager.prune(key, dry_run=False)
         self.assertTrue(result["removed"])
         self.assertFalse(ns.exists())
+
+    def test_existing_symlinked_lease_or_lock_dir_is_rejected(self):
+        for name in ("uses", "locks"):
+            with self.subTest(name=name):
+                root = self.root / ("symlink-" + name)
+                root.mkdir()
+                outside = self.root / ("outside-" + name)
+                outside.mkdir()
+                link = root / name
+                try:
+                    link.symlink_to(outside, target_is_directory=True)
+                except (OSError, NotImplementedError):
+                    self.skipTest("symlink unsupported")
+                other = BuildCacheNamespaces(root)
+                with self.assertRaises(BuildCacheError):
+                    other.open(pinned())
+                self.assertEqual(list(outside.iterdir()), [])
 
     def test_cache_not_system_disk_quota_and_no_fake_hits(self):
         with self.manager.open(pinned()) as lease:
