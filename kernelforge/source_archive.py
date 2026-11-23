@@ -127,6 +127,7 @@ def inspect_archive(path: Path, fmt: str) -> dict:
         if fmt == "zip":
             with zipfile.ZipFile(path) as archive:
                 for item in archive.infolist():
+                    _require(len(entries) < MAX_MEMBERS, "archive exceeds member-count limit")
                     mode = item.external_attr >> 16
                     kind = stat.S_IFMT(mode)
                     _require(not item.flag_bits & 1, "encrypted ZIP entry forbidden")
@@ -137,6 +138,7 @@ def inspect_archive(path: Path, fmt: str) -> dict:
         else:
             with tarfile.open(path, mode="r:*") as archive:
                 for item in archive:
+                    _require(len(entries) < MAX_MEMBERS, "archive exceeds member-count limit")
                     _require(item.isfile() or item.isdir(), "TAR link/special member forbidden")
                     _require(not (item.mode & 0o6000), "setuid/setgid archive mode forbidden")
                     entries.append((item.name, item.isdir(), 0 if item.isdir() else item.size))
