@@ -187,6 +187,16 @@ def main(argv=None):
         output = json.dumps(result, indent=2, sort_keys=True) + "\n"
         if args.report:
             require(args.report.parent.is_dir(), "REPORT_PARENT_ABSENT")
+            require(not args.report.exists() and not args.report.is_symlink(),
+                    "REPORT_OVERWRITE_FORBIDDEN")
+            require(all(not parent.is_symlink() for parent in args.report.parents),
+                    "REPORT_SYMLINK_ANCESTOR_FORBIDDEN")
+            destination = args.report.resolve()
+            for protected in (args.repo_root, args.source_workspace):
+                if protected is not None:
+                    canonical = protected.resolve()
+                    require(destination != canonical and canonical not in destination.parents,
+                            "REPORT_MUST_BE_OUTSIDE_SOURCE_AND_PROJECT")
             args.report.write_text(output, encoding="utf-8")
         sys.stdout.write(output)
         return 0
