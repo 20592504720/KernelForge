@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "intent": "single-stage6-full-ci",
+  "reference_commit": "b0b746ce361c38eb7eeda2747fa27101d9f736d4",
+  "branch": "stage1/initial-foundation",
+  "run_scope": {
+    "validate_matrix": "windows-linux-python-3.11-3.12",
+    "gki_real_source_matrix": "2-providers-x-2-susfs-x-2-version-policies",
+    "pinned_full_image": true,
+    "sm8750_manifest_audit": true,
+    "sm8750_35_project_repo_sync": false
+  },
+  "safety": "No source locks, kernel patches, main branch, pull request merge, or device images altered"
+}

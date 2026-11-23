@@ -6,6 +6,7 @@ on:
     branches: [stage1/initial-foundation]
     paths:
       - .github/stage5-exact-gki-request.json
+      - .github/stage6-full-ci-request.json
   schedule:
     - cron: '15 3 * * 1'
   workflow_dispatch:
@@ -23,7 +24,7 @@ permissions:
   contents: read
 jobs:
   sources:
-    if: ${{ github.event_name != 'push' && (github.event_name != 'workflow_dispatch' || inputs.exact_bakasu_commit == '') }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/stage1/initial-foundation' && contains(github.event.head_commit.message, '[stage6-full-ci-once]')) || (github.event_name != 'push' && (github.event_name != 'workflow_dispatch' || inputs.exact_bakasu_commit == '')) }}
     # Clang 17 preserves ACK KCFI. Pin the host compiler separately to avoid
     # newer GNU host diagnostics in this older ACK revision.
     runs-on: ubuntu-24.04
@@ -52,7 +53,7 @@ jobs:
           args=(--provider "$PROVIDER" --workspace "$RUNNER_TEMP/source-validation")
           if [ "$WITH_SUSFS" = true ]; then args+=(--susfs); fi
           if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline); fi
-          if { [ "${{ inputs.full_kernel }}" = true ] || [ "${{ github.event_name }}" = pull_request ]; } && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
+          if { [ "${{ inputs.full_kernel }}" = true ] || [ "${{ github.event_name }}" = pull_request ] || [ "${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[stage6-full-ci-once]') }}" = true ]; } && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
           python scripts/validate_upstreams.py "${args[@]}"
       - name: Print verification reports
         if: always()
@@ -71,7 +72,7 @@ jobs:
   exact_bakasu:
     # Explicit manual single-combination verification only. A SHA is passed
     # via environment, never interpolated into a shell script.
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.exact_bakasu_commit != '') }}
+    if: ${{ (github.event_name == 'push' && !contains(github.event.head_commit.message, '[stage6-full-ci-once]')) || (github.event_name == 'workflow_dispatch' && inputs.exact_bakasu_commit != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
