@@ -1,0 +1,56 @@
+name: Stage 7.4 manual fast-build admission (no compilation)
+
+# Manual-only and read-only. It is intentionally NOT present on protected main.
+on:
+  workflow_dispatch:
+    inputs:
+      reviewed_lock_sha256:
+        description: 'SHA256 of reviewed 35-project source-lock JSON (64 lowercase hex)'
+        required: true
+        type: string
+      build_timestamp:
+        description: 'Optional ISO8601+timezone; blank previews UTC now, real build resamples later'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stage7-4-admission-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: github.ref == 'refs/heads/stage1/initial-foundation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Check reviewed source-lock SHA, 35 project identities, and timestamp format
+        shell: bash
+        env:
+          REVIEWED_SHA: ${{ inputs.reviewed_lock_sha256 }}
+          REQUESTED_TIME: ${{ inputs.build_timestamp }}
+        run: |
+          set -Eeuo pipefail
+          python -B -m scripts.stage7_4_fast_build_gate \
+            --reviewed-lock-sha256 "$REVIEWED_SHA" \
+            --build-timestamp "$REQUESTED_TIME" \
+            --report "$RUNNER_TEMP/stage7-4-admission.json"
+          sha256sum "$RUNNER_TEMP/stage7-4-admission.json" > "$RUNNER_TEMP/stage7-4-admission.sha256"
+          echo "Read-only source-lock policy evidence. No kernel compilation, source sync, or release." >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve policy report only (not kernel Image)
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: stage7-4-readonly-admission
+          path: |
+            ${{ runner.temp }}/stage7-4-admission.json
+            ${{ runner.temp }}/stage7-4-admission.sha256
+          if-no-files-found: warn
+          retention-days: 7
