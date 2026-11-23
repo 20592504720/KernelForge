@@ -26,6 +26,13 @@ class Stage74AdmissionTests(unittest.TestCase):
     def sha(self):
         return hashlib.sha256((self.root / LOCK).read_bytes()).hexdigest()
 
+    def host_disk_fixture(self):
+        # Capacity is mocked in these tests; this explicit path lets WSL-specific
+        # host-disk admission pass so each test reaches the rejection branch it targets.
+        path = self.root / "host-disk-fixture"
+        path.mkdir(exist_ok=True)
+        return path
+
     def edit(self, rel, change):
         path = self.root / rel
         data = json.loads(path.read_text())
@@ -120,7 +127,7 @@ class Stage74AdmissionTests(unittest.TestCase):
                                        return_value=" M fs/unsafe.c"):
                                 with self.assertRaisesRegex(AdmissionBlocked,
                                                             "SOURCE_TRACKED_WORKTREE_DIRTY"):
-                                    inspect_source(lock, source)
+                                    inspect_source(lock, source, host_disk=self.host_disk_fixture())
 
     def test_missing_source_fails_closed(self):
         with self.assertRaisesRegex(AdmissionBlocked, "EXISTING_REPO_SOURCE_REQUIRED"):
@@ -143,7 +150,7 @@ class Stage74AdmissionTests(unittest.TestCase):
                    side_effect=AdmissionBlocked("DISK_RESERVE_EXHAUSTED")):
             with patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection") as f:
                 with self.assertRaisesRegex(AdmissionBlocked, "DISK_RESERVE_EXHAUSTED"):
-                    inspect_source(lock, source)
+                    inspect_source(lock, source, host_disk=self.host_disk_fixture())
                 f.assert_not_called()
 
     def test_project_mismatch_is_not_overridden_by_manifest_match(self):
@@ -157,7 +164,7 @@ class Stage74AdmissionTests(unittest.TestCase):
                     with patch("scripts.stage7_4_fast_build_gate.inspect_projects",
                                return_value=[{"name":"mismatch","matches_lock":False}]):
                         with self.assertRaisesRegex(AdmissionBlocked, "PROJECT_HEAD_MISMATCH"):
-                            inspect_source(lock, source)
+                            inspect_source(lock, source, host_disk=self.host_disk_fixture())
 
     def test_cli_failed_admission_does_not_emit_trusted_report(self):
         report = self.root / "report.json"
