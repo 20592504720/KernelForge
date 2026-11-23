@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
+from urllib.parse import urlsplit
 
 from kernelforge.build_timestamp import resolve_build_timestamp
 from scripts.verify_sm8750_sync import (
@@ -70,8 +71,17 @@ def inspect_policy(root, expected_sha):
                 "DUPLICATE_PROJECT_PATH")
         require(SHA40.fullmatch(str(item.get("commit_sha"))),
                 "MUTABLE_PROJECT_COMMIT")
-        require(str(item.get("repository", "")).startswith("https://"),
-                "UNTRUSTED_PROJECT_REPOSITORY")
+        try:
+            url = urlsplit(item.get("repository", ""))
+            safe_repo = (url.scheme == "https"
+                         and url.hostname in ("github.com", "git.codelinaro.org")
+                         and url.username is None and url.password is None
+                         and url.port in (None, 443)
+                         and not url.query and not url.fragment
+                         and bool(url.path))
+        except (TypeError, ValueError):
+            safe_repo = False
+        require(safe_repo, "UNTRUSTED_PROJECT_REPOSITORY")
         if path == "./":
             require(name == ROOT_PROJECT and item.get("repository") == ROOT_REPOSITORY,
                     "UNREVIEWED_ROOT_PROJECT")
@@ -123,8 +133,11 @@ def inspect_source(lock, source, host_disk=None):
     require(not bad, "PROJECT_HEAD_MISMATCH:" + ",".join(bad[:5]))
     for entry in projects:
         try:
-            status = git_value(project_path(source, entry), "status",
-                               "--porcelain", "--untracked-files=no")
+            status = subprocess.check_output(
+                ["git", "--no-optional-locks", "-C",
+                 str(project_path(source, entry)), "status", "--porcelain",
+                 "--untracked-files=no"],
+                text=True, stderr=subprocess.PIPE, timeout=30).strip()
         except (OSError, subprocess.SubprocessError, ValueError) as exc:
             raise AdmissionBlocked("SOURCE_WORKTREE_CHECK_FAILED") from exc
         require(not status, "SOURCE_TRACKED_WORKTREE_DIRTY:" + entry["name"])
