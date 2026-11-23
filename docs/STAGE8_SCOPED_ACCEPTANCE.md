@@ -31,6 +31,14 @@
 
 **S02/S03 特别声明：** 只验收确定版本的 BakaSU+SUSFS 和设备原生风驰；不把其他 KernelSU 分支、旧 Hook 或第三方调度器一并纳入。
 
+## GitHub Actions 可选内核构建时间（基础设施要求）
+
+- Actions 的 `build_timestamp` 是**可选字符串**。空值/不填写表示在真正执行编译前取 Runner 当前 **UTC 时间**；不能把 Git Commit 时间或工作流调度时间伪装成当前构建时间。
+- 自定义值使用有明确时区的秒级 ISO 8601，例如 `2026-11-24T17:30:00+08:00` 或 `2026-11-24T09:30:00Z`。无时区、无效日期、非法注入字符必须在编译前拒绝，不静默回退。
+- 对通过准入的真实编译，提供一致的 `KBUILD_BUILD_TIMESTAMP` 和 `SOURCE_DATE_EPOCH`，并记录用户输入、规范化 UTC 与 Unix Epoch，纳入构建报告、缓存隔离与产物溯源。不得改变 Git Commit 的 author/committer 时间。
+- **当前 `.github/workflows/build.yml` 仍为 preflight-only**：已开放并校验此输入，但仍会主动停止，不代表现在能在该 Actions 工作流实际构建内核。Stage 7.4 的真实手动构建必须继承此接口并验证 Kleaf/Bazel sandbox 能否传递变量。
+- 无论用户自定义还是当前时间，都不能由单一时间字段证明完全可复现；编译器、源码锁、配置与产物仍需固定和校验。
+
 ## 实施前置门禁
 
 - Stage 7.4–7.6 的工具链/快速构建与后续阶段的任务状态必须分别确认；不以 Stage 8 规划提交为开工许可。

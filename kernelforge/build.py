@@ -20,6 +20,7 @@ from .patch_manager import apply_series
 from .toolchain import check_tools
 from .toolchains import ToolchainManager, ToolchainManagerError
 from .build_cache import BuildCacheNamespaces, BuildCacheError, canonical_digest, digest_file
+from .build_timestamp import resolve_build_timestamp, kernel_build_environment
 from .kernelsu import integrate, IntegrationError
 from . import development
 from .workspace import Workspace
@@ -269,6 +270,10 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     try:
         if mode not in ADAPTERS:
             raise BuildError(f"unsupported build mode: {mode}")
+        # Validate explicit input before any checkout/toolchain download.
+        requested_stamp = config["build"].get("build_timestamp", "")
+        if requested_stamp not in ("", None):
+            resolve_build_timestamp(requested_stamp)
         if config.get('device_profile'):
             from .source_provider import load_profile
             profile = load_profile(Path(__file__).resolve().parents[1], config['device_profile'])
@@ -355,6 +360,12 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         report["build"]["environment_keys"] = sorted(plan.environment)
         timeout = config["build"].get("timeout_seconds", 3600)
         safe_env = _safe_environment(plan.environment, managed_environment)
+        # Capture UTC close to the actual build (not workflow checkout time).
+        # These values override ambient/adapter variables and are reported
+        # separately from the workflow start/end clock.
+        resolved_stamp = resolve_build_timestamp(requested_stamp)
+        safe_env.update(kernel_build_environment(resolved_stamp))
+        report["build"]["build_timestamp"] = resolved_stamp
         if versions is not None:
             kernel = source_dir / config.get('kernelsu', {}).get('kernel_directory', '.')
             validation = dict(config['validation']) if config.get('validation') else None
