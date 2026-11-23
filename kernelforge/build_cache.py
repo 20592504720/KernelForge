@@ -32,10 +32,12 @@ _ID_FIELDS = frozenset({
     "compiler_sha256", "compiler_version",
     "root_provider", "root_commit", "susfs_enabled", "susfs_commit",
     "patch_lock_sha256", "config_sha256", "build_arguments_sha256",
+    "effective_environment_sha256",
 })
 _DIGEST_FIELDS = (
     "manifest_lock_sha256", "compiler_sha256", "patch_lock_sha256",
     "config_sha256", "build_arguments_sha256",
+    "effective_environment_sha256",
 )
 
 
@@ -205,12 +207,14 @@ class BuildCacheNamespaces:
                  "ccache max_size_mib must be 64..8192")
         _require(type(timeout) in (int, float) and 0 < timeout <= 300,
              "ccache lock timeout must be 0..300 seconds")
-        self.root = Path(root).expanduser().absolute()
+        requested_root = Path(root).expanduser().absolute()
+        _no_symlink_ancestors(requested_root)
+        self.root = requested_root.resolve(strict=False)
         self.max_size_mib = max_size_mib
         self.timeout = timeout
         _no_symlink_ancestors(self.root)
         for forbidden in forbidden_roots:
-            f = Path(forbidden).expanduser().absolute()
+            f = Path(forbidden).expanduser().resolve(strict=False)
             if self.root == f or f in self.root.parents or self.root in f.parents:
                 raise BuildCacheError("ccache root overlaps protected source/toolchain directory")
 

@@ -154,7 +154,8 @@ def _write_report(output: Path, report: dict) -> None:
 
 def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
                            source_dir: Path, source_sha: str, plan: Plan,
-                           prepared: dict | None, report: dict, versions: dict | None):
+                           prepared: dict | None, report: dict,
+                           versions: dict | None, runtime_env: dict[str, str]):
     """Cache namespace admission, NOT proof of ccache binary interception."""
     policy = config["build"].get("ccache", {})
     if not policy or policy.get("enabled") is not True:
@@ -170,7 +171,8 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
     if source_dir.resolve() not in cfile.parents or not cfile.is_file():
         raise BuildError("ccache requires final .config inside pinned kernel tree")
     config_hash = digest_file(cfile)
-    compiler_hash = digest_file(Path(prepared["executables"]["CC"]))
+    compiler_path = Path(prepared["executables"]["CC"])
+    compiler_hash = digest_file(compiler_path)
     ksu, sus = config.get("kernelsu", {}), config.get("susfs", {})
     provider, root_sha, sus_sha = "none", None, None
     if ksu.get("enabled"):
@@ -209,10 +211,18 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
             "jobs": config["build"]["jobs"], "defconfig": config.get("defconfig"),
             "validation": config.get("validation"), "environment": plan.environment
         }),
+        "effective_environment_sha256": canonical_digest({
+            k: v for k, v in runtime_env.items() if not k.startswith("CCACHE_")
+        }),
     }
     cache_root = Path(policy.get("directory", ".kernelforge-build-cache/ccache")).expanduser()
     if not cache_root.is_absolute():
         cache_root = workspace / cache_root
+    cache_root = cache_root.resolve(strict=False)
+    for protected in (source_dir, output_dir, Path(prepared["root"])):
+        p = Path(protected).resolve(strict=False)
+        if cache_root == p or cache_root in p.parents or p in cache_root.parents:
+            raise BuildError("ccache root overlaps protected source/toolchain/output directory")
     controller = BuildCacheNamespaces(
         cache_root, max_size_mib=policy.get("max_size_mib", 1024),
         forbidden_roots=(source_dir, output_dir, Path(prepared["root"])),
@@ -234,7 +244,7 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
         "cache_hit_rate": "UNTESTED", "ccache_binary_executed": False,
         "device_level_cache_authorized": False,
     }
-    return lease, (record, cfile, config_hash)
+    return lease, (record, cfile, config_hash, compiler_path, compiler_hash)
 
 
 def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
@@ -356,7 +366,7 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         report["build"]["toolchain_environment"] = {"keys": sorted(managed_environment), "root": report.get("toolchain", {}).get("managed", {}).get("install_path")}
         cache_lease, cache_details = _prepare_opt_in_ccache(
             config, workspace, output_dir, source_dir, source_sha, plan,
-            managed_prepared, report, versions)
+            managed_prepared, report, versions, safe_env)
         if cache_lease is not None:
             report["build_cache"] = cache_details[0]
             # Parent/adapter CCACHE_* settings cannot override the namespace.
@@ -373,10 +383,16 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
                     report["build"]["timed_out"] = True
                     report["build"]["exit_status"] = 124
                     raise BuildError(f"{mode} build timed out after {timeout} seconds")
-        if cache_lease is not None and digest_file(cache_details[1]) != cache_details[2]:
-            report["build_cache"]["status"] = "BLOCKED_CONFIG_CHANGED_DURING_BUILD"
-            cache_lease.invalidate("CONFIG_CHANGED_DURING_BUILD")
-            raise BuildError("final .config changed during cached build; namespace quarantined")
+        if cache_lease is not None:
+            try:
+                inputs_stable = (digest_file(cache_details[1]) == cache_details[2] and
+                                 digest_file(cache_details[3]) == cache_details[4])
+            except (OSError, BuildCacheError):
+                inputs_stable = False
+            if not inputs_stable:
+                report["build_cache"]["status"] = "BLOCKED_CONFIG_CHANGED_DURING_BUILD"
+                cache_lease.invalidate("CONFIG_CHANGED_DURING_BUILD")
+                raise BuildError("compiler or final .config changed during cached build; namespace quarantined")
         if report["build"]["exit_status"]:
             raise BuildError(f"{mode} build failed with exit code {report['build']['exit_status']}; see {log_path}")
         if (source_dir / 'Makefile').is_file():

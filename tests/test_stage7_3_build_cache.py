@@ -25,6 +25,7 @@ def pinned():
         "susfs_enabled": True, "susfs_commit": "c" * 40,
         "patch_lock_sha256": "3" * 64, "config_sha256": "4" * 64,
         "build_arguments_sha256": "5" * 64,
+        "effective_environment_sha256": "6" * 64,
     }
 
 
@@ -54,6 +55,7 @@ class IdentityTests(unittest.TestCase):
             "patch_lock_sha256": "f" * 64,
             "config_sha256": "f" * 64,
             "build_arguments_sha256": "f" * 64,
+            "effective_environment_sha256": "f" * 64,
         }
         key = cache_key(original)
         for field, val in mutations.items():
