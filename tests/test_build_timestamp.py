@@ -114,10 +114,10 @@ class BuildEngineTimestampTests(unittest.TestCase):
     def config(self, timestamp="2026-11-24T17:15:23+08:00"):
         script = (
             "import os,json;from pathlib import Path;"
-            "Path('Image').write_text(json.dumps({"
-            "'kbuild':os.getenv('KBUILD_BUILD_TIMESTAMP'),"
-            "'epoch':os.getenv('SOURCE_DATE_EPOCH'),"
-            "'timezone':os.getenv('TZ')}))"
+            "Path('Image').write_text(json.dumps(dict("
+            "kbuild=os.getenv('KBUILD_BUILD_TIMESTAMP'),"
+            "epoch=os.getenv('SOURCE_DATE_EPOCH'),"
+            "timezone=os.getenv('TZ'))))"
         )
         spec = {"argv": [sys.executable, "-c", script], "directory": ".",
                 "targets": ["Image"], "artifacts": ["Image"]}
