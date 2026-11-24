@@ -1,6 +1,6 @@
 # Stage 7.4-O 性能与运行流程优化专项
 
-状态：第一批候选实现，必须通过当前提交的 CI 后才能接受。未启动新的真实内核构建；不以夹具推断真实加速比例。
+状态：第一批候选软件与安全回归通过；整体优化阶段未结项，真实编译验收待执行。未启动新的真实内核构建；不以夹具推断真实加速比例。
 
 ## 基线（优化前）
 
@@ -25,3 +25,11 @@
 | O8 回归 | 待执行 | 当前代码四环境/安全门禁；最终优化集合另行执行正式完整回归。真实性能须有重复对照而非单次样本 |
 
 禁止未经验证扩大线程、缩减 SHA256/归档复核、关闭 CFI/KCFI、自动清理或跨设备共享缓存。无收益或有退化即撤销候选。Stage 7.5 / 8 尚未授权构建；不修改 main、源锁、PR 合并状态。
+
+## 第一批云端验证及独立微基准（2026-11-25，UTC+8）
+
+功能提交：`66a51aabbe749a2b40efa39ad467362f2a347c58`。 [Validate 45432517564](https://github.com/20592504720/KernelForge/actions/runs/45432517564) 四环境成功，各 486 项；Linux 全通过，Windows 各 445 通过、41 条件跳过。共 1944 次含跳过、1862 次通过、82 跳过、0 错误/失败。新增 7 项，Windows 条件跳过 POSIX 执行位。 [Release mirror 45432517742](https://github.com/20592504720/KernelForge/actions/runs/45432517742) 4/4 成功。[CodeQL 45432517594](https://github.com/20592504720/KernelForge/actions/runs/45432517594) 实际 SARIF 结果 0；[安全审计 45432517551](https://github.com/20592504720/KernelForge/actions/runs/45432517551) Bandit LOW56/MEDIUM1/HIGH0/errors0，pip-audit 无已知漏洞；[历史扫描 45432517601](https://github.com/20592504720/KernelForge/actions/runs/45432517601) 153 个可达提交，0 项发现。既有安全边界保留。
+
+独立隔离 Linux 容器（Python 3.13.5、Git 2.47.3）以等价算法微基准测量（非完整仓库执行）：五次重复中位耗时，tracemalloc 峰值取五次最大。原已验收 ZIP official-susfs-on 内实际 Image 36,293,120 字节，旧整文件哈希与新流式哈希均为 `f080665340ca6b7e116cb2d6fcfea06bb1ede7d2cb6eca0a9448ca3d22826d07`。旧 34.52 ms/36,297,658 bytes Python 追踪峰值，新 25.51 ms/267,345 bytes。不是进程 RSS、也不是内核构建整体速度。16 个 1 MiB 文件模拟树，旧初检逻辑读取 33,554,432 字节，新 16,777,216 字节，严格/legacy 摘要一致；27.64/13.71 ms。没有取消独立解压后第二道校验；微基准不代表大型工具链整条缓存流程加速。
+
+O3 对照：20 个提交、每次 256 KiB 内容变化、隔离 file:// Git 仓库，旧 clone+fetch 89 ms/270889 Git 对象字节，精确 init+fetch 55 ms/262443 字节；同一 HEAD、fsck 与 tree 检查通过。仅一次本地样本，未测远端拒绝任意 SHA、Git SHA-256 仓库及跨平台边界，暂不修改生产 checkout。O2：读取分支保护 API 返回 403，无法确认 required checks；不修改触发策略。软件验证通过不是新一轮真实 GKI 性能验收。O5/O6 保持 -j2 与 ccache 默认关闭，详见[本地交接](STAGE7_4_O_LOCAL_HANDOFF.md)。O7 原始证据持久存储尚未配置。O8 等候候选最终集合，正式全量回归仍未执行。本次未触发重型构建。

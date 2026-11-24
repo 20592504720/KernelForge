@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "status": "FIRST_BATCH_SOFTWARE_AND_SECURITY_TESTED_REAL_BUILD_PENDING",
+  "source_commit": "66a51aabbe749a2b40efa39ad467362f2a347c58",
+  "baseline_run": 45375493788,
+  "validate": {
+    "run": 45432517564,
+    "tests_per_environment": 486,
+    "linux_passed_per_environment": 486,
+    "windows_passed_per_environment": 445,
+    "windows_skipped_per_environment": 41,
+    "total_passed": 1862,
+    "total_skipped": 82,
+    "failures": 0,
+    "errors": 0
+  },
+  "security": {
+    "codeql_run": 45432517594,
+    "codeql_results": 0,
+    "dependency_run": 45432517551,
+    "bandit": {
+      "low": 56,
+      "medium": 1,
+      "high": 0,
+      "errors": 0
+    },
+    "pip_audit_known_vulnerabilities": 0,
+    "gitleaks_run": 45432517601,
+    "reachable_commits": 153,
+    "findings": 0,
+    "mirror_run": 45432517742
+  },
+  "microbenchmark": {
+    "scope": "isolated Linux container equivalent algorithms; not end-to-end build, not WSL2",
+    "python": "3.13.5",
+    "git": "2.47.3",
+    "repetitions": 5,
+    "image": {
+      "bytes": 36293120,
+      "sha256": "f080665340ca6b7e116cb2d6fcfea06bb1ede7d2cb6eca0a9448ca3d22826d07",
+      "old_median_ms": 34.52,
+      "new_median_ms": 25.51,
+      "old_peak_python_traced_bytes": 36297658,
+      "new_peak_python_traced_bytes": 267345
+    },
+    "tree": {
+      "files": 16,
+      "file_bytes": 1048576,
+      "old_initial_logical_bytes": 33554432,
+      "new_initial_logical_bytes": 16777216,
+      "old_median_ms": 27.64,
+      "new_median_ms": 13.71,
+      "digest_parity": true
+    },
+    "git_fixture": {
+      "repetitions": 1,
+      "commits": 20,
+      "old_ms": 89,
+      "new_ms": 55,
+      "old_object_bytes": 270889,
+      "new_object_bytes": 262443,
+      "head_fsck_tree": "PASS",
+      "production_change": false
+    }
+  },
+  "deferred": {
+    "O2": "branch protection API 403; unchanged",
+    "O3": "real remote compatibility untested",
+    "O5": "runtime resource and throughput benchmark pending",
+    "O6": "real ccache and compiler interception pending",
+    "O7": "persistent storage not configured",
+    "O8": "final scoped real GKI regression pending"
+  },
+  "real_kernel_build_this_batch": false,
+  "main_modified": false,
+  "pr_merged": false
+}
