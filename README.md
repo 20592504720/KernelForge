@@ -30,7 +30,7 @@ JSON files are validated against Draft 2020-12 schemas. Toolchain defaults are i
 
 ## Local requirements and commands
 
-Python 3.11 or newer. Install development dependencies and run commands from the repository root:
+The reviewed development dependency lock supports x86-64 Linux/WSL2 and Windows with CPython 3.11 or 3.12. Other Python/host combinations require a separately reviewed wheel hash lock. Install development dependencies and run commands from the repository root:
 
 ```sh
 python3 -m pip install -r requirements-dev.txt

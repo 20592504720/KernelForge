@@ -36,8 +36,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install pip-audit==2.10.1
-      - name: Audit resolved development dependencies
-        run: python -m pip_audit -r requirements-dev.txt --progress-spinner off --format json --output "$RUNNER_TEMP/dependency-audit.json"
+      - name: Audit exact locked development dependencies
+        run: python -m pip_audit -r requirements-dev.txt --require-hashes --no-deps --progress-spinner off --format json --output "$RUNNER_TEMP/dependency-audit.json"
       - name: Retain advisory result (including failure)
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f

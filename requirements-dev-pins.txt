@@ -1,5 +1,5 @@
 # Versions observed in the successful Stage 1–7.4 + round 1 regression.
-# Candidate review input; not yet a hash-enforced installation lock.
+# Review input for regenerating the active hash-enforced requirements-dev.txt.
 attrs==26.1.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
