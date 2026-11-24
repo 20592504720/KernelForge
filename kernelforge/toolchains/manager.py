@@ -99,6 +99,16 @@ def _tree_digest(root: Path) -> str:
 
 def _trusted_tree_digest(root: Path) -> str:
     """Compare content, path types and executable bits to independently extracted bytes."""
+    return _tree_proofs(root, include_legacy=False)[0]
+
+
+def _tree_proofs(root: Path, *, include_legacy: bool) -> tuple[str, str | None]:
+    """Compute the existing strict digest and optional legacy digest in one read pass.
+
+    The two historical formats have different path ordering and record layouts.
+    Keep both byte formats unchanged; never reuse these values across validation
+    boundaries or after independently extracting the pinned archive.
+    """
     def inspect(path):
         info = path.lstat()
         if (path.is_symlink() or getattr(info, "st_file_attributes", 0) &
@@ -109,6 +119,7 @@ def _trusted_tree_digest(root: Path) -> str:
     if not stat.S_ISDIR(inspect(root).st_mode):
         raise ValueError("managed toolchain root is not a real directory")
     digest = hashlib.sha256()
+    legacy = hashlib.sha256() if include_legacy else None
     for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
         info = inspect(path)
         rel = path.relative_to(root).as_posix().encode("utf-8")
@@ -119,10 +130,14 @@ def _trusted_tree_digest(root: Path) -> str:
         elif stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
             digest.update(b"F")
             digest.update(bytes([bool(info.st_mode & 0o111) if os.name != "nt" else 0]))
-            digest.update(bytes.fromhex(_digest(path)))
+            file_digest = bytes.fromhex(_digest(path))
+            digest.update(file_digest)
+            if legacy is not None:
+                legacy.update(len(rel).to_bytes(4, "big")); legacy.update(rel)
+                legacy.update(file_digest)
         else:
             raise ValueError("nonregular or hardlinked file in managed toolchain")
-    return digest.hexdigest()
+    return digest.hexdigest(), legacy.hexdigest() if legacy is not None else None
 
 
 def _binary_architecture(path: Path) -> str | None:
@@ -467,9 +482,10 @@ class ToolchainManager:
                     not archive.is_file() or not install.is_dir()):
                 raise ValueError("cache archive or installed toolchain is missing or linked")
             started = time.monotonic()
-            _trusted_tree_digest(install)  # reject links before legacy metadata hashing
+            # Strict traversal rejects links and nonregular entries while deriving
+            # the unchanged legacy metadata digest from the same file bytes.
+            _, installed_digest = _tree_proofs(install, include_legacy=True)
             actual = _digest(archive)
-            installed_digest = _tree_digest(install)
             duration = round(time.monotonic() - started, 3)
             if actual.lower() != spec["sha256"].lower() or metadata.get("actual_sha256", "").lower() != actual.lower():
                 raise ValueError("cached archive SHA256 mismatch")

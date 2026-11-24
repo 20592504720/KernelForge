@@ -10,6 +10,7 @@ import hashlib
 from datetime import datetime, timezone
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,7 @@ from kernelforge.kernelsu import integrate
 from kernelforge.source import checkout, _run_git
 from kernelforge.versions import resolve
 from kernelforge.objects import inspect_object, archive_members
+from kernelforge.performance import PhaseTimer, file_sha256
 
 BASELINE={'official':'2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4',
           'bakasu':'7b65bde0710b5e7c6f755545cb15a4abd417f3a8',
@@ -98,7 +100,9 @@ def main():
                   compatibility_admission=compatibility_admission)
     started=datetime.now(timezone.utc)
     result.update(kernelforge_version=__version__,started_at=started.isoformat(),toolchain={})
+    phases = PhaseTimer(clock=time.monotonic_ns)
     step='version resolution'
+    phases.start(step)
     try:
         profile=ROOT/'configs/kernelsu'/('official-development.json' if args.provider=='official' else 'bakasu-development.json')
         config={'kernelsu':json.loads(profile.read_text(encoding='utf-8'))}
@@ -117,6 +121,7 @@ def main():
         (output/'versions.lock.json').write_text(json.dumps(lock,indent=2)+'\n',encoding='utf-8')
         source=work/'source'
         step='GKI checkout'
+        phases.start(step)
         # Shallow source fetch avoids cloning the entire ACK history. Verify tree
         # connectivity and exact HEAD before any integration.
         source.mkdir()
@@ -130,6 +135,7 @@ def main():
         result['kernel_commit']=kernel_lock['commit_sha']
         if args.pinned_baseline and args.provider == 'official' and not args.susfs:
             step='real GKI Patch Manager transaction probe'
+            phases.start(step)
             from kernelforge.real_patch_probe import check_real_source
             result['patch_manager'] = check_real_source(
                 source, work / 'patch-probe', output / 'patch-probe', kernel_lock['commit_sha'])
@@ -145,10 +151,12 @@ def main():
         result['host']={'cpus':os.cpu_count(),'free_bytes':shutil.disk_usage(work).free,
                         'memory':Path('/proc/meminfo').read_text() if Path('/proc/meminfo').exists() else 'unknown'}
         step='toolchain inventory'
+        phases.start(step)
         for tool in ('clang','ld.lld','llvm-nm','gcc-11'):
             run([tool,'--version'])
             result['toolchain'][tool]=subprocess.check_output([tool,'--version'],text=True).splitlines()[0]
         step='initial Kconfig'
+        phases.start(step)
         run(['clang','--target=aarch64-linux-gnu','-fsanitize=kcfi','-x','c','-c','/dev/null','-o',str(output/'compiler-kcfi-probe.o')])
         defconfig=(source/'arch/arm64/configs/gki_defconfig').read_text().splitlines()
         hardening=[name for name in ('CFI_CLANG','SHADOW_CALL_STACK','STACKPROTECTOR_STRONG','RANDOMIZE_BASE','HARDENED_USERCOPY','FORTIFY_SOURCE') if f'CONFIG_{name}=y' in defconfig]
@@ -159,8 +167,10 @@ def main():
         for symbol in symbols:
             run(['scripts/config','--enable',symbol])
         step='KernelSU and SUSFS integration'
+        phases.start(step)
         result['integration'],result['susfs']=development.integrate_locked(config,lock,source,output,mode='gki',integrator=integrate)
         step='final Kconfig'
+        phases.start(step)
         run(command+['olddefconfig'])
         result['required_final_configs']=development.require_final_configs(source,symbols)
         result['kconfig']='TESTED'
@@ -169,6 +179,7 @@ def main():
         result['capabilities'] = inspect_capabilities(source, source / '.config')
         (output/'capabilities.json').write_text(json.dumps(result['capabilities'],indent=2)+'\n',encoding='utf-8')
         step='make prepare and UAPI headers'
+        phases.start(step)
         run(command+['prepare'])
         run(command+['headers_install'])
         # A directory-only Kbuild does not visit SELinux's host header generator.
@@ -176,6 +187,7 @@ def main():
         run(command+['-j2','security/selinux/'])
         result['kbuild']='TESTED (make prepare; actual object build follows)'
         step='real ARM64 object compilation'
+        phases.start(step)
         targets=['drivers/kernelsu/']; objects=[]
         if args.susfs:
             selected=result['susfs'].get('compatibility_patch')
@@ -186,6 +198,7 @@ def main():
         run(command+['-j2']+targets,timeout=1200)
         if args.pinned_baseline and args.provider == 'official' and not args.susfs:
             step='ZRAM module object compilation'
+            phases.start(step)
             run(command+['-j2','drivers/block/zram/'],timeout=1200)
             zcomp=source/'drivers/block/zram/zcomp.o'
             if not zcomp.is_file() or not zcomp.stat().st_size:
@@ -195,6 +208,7 @@ def main():
         result['objects']=[inspect_object(source/name,source) for name in objects]
         result['object_compilation']='TESTED'
         step='relocatable integration link'
+        phases.start(step)
         run(['ld.lld','-r','-o','integration-check.o']+objects)
         result['relocatable_link']=inspect_object(source/'integration-check.o',source)
         undefined=subprocess.check_output(['llvm-nm','--undefined-only','integration-check.o'],cwd=source,text=True)
@@ -211,7 +225,10 @@ def main():
         result['kernel_compile_reason']=('Full Image build requested' if args.full_kernel else 'Full Image build not requested; host resources recorded separately')
         if args.full_kernel:
             step='complete Image build'
+            phases.start(step)
             run(command+['-j2','Image'],timeout=args.image_timeout_seconds)
+            step='artifact hashing and capability verification'
+            phases.start(step)
             image=source/'arch/arm64/boot/Image'
             if not image.is_file() or not image.stat().st_size:
                 raise ValueError('Image build returned without a nonempty Image')
@@ -222,9 +239,9 @@ def main():
                 result['vmlinux']={'path':str(vmlinux.relative_to(work)),
                                    'bytes':vmlinux.stat().st_size,
                                    'sha256':hashlib.file_digest(stream,'sha256').hexdigest()}
-            result['image']={'path':str(image.relative_to(work)),'bytes':image.stat().st_size,'sha256':hashlib.sha256(image.read_bytes()).hexdigest()}
+            result['image']={'path':str(image.relative_to(work)),'bytes':image.stat().st_size,'sha256':file_sha256(image)}
             shutil.copyfile(image,output/'Image')
-            if hashlib.sha256((output/'Image').read_bytes()).hexdigest()!=result['image']['sha256']:
+            if file_sha256(output/'Image')!=result['image']['sha256']:
                 raise ValueError('Image artifact copy SHA256 mismatch')
             result['image']['artifact']='Image'
             result['capabilities'] = inspect_capabilities(source, source / '.config')
@@ -238,6 +255,7 @@ def main():
         result['failure_reason']=str(exc)
         print(str(exc),file=sys.stderr)
     finally:
+        result['performance'] = phases.finish(success=result['status']=='success')
         ended=datetime.now(timezone.utc)
         result.update(ended_at=ended.isoformat(),duration_seconds=(ended-started).total_seconds())
         (output/'real-source-report.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
