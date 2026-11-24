@@ -23,7 +23,7 @@ from ..security import redact_diagnostic
 from .archive import ArchiveError, extract
 from .download import DownloadError, download
 from .release_mirror import ReviewedGithubReleaseAdapter, ReleaseMirrorError
-from .locking import FileLock, LockTimeout
+from .locking import FileLock, LockTimeout, _pid_alive, _linked
 
 LOG = logging.getLogger(__name__)
 SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
@@ -180,7 +180,9 @@ class ToolchainManager:
 
     def __init__(self, cache_dir: Path | str, *, mode: str = "AUTO", lock_timeout: float = 120,
                  downloader=download, extractor=extract, source_adapters: dict | None = None):
-        self.cache_dir = Path(cache_dir).expanduser().resolve()
+        self.cache_dir = Path(cache_dir).expanduser().absolute()
+        if any(_linked(p) for p in (self.cache_dir, *self.cache_dir.parents)):
+            raise ToolchainManagerError("linked cache path refused", phase="cache")
         self.mode = mode.upper()
         if self.mode not in MODES:
             raise ToolchainManagerError(f"unsupported toolchain mode: {mode}", phase="requirements")
@@ -663,23 +665,12 @@ class ToolchainManager:
         return removed
 
     def _has_live_use(self, key: str) -> bool:
+        # Unknown, malformed, foreign-host and abandoned leases all block
+        # mutation until reconciled explicitly. Age alone is not authorization.
         root = self.cache_dir / "uses"
-        if not root.exists():
-            return False
-        live = False
-        for path in root.glob(f"{key}.*.use"):
-            try:
-                owner = json.loads(path.read_text(encoding="utf-8"))
-                if owner.get("host") == platform.node() and _pid_alive(owner.get("pid")):
-                    live = True
-                elif owner.get("host") != platform.node() and time.time() - path.stat().st_mtime <= 21600:
-                    live = True
-                elif time.time() - path.stat().st_mtime > 21600:
-                    path.unlink(missing_ok=True)
-            except (OSError, ValueError, json.JSONDecodeError):
-                if time.time() - path.stat().st_mtime > 21600:
-                    path.unlink(missing_ok=True)
-        return live
+        if _linked(root):
+            raise ToolchainManagerError("linked lease directory refused", phase="cache")
+        return root.is_dir() and any(root.glob(f"{key}.*.use"))
 
 
 def _tree_size(root: Path) -> int:
@@ -693,18 +684,4 @@ def _tree_size(root: Path) -> int:
         except OSError:
             continue
     return total
-
-
-def _pid_alive(pid) -> bool:
-    if not isinstance(pid, int) or pid <= 0:
-        return False
-    try:
-        os.kill(pid, 0)
-        return True
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    except OSError:
-        return False
 

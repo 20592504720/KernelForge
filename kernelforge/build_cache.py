@@ -17,7 +17,7 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .toolchains.locking import FileLock, LockTimeout
+from .toolchains.locking import FileLock, LockTimeout, _linked
 
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -128,7 +128,7 @@ def digest_file(path: Path) -> str:
 
 def _no_symlink_ancestors(path: Path) -> None:
     for candidate in (path, *path.parents):
-        _require(not candidate.is_symlink(), f"cache path has a symlink component: {candidate}")
+        _require(not _linked(candidate), f"cache path has a symlink/reparse component: {candidate}")
 
 
 def _strict_json(path: Path) -> dict:
@@ -180,8 +180,13 @@ class CacheLease:
             target = self.path / _INVALID
             _require(self.path.is_dir() and not self.path.is_symlink(),
                      "cannot invalidate missing/unsafe namespace")
-            target.write_text(json.dumps({"key": self.key, "reason": reason}) + "\n",
-                              encoding="utf-8")
+            _require(not _linked(target), "unsafe cache invalidation marker")
+            if target.exists():
+                _require(_strict_json(target).get("key") == self.key,
+                         "unexpected existing invalidation marker")
+                return
+            with target.open("x", encoding="utf-8") as stream:
+                stream.write(json.dumps({"key": self.key, "reason": reason}) + "\n")
 
     def close(self) -> None:
         if self.closed:
@@ -305,7 +310,9 @@ class BuildCacheNamespaces:
     def prune(self, key: str, *, dry_run: bool = True) -> dict:
         """Explicit deletion only; blocks even stale use markers, no auto-recovery."""
         _require(type(dry_run) is bool, "cache prune dry_run must be boolean")
+        self.namespace_path(key)  # validate before forming any lock path
         _no_symlink_ancestors(self.root)
+        _no_symlink_ancestors(self.root / "locks" / f"{key}.lock")
         _require(_strict_json(self.root / _ROOT_MARK) ==
                  {"owner": _ROOT_ID, "schema_version": 1},
                  "refusing to prune a cache root not owned by KernelForge")
@@ -317,7 +324,7 @@ class BuildCacheNamespaces:
                      "active or stale cache lease blocks cleanup")
             _require(not dest.is_symlink(), "symlinked cache namespace cannot be pruned")
             for entry in dest.rglob("*"):
-                _require(not entry.is_symlink(), "symlink in cache namespace blocks cleanup")
+                _require(not _linked(entry), "symlink/reparse point in cache namespace blocks cleanup")
             if not dry_run:
                 shutil.rmtree(dest)
             return {"key": key, "dry_run": dry_run,

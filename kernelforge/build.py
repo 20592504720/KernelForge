@@ -11,11 +11,12 @@ import subprocess
 import tempfile
 import time
 from datetime import datetime, timezone
-from contextlib import nullcontext
 from pathlib import Path
 from typing import Protocol
 
 from . import __version__
+from .toolchains.locking import FileLock, LockTimeout, _linked
+from .bounded_process import run_bounded_capture
 from .source import checkout
 from .patch_manager import apply_series
 from .toolchain import check_tools
@@ -256,7 +257,7 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
     cache_root = Path(policy.get("directory", ".kernelforge-build-cache/ccache")).expanduser()
     if not cache_root.is_absolute():
         cache_root = workspace / cache_root
-    cache_root = cache_root.resolve(strict=False)
+    cache_root = cache_root.absolute()
     for protected in (source_dir, output_dir, Path(prepared["root"])):
         p = Path(protected).resolve(strict=False)
         if cache_root == p or cache_root in p.parents or p in cache_root.parents:
@@ -287,7 +288,7 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
 
 def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     output_dir = output_dir.absolute()
-    if any(path.is_symlink() for path in (output_dir, *output_dir.parents)):
+    if any(_linked(path) for path in (output_dir, *output_dir.parents)):
         raise BuildError("build output directory cannot have symlink components")
     output_dir = output_dir.resolve()
     workspace = workspace.resolve()
@@ -430,24 +431,24 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             safe_env = {k: v for k, v in safe_env.items() if not k.startswith("CCACHE_")}
             safe_env.update(cache_lease.environment())
             report["build"]["ccache_overlay_keys"] = sorted(cache_lease.environment())
-        with (cache_lease if cache_lease is not None else nullcontext()):
-            with log_path.open("x", encoding="utf-8") as log:
-                log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
-                # TemporaryFile is private OS-managed spool storage; never
-                # publish unfiltered compiler stdout/stderr as a build artifact.
-                # Raw spool disk usage is not a hard quota.
-                with tempfile.TemporaryFile(mode="w+b") as raw_log:
-                    try:
-                        result = subprocess.run(plan.argv, cwd=plan.cwd, env=safe_env,
-                                                stdout=raw_log, stderr=subprocess.STDOUT,
-                                                check=False, timeout=timeout)
-                        report["build"]["exit_status"] = result.returncode
-                    except subprocess.TimeoutExpired:
-                        report["build"]["timed_out"] = True
-                        report["build"]["exit_status"] = 124
-                        raise BuildError(f"{mode} build timed out after {timeout} seconds")
-                    finally:
-                        report["build"]["diagnostic_log"] = publish_redacted_log(raw_log, log)
+        # Keep compiler-cache lease until inputs, artifacts and failure state
+        # have all been checked. No prune window between process exit and proof.
+        with log_path.open("x", encoding="utf-8") as log:
+            log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
+            with tempfile.TemporaryFile(mode="w+b", dir=output_dir) as raw_log:
+                capture = {}
+                try:
+                    result = run_bounded_capture(plan.argv, cwd=plan.cwd, env=safe_env,
+                                                 timeout=timeout, spool=raw_log,
+                                                 disk_path=output_dir, evidence=capture)
+                    report["build"]["exit_status"] = result
+                except subprocess.TimeoutExpired:
+                    report["build"]["timed_out"] = True
+                    report["build"]["exit_status"] = 124
+                    raise BuildError(f"{mode} build timed out after {timeout} seconds")
+                finally:
+                    report["build"]["diagnostic_log"] = publish_redacted_log(raw_log, log)
+                    report["build"]["diagnostic_log"].update(capture)
         if cache_lease is not None:
             try:
                 inputs_stable = (digest_file(cache_details[1]) == cache_details[2] and
@@ -473,15 +474,13 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         if (output_dir / 'versions.lock.json').is_file():
             report['version_lock'] = json.loads((output_dir / 'versions.lock.json').read_text(encoding='utf-8'))
         if cache_lease is not None:
-            if (report["build"].get("exit_status") not in (0, None) or
-                report.get("build_cache", {}).get("status") == "BLOCKED_CONFIG_CHANGED_DURING_BUILD"):
+            if (report["build"].get("exit_status") != 0 or
+                report.get("build_cache", {}).get("status") == "BLOCKED_CONFIG_CHANGED_DURING_BUILD"
+                or report["build"]["status"] != "success"):
                 try:
                     cache_lease.invalidate()
                 except Exception as quarantine_exc:
                     report.setdefault("build_cache", {})["quarantine_error"] = str(quarantine_exc)
-            cache_lease.close()
-        if manager and managed_prepared:
-            manager.release(managed_prepared)
         report["build"]["status"] = "failure"
         report["error"] = redact_diagnostic(f"{type(exc).__name__}: {exc}")
         if not log_path.exists():
@@ -492,8 +491,17 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         if isinstance(exc, BuildError):
             raise
         raise BuildError(redact_diagnostic(str(exc))) from exc
-    if manager and managed_prepared:
-        manager.release(managed_prepared)
+    except BaseException:
+        if cache_lease is not None:
+            cache_lease.invalidate()
+        raise
+    finally:
+        try:
+            if cache_lease is not None:
+                cache_lease.close()
+        finally:
+            if manager and managed_prepared:
+                manager.release(managed_prepared)
     _finish_report(report, monotonic_start)
     _write_report(output_dir, report)
     LOG.info("Build succeeded; %d artifact(s)", len(report["artifacts"]))
@@ -506,20 +514,19 @@ def _finish_report(report: dict, monotonic_start: float) -> None:
 
 
 def run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
-    """Serialize builds sharing a workspace and reject stale/active lock collisions."""
+    """Serialize both workspace and output ownership, including different workspaces."""
+    workspace = Path(workspace).absolute()
+    output_dir = Path(output_dir).absolute()
+    if any(_linked(p) for path in (workspace, output_dir) for p in (path, *path.parents)):
+        raise BuildError("build workspace/output cannot have symlink components")
     workspace = workspace.resolve()
+    output_dir = output_dir.resolve()
     workspace.mkdir(parents=True, exist_ok=True)
-    lock = workspace / ".kernelforge-build.lock"
+    key = hashlib.sha256(os.path.normcase(str(output_dir)).encode("utf-8")).hexdigest()
+    output_lock = output_dir.parent / (".kf-output-" + key + ".lock")
     try:
-        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError as exc:
-        raise BuildError(f"another build may be using workspace {workspace}; lock exists at {lock}") from exc
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(f"pid={os.getpid()}\n")
-        return _run_build(config, workspace, output_dir)
-    finally:
-        try:
-            lock.unlink()
-        except FileNotFoundError:
-            pass
+        with FileLock(workspace / ".kernelforge-build.lock", timeout=0, stale_after=float("inf")):
+            with FileLock(output_lock, timeout=0, stale_after=float("inf")):
+                return _run_build(config, workspace, output_dir)
+    except LockTimeout as exc:
+        raise BuildError("workspace or output lock exists or is unsafe: " + str(exc)) from exc

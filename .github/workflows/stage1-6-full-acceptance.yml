@@ -42,6 +42,12 @@ jobs:
         run: python scripts/stage6_acceptance.py --output "$RUNNER_TEMP/stage6-evidence.json"
       - name: Verify both SM8750 device manifests without a new 35-project sync
         run: python scripts/audit_sm8750.py "$RUNNER_TEMP/sm8750-manifest-audit.json"
+      - name: Re-run exact Stage 7.4 admission policy, default and custom timestamp
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -B -m scripts.stage7_4_fast_build_gate --reviewed-lock-sha256 7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e --report "$RUNNER_TEMP/stage7-4-default.json"
+          python -B -m scripts.stage7_4_fast_build_gate --reviewed-lock-sha256 7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e --build-timestamp '2026-11-24T08:00:00+08:00' --report "$RUNNER_TEMP/stage7-4-custom.json"
       - name: Preserve evidence reports
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
@@ -50,6 +56,8 @@ jobs:
           path: |
             ${{ runner.temp }}/stage6-evidence.json
             ${{ runner.temp }}/sm8750-manifest-audit.json
+            ${{ runner.temp }}/stage7-4-default.json
+            ${{ runner.temp }}/stage7-4-custom.json
           if-no-files-found: warn
           retention-days: 30
 

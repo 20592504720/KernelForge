@@ -197,7 +197,8 @@ def main(argv=None):
                     canonical = protected.resolve()
                     require(destination != canonical and canonical not in destination.parents,
                             "REPORT_MUST_BE_OUTSIDE_SOURCE_AND_PROJECT")
-            args.report.write_text(output, encoding="utf-8")
+            with args.report.open("x", encoding="utf-8") as stream:
+                stream.write(output)
         sys.stdout.write(output)
         return 0
     except (AdmissionBlocked, ValueError, OSError, KeyError) as exc:
