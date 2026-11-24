@@ -12,3 +12,8 @@ References: https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
 ## F-03 — Git repository operand boundaries
 
 The generic repository validator's SCP-style form previously admitted an option-prefixed repository string. The KernelSU tag/branch resolution also invoked ls-remote before the generic checkout validator. Reject option-prefixed repository strings before spawning Git; validate the provider repository before direct ref lookup, and delimit repository operands with -- for clone and ls-remote. Existing HTTPS/SSH/file fixtures remain supported. Two offline regression tests assert no Git process is launched for rejected operands. This closes a conditional command-option injection boundary, not a proven remote execution incident. The build profiles, Git runtime PATH and local Git/SSH configuration must still be trusted. No source-lock or request marker change. A local disposable Git fixture verified that clone and ls-remote accept the operand delimiter, but the project suite must pass separately.
+
+
+## Final scoped acceptance (2026-11-24)
+
+Completed run [45375493788](https://github.com/20592504720/KernelForge/actions/runs/45375493788) passed 12/12 jobs after F-01–F-03. Actual SARIF inventories zero at code baseline; all five downloaded Image SHA256 values and seven ZIP digests independently verified. See [最终安全验收报告](SECURITY_FINAL_ACCEPTANCE_2026_11_24.md) and [structured evidence](evidence/security_final_acceptance_2026_11_24.json). Historical pending statements above describe pre-acceptance state; host/runtime/local OEM limitations remain open.
