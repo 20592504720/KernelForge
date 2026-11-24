@@ -1,34 +1,48 @@
-# Roadmap
+# KernelForge 开发路线图
 
+更新日期：2026-11-24。以[最终安全验收报告](SECURITY_FINAL_ACCEPTANCE_2026_11_24.md)和[当前功能矩阵](STATUS.md)为准。旧路线图与历史阶段定义仍保留在[历史快照](https://github.com/20592504720/KernelForge/blob/4ac79893c19d95680bea4acc2374cc299fd6d2ab/docs/ROADMAP.md)，不将历史未完成描述误作最新状态。
 
-> **Evidence update (2026-11-23):** Fixed ACK 6.1 / BakaSU `2734e0bc...` / SUSFS `756abbf...` passed real 67-object ARM64 + relocatable-link verification ([Run 45105067150](https://github.com/20592504720/KernelForge/actions/runs/45105067150)); full Image/boot remain untested. After Windows test-runner isolation, both [Push Validate 45108869968](https://github.com/20592504720/KernelForge/actions/runs/45108869968) and [PR Validate 45108874520](https://github.com/20592504720/KernelForge/actions/runs/45108874520) passed all four OS/Python combinations, with 187 tests on each Windows job and exits 0. Stage 5 is **READY_FOR_SCOPED_ACCEPTANCE**, not formally completed until the user accepts treating dynamic `latest_branch` as ongoing maintenance (BLOCKED) and deferring OnePlus 13 full device/OKI compilation to Stage 8. See [final gate](STAGE5_FINAL_ACCEPTANCE_GATE.md).
+## 已通过的阶段与当前边界
 
+| 阶段 | 内容 | 状态 |
+| --- | --- | --- |
+| 1 | 基础框架、Schema、CLI、CI | 范围内验收通过 |
+| 2 | 构建引擎、GKI/Vendor 适配 | 软件通过；真实 Vendor 未验 |
+| 3 | LLVM/GCC 工具链管理 | 软件通过；大型真实发行包待验 |
+| 4–4.6 | KernelSU、BakaSU、SUSFS、版本锁 | 固定 ACK6.1 五组合真实编译通过 |
+| 5 | 补丁管理、设备档案、源码及功能检查 | 范围内通过；设备构建与运行未验 |
+| 6–6.5 | Git/Archive 安全获取、源码等价、兼容门禁 | 范围内通过；独立 Vendor 归档未验 |
+| 7.1 | 环境只读预检 | 软件通过 |
+| 7.2 | Release 镜像与可信回退 | 软件通过；实际镜像及许可待验 |
+| 7.3 | ccache 安全隔离 | 软件通过；实际 ccache 待验 |
+| 7.4 | 构建准入与可选构建时间 | 云端策略通过；本地锁和实际 OEM 构建受阻 |
+| 安全收尾 | 四轮整改、专项修复、完整回归及报告归档 | 范围内通过，保留限制 |
+| 文档中文化 | README、功能矩阵、路线图 | 本次文档更新 |
 
-> **Status clarification (2026-11-23):** OnePlus 13 official `source_sync=TESTED` (35/35) is documented in [Stage 5 handoff](STAGE5_HANDOFF.md). The latest checked real-source GKI matrix was 7/8, with BakaSU+SUSFS `latest_branch` patch conflict; Stage 5 overall is not yet accepted. See [evidence reconciliation](STAGE5_EVIDENCE_RECONCILIATION.md). Older "WSL source sync is running" lines below are historical and superseded for that single gate. Later Stages 6–9 remain planning only.
+## 下一阶段：7.5 真实一加 13 快速 Image/vmlinux
 
+[Stage 7.5 计划](STAGE7_5_FAST_IMAGE_PLAN.md)已启动离线证据工具与静态审计；实际构建尚未开始。先在原电脑核对本地 WSL2 锁摘要、35 项源码、固件、工具链与物理磁盘/RAM，确定真实 Kleaf 目标、DFR 依赖图和安全执行边界；后续查询及编译须独立授权。实际编译时间默认在构建开始时读取 UTC；可选有时区 ISO 8601，必须验证实际 Bazel action 传递。真实 ccache 默认关闭。后续 7.6 等环节依审核后的独立合同推进，不凭规划宣称完成。
 
-All stages follow the [execution policy](EXECUTION_POLICY.md). Stage 5 remains
-open until current-Tree Linux and SM8750 evidence is assessed; do not infer
-acceptance from configuration files or an earlier run.
+## Stage 8：一加 13 官方 OKI 与十项选定目标
 
-1. **Foundation:** schemas, local validator, manifests, tests, and CI.
-2. **Build engine:** pinned source checkout, separate GKI/Vendor plans, logging and reproducible reports.
-3. **Toolchain manager — implemented:** profile-driven LLVM/GCC provisioning, mandatory SHA256 checks for downloads and cache reuse, safe installation, cache maintenance and isolated GKI/Vendor build environment integration. Real upstream toolchain layouts and Android kernel builds remain unverified.
-4. **KernelSU:** individually researched adapters for Official, Next, and ReSukiSU.
-5. **Patch manager:** ordering, conflict/check/apply/rollback, hashes, reports.
-6. **Features:** source/Kconfig-based SUSFS, networking, ZRAM, optimization checks. Unidentified BBG/Unicode/Fengchi items remain unimplemented until their sources are confirmed.
-7. **Devices and delivery:** verified profiles, real builds, artifact manifests, packaging, guarded releases.
+Stage 8 尚未开始实施。目标为 PJZ110/SM8750 官方 Linux 6.6 OKI；先完成未增强官方基线，再逐项集成及验证。完整合同见[十项功能矩阵](STAGE8_EXPANDED_FEATURE_MATRIX.md)和[验收标准](STAGE8_SCOPED_ACCEPTANCE.md)。
 
-Directories and configuration keys alone do not imply later-stage capability.
+| 子阶段 | 目标 |
+| --- | --- |
+| 8.1 | 源码/固件/Kleaf/DFR 准入 |
+| 8.2 | 官方 OKI 完整基线与 ccache 预检 |
+| 8.3 | BakaSU + SUSFS、原生风驰 HMBIRD |
+| 8.4 | BBR/Westwood、必要网络配置、ZRAM/兼容压缩 |
+| 8.5 | Droidspaces、Mountify、Re:Kernel/Freezer/NoActive |
+| 8.6 | 条件性 ADIOS I/O 调度器实验 |
+| 8.7 | 十项独立验收与 Stage 9 交接 |
 
+旧 21 条需求仍可追溯；D01–D14 暂缓不删除、不默认启用、不纳入本阶段完成率。具体见[暂缓清单](STAGE8_EXPANDED_FEATURE_MATRIX.md)。Linux 5.10–6.12 及 GKI/Vendor 框架目标保留，不扩大为已支持所有组合的承诺。
 
-## Prospective Stages 6–9 (approved planning, NOT_IMPLEMENTED)
+## Stage 9：自动化交付
 
-The historical Stage 6 feature and Stage 7 device/delivery bullets above are retained as context, **not discarded**. For new development, use the revised phase allocation below; see [Stage 5 cloud-readiness audit and acceptance contracts](STAGE5_CLOUD_READINESS.md). This is a plan only, not a Stage 5 completion or a release authorization.
+待实现：可复现构建、产物与版本锁、签名、设备与固件匹配、恢复/OTA、安全发布门禁。没有完整 OKI、ABI/KMI、真机启动与授权，不得发布可刷写镜像。
 
-- **Stage 6 — source acquisition and compatibility:** dual verified Git/archive strategies; preserve Git-backed patch targets and exact 35-project source lock. Carry forward old Stage 6 feature-source reviews and patch-conflict work. Gate: provenance/negative/security tests.
-- **Stage 7 — toolchains, caching and fast real builds:** Release mirror through existing ToolchainManager, validated non-LLVM resources, ccache isolation, an optional timezone-explicit Actions kernel build timestamp (blank = build-start current UTC), and manual-only Actions fast Image builds. The current build.yml remains a non-building preflight stub; a real Stage 7.4 workflow must carry timestamp metadata and the KBUILD_BUILD_TIMESTAMP/SOURCE_DATE_EPOCH environment into the actual compiler. Gate: real pinned Image/vmlinux plus toolchain, source, timestamp and artifact hashes.
-- **Stage 8 — scoped OnePlus 13 official OKI and 10 user-selected goals:** retain the pinned 35-project PJZ110 baseline and full vendor modules, DTB/DTBO, ABI/KMI and firmware/boot gates. Selected goals: BakaSU+SUSFS; native Fengchi HMBIRD; isolated safe ccache; BBR/Westwood and necessary network config; ZRAM with compatible compression; Droidspaces; Mountify; conditional ADIOS I/O; Re:Kernel/Freezer/NoActive. All other Stage 8 screenshot additions, other Root providers, device/kernel variants, public ccache-ECS preload, forced compression upgrades and experimental GKI are explicitly **DEFERRED**, not silently deleted. Follow the [10-item feature and deferral matrix](STAGE8_EXPANDED_FEATURE_MATRIX.md) and [scoped acceptance contract](STAGE8_SCOPED_ACCEPTANCE.md). Planning only; Stage 9 release gates unchanged.
-- **Stage 9 — automated Actions delivery:** checked workflow configuration, repeatability, bounded caches, guarded Artifacts/Releases and device-flashing gates. Carry forward old Stage 7 guarded release obligations. Gate: negative configuration tests and verified artifact/provenance/release behavior.
+## 执行原则
 
-**Stage 5 remains IN_PROGRESS** and the existing WSL2 35-project source sync continues independently. None of these phases authorizes rewriting its lock/verifier, a second sync, a heavy CI run or a local future-build dependency.
+遵守[执行政策](EXECUTION_POLICY.md)：保护 main 与 PR #1，禁止未经批准的重型构建、源码同步、缓存删除和设备刷写。以实际验证层级和不可变证据为准，失败与暂缓项不得隐藏。后续项目主页介绍使用中文，状态变化同步 README、本路线图及功能矩阵。
