@@ -461,7 +461,11 @@ class ToolchainManager:
             if (archive.is_symlink() or metadata_path.is_symlink() or install.is_symlink() or
                     not archive.is_file() or not install.is_dir()):
                 raise ValueError("cache archive or installed toolchain is missing or linked")
-            started = time.monotonic(); actual = _digest(archive); installed_digest = _tree_digest(install); duration = round(time.monotonic() - started, 3)
+            started = time.monotonic()
+            _trusted_tree_digest(install)  # reject links before legacy metadata hashing
+            actual = _digest(archive)
+            installed_digest = _tree_digest(install)
+            duration = round(time.monotonic() - started, 3)
             if actual.lower() != spec["sha256"].lower() or metadata.get("actual_sha256", "").lower() != actual.lower():
                 raise ValueError("cached archive SHA256 mismatch")
             if metadata.get("installed_tree_sha256") != installed_digest:
@@ -588,9 +592,11 @@ class ToolchainManager:
     def _cache_rows(self) -> list[dict]:
         rows = []
         meta_root = self.cache_dir / "metadata"
-        metadata_files = sorted(meta_root.rglob("*.json")) if meta_root.exists() else []
+        metadata_files = sorted(meta_root.glob("*.json")) if meta_root.exists() else []
         known_keys = set()
         for path in metadata_files:
+            if path.is_symlink() or not path.is_file() or re.fullmatch(r"[0-9a-f]{64}", path.stem) is None:
+                continue
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 key = data["key"]

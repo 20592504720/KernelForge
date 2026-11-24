@@ -4,6 +4,7 @@ on:
     branches: [stage1/initial-foundation]
     paths:
       - requirements-dev.txt
+      - requirements-dev-pins.txt
       - "kernelforge/**"
       - "scripts/**"
       - "tests/**"
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - requirements-dev.txt
+      - requirements-dev-pins.txt
       - "kernelforge/**"
       - "scripts/**"
       - "tests/**"
@@ -77,5 +79,24 @@ jobs:
         with:
           name: static-security-findings
           path: ${{ runner.temp }}/bandit.json
+          if-no-files-found: error
+          retention-days: 14
+
+  dependency-lock-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+      - name: Generate four-platform wheel evidence without installing wheels
+        run: python scripts/dependency_lock_candidate.py "$RUNNER_TEMP/lock-candidate"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: dependency-lock-review-candidate
+          path: ${{ runner.temp }}/lock-candidate/
           if-no-files-found: error
           retention-days: 14
