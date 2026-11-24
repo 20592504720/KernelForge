@@ -7,7 +7,7 @@ Baseline: 4c3a3220df88dac6b9a37ec0c188ec4c726005d6. No main, PR merge, source lo
 - B310: exact HTTPS origin and standard port, no URL credentials, fragments, or unapproved queries; validate each redirect BEFORE connecting; bound responses and release rows. Apply to four previous metadata fetch sites. Custom toolchain archive downloads are distinct and retain pinned SHA256 checks; no claim of general SSRF protection.
 - Low severity findings: predominantly subprocess imports/argv execution and PATH-based Git binaries. They are not automatically safe; trusted runtime PATH and trusted build configuration remain required. No blanket nosec or suppressed rules.
 - CodeQL Python analysis added with the official verified v4 action commit 1bd86f2fdb4b86187fa4059f16f31a3202acc9ea (v4.39.4 release branch). Actual run and alert results must be inspected; no clean verdict assumed.
-- History secret scanning and concurrent cache/log resource protection are pending separately; no credential values should be printed.
+- Git history secret audit: pinned Gitleaks v8.30.1 binary archive SHA256, full-depth checkout, reachable refs scanned with built-in rules, no raw findings uploaded, only rule/count summaries. Nonzero on findings or scan errors. Unreachable/deleted refs, binary payloads and unknown secret formats are outside the guarantee. Concurrent cache/log resource protection is still pending.
 - Existing build_eligible=false policy retained.
 
 Reference: https://docs.python.org/3/library/xml.html ; https://github.com/github/codeql-action/commit/1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
