@@ -8,6 +8,7 @@ import os
 import re
 import shlex
 import subprocess
+import tempfile
 import time
 from datetime import datetime, timezone
 from contextlib import nullcontext
@@ -24,7 +25,7 @@ from .build_timestamp import resolve_build_timestamp, kernel_build_environment
 from .kernelsu import integrate, IntegrationError
 from . import development
 from .workspace import Workspace
-from .security import redact_diagnostic, redact_tree
+from .security import redact_diagnostic, redact_tree, publish_redacted_log
 
 LOG = logging.getLogger(__name__)
 SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
@@ -432,13 +433,21 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         with (cache_lease if cache_lease is not None else nullcontext()):
             with log_path.open("x", encoding="utf-8") as log:
                 log.write(f"$ {shlex.join(_safe_argv(plan.argv))}\n"); log.flush()
-                try:
-                    result = subprocess.run(plan.argv, cwd=plan.cwd, env=safe_env, stdout=log, stderr=subprocess.STDOUT, check=False, timeout=timeout)
-                    report["build"]["exit_status"] = result.returncode
-                except subprocess.TimeoutExpired:
-                    report["build"]["timed_out"] = True
-                    report["build"]["exit_status"] = 124
-                    raise BuildError(f"{mode} build timed out after {timeout} seconds")
+                # TemporaryFile is private OS-managed spool storage; never
+                # publish unfiltered compiler stdout/stderr as a build artifact.
+                # Raw spool disk usage is not a hard quota.
+                with tempfile.TemporaryFile(mode="w+b") as raw_log:
+                    try:
+                        result = subprocess.run(plan.argv, cwd=plan.cwd, env=safe_env,
+                                                stdout=raw_log, stderr=subprocess.STDOUT,
+                                                check=False, timeout=timeout)
+                        report["build"]["exit_status"] = result.returncode
+                    except subprocess.TimeoutExpired:
+                        report["build"]["timed_out"] = True
+                        report["build"]["exit_status"] = 124
+                        raise BuildError(f"{mode} build timed out after {timeout} seconds")
+                    finally:
+                        report["build"]["diagnostic_log"] = publish_redacted_log(raw_log, log)
         if cache_lease is not None:
             try:
                 inputs_stable = (digest_file(cache_details[1]) == cache_details[2] and

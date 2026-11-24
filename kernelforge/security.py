@@ -23,3 +23,45 @@ def redact_tree(value):
     if isinstance(value, str):
         return redact_diagnostic(value)
     return value
+
+
+# Do not publish raw subprocess output. A bounded line reader avoids loading
+# pathological individual lines into memory; overlong lines are discarded whole.
+_LOG_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+_ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+LOG_LINE_LIMIT = 64 * 1024
+LOG_PUBLISH_LIMIT = 128 * 1024**2
+
+
+def publish_redacted_log(source, destination, *, line_limit=LOG_LINE_LIMIT,
+                         byte_limit=LOG_PUBLISH_LIMIT):
+    if type(line_limit) is not int or line_limit < 1 or type(byte_limit) is not int or byte_limit < 1:
+        raise ValueError("invalid diagnostic log budget")
+    source.seek(0)
+    written = 0
+    truncated = False
+    while True:
+        raw = source.readline(line_limit + 1)
+        if not raw:
+            break
+        if len(raw) > line_limit:
+            while not raw.endswith(b"\n"):
+                raw = source.readline(line_limit + 1)
+                if not raw:
+                    break
+            text = "[REDACTED: overlong diagnostic line]\n"
+        else:
+            line = raw.decode("utf-8", errors="replace")
+            line = _ANSI.sub("", line)
+            line = _LOG_CONTROL.sub("", line)
+            text = redact_diagnostic(line)
+        length = len(text.encode("utf-8"))
+        if written + length > byte_limit:
+            truncated = True
+            break
+        destination.write(text)
+        written += length
+    if truncated:
+        destination.write("\n[diagnostic log truncated at configured byte limit]\n")
+    return {"published_bytes": written, "truncated": truncated,
+            "policy": "BEST_EFFORT_REDACTED_NOT_RAW"}

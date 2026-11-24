@@ -9,6 +9,8 @@ import platform
 import re
 import shutil
 import subprocess
+import stat
+import tempfile
 import time
 import uuid
 from datetime import datetime, timezone
@@ -17,6 +19,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from ..toolchain import _version_tuple
 from ..filesystem import atomic_replace
+from ..security import redact_diagnostic
 from .archive import ArchiveError, extract
 from .download import DownloadError, download
 from .release_mirror import ReviewedGithubReleaseAdapter, ReleaseMirrorError
@@ -91,6 +94,34 @@ def _tree_digest(root: Path) -> str:
         relative = path.relative_to(root).as_posix().encode("utf-8")
         digest.update(len(relative).to_bytes(4, "big")); digest.update(relative)
         digest.update(bytes.fromhex(_digest(path)))
+    return digest.hexdigest()
+
+
+def _trusted_tree_digest(root: Path) -> str:
+    """Compare content, path types and executable bits to independently extracted bytes."""
+    def inspect(path):
+        info = path.lstat()
+        if (path.is_symlink() or getattr(info, "st_file_attributes", 0) &
+                getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)):
+            raise ValueError("link or reparse point in managed toolchain")
+        return info
+
+    if not stat.S_ISDIR(inspect(root).st_mode):
+        raise ValueError("managed toolchain root is not a real directory")
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
+        info = inspect(path)
+        rel = path.relative_to(root).as_posix().encode("utf-8")
+        digest.update(len(rel).to_bytes(4, "big"))
+        digest.update(rel)
+        if stat.S_ISDIR(info.st_mode):
+            digest.update(b"D")
+        elif stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
+            digest.update(b"F")
+            digest.update(bytes([bool(info.st_mode & 0o111) if os.name != "nt" else 0]))
+            digest.update(bytes.fromhex(_digest(path)))
+        else:
+            raise ValueError("nonregular or hardlinked file in managed toolchain")
     return digest.hexdigest()
 
 
@@ -182,6 +213,7 @@ class ToolchainManager:
                  "version": None, "version_check": "not-run", "install_path": None, "environment": {}, "failure_phase": None, "failure_reason": None}
         try:
             self._validate(spec, audit)
+            self._check_cache_layout()
             key = self._key(spec)
             lock_path = self.cache_dir / "locks" / f"{key}.lock"
             with FileLock(lock_path, timeout=self.lock_timeout):
@@ -198,12 +230,12 @@ class ToolchainManager:
                 return self._lease_result(result, key) if lease else result
         except (ToolchainManagerError, ReleaseMirrorError, DownloadError, ArchiveError, LockTimeout, OSError, ValueError, json.JSONDecodeError) as exc:
             phase = getattr(exc, "phase", "resolve")
-            audit["failure_phase"], audit["failure_reason"] = phase, str(exc)
+            audit["failure_phase"], audit["failure_reason"] = phase, redact_diagnostic(str(exc))
             if isinstance(exc, ToolchainManagerError) and exc.audit:
                 audit.update(exc.audit)
             if isinstance(exc, LockTimeout):
                 phase = "lock"; audit["failure_phase"] = phase
-            raise ToolchainManagerError(str(exc), phase=phase, audit=audit) from exc
+            raise ToolchainManagerError(redact_diagnostic(str(exc)), phase=phase, audit=audit) from exc
 
     def _validate(self, spec: dict, audit: dict) -> None:
         if not isinstance(spec, dict):
@@ -383,7 +415,37 @@ class ToolchainManager:
             Path(lease).unlink(missing_ok=True)
 
     def _metadata_paths(self, key: str):
+        if not isinstance(key, str) or re.fullmatch(r"[0-9a-f]{64}", key) is None:
+            raise ToolchainManagerError("invalid managed cache key", phase="cache")
         return self.cache_dir / "install" / key, self.cache_dir / "metadata" / f"{key}.json", self.cache_dir / "downloads" / f"{key}.archive"
+
+    def _check_cache_layout(self):
+        # No destructive operations or execution through linked cache directories.
+        for path in (self.cache_dir, *(self.cache_dir / part for part in
+                     ("install", "metadata", "downloads", "locks", "uses", "staging", "quarantine"))):
+            if path.is_symlink() or (path.exists() and (
+                    not path.is_dir() or getattr(path.lstat(), "st_file_attributes", 0) &
+                    getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))):
+                raise ToolchainManagerError("unsafe linked or non-directory cache layout", phase="cache")
+
+    def _verify_cached_tree(self, spec, archive, install, expected_sha):
+        # Metadata and installed files are in the same trust domain. Compare
+        # against a fresh extraction of the independently pinned archive.
+        stage_root = self.cache_dir / "staging"
+        stage_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="proof-", dir=stage_root) as temporary:
+            reference = Path(temporary) / "root"
+            try:
+                self.source_adapters[spec.get("source_type", "custom")].extract(
+                    self, spec, archive, reference)
+            except (ArchiveError, OSError) as exc:
+                raise ToolchainManagerError("cache archive proof could not be completed",
+                                            phase="cache-proof") from exc
+            if _digest(archive) != expected_sha:
+                raise ValueError("archive changed during independent cache proof")
+            if _trusted_tree_digest(reference) != _trusted_tree_digest(install):
+                raise ValueError("cached installed tree differs from pinned archive")
+
 
     def _cached(self, spec: dict, key: str, audit: dict) -> dict | None:
         install, metadata_path, archive = self._metadata_paths(key)
@@ -396,22 +458,28 @@ class ToolchainManager:
                 raise ValueError("cache metadata schema or key mismatch")
             if metadata.get("expected_sha256", "").lower() != spec["sha256"].lower():
                 raise ValueError("cache metadata expected SHA256 does not match request")
-            if not archive.is_file() or not install.is_dir():
-                raise ValueError("cache archive or installed toolchain is missing")
+            if (archive.is_symlink() or metadata_path.is_symlink() or install.is_symlink() or
+                    not archive.is_file() or not install.is_dir()):
+                raise ValueError("cache archive or installed toolchain is missing or linked")
             started = time.monotonic(); actual = _digest(archive); installed_digest = _tree_digest(install); duration = round(time.monotonic() - started, 3)
             if actual.lower() != spec["sha256"].lower() or metadata.get("actual_sha256", "").lower() != actual.lower():
                 raise ValueError("cached archive SHA256 mismatch")
             if metadata.get("installed_tree_sha256") != installed_digest:
                 raise ValueError("cached installed toolchain content mismatch")
+            self._verify_cached_tree(spec, archive, install, actual)
             details, env = self._verify_tools(install, spec)
             if details["version"] != metadata.get("version"):
                 raise ValueError("cached installed tool version does not match metadata")
         except (OSError, ValueError, KeyError, json.JSONDecodeError, ToolchainManagerError) as exc:
-            audit["cache_failure_reason"] = str(exc)
+            if isinstance(exc, ToolchainManagerError) and exc.phase == "cache-proof":
+                raise
+            if self._has_live_use(key):
+                raise ToolchainManagerError("invalid toolchain cache has an active lease; refusing mutation", phase="cache") from exc
+            audit["cache_failure_reason"] = redact_diagnostic(str(exc))
             self._quarantine(key, install, metadata_path, archive)
-            LOG.warning("Quarantined invalid toolchain cache %s: %s", key, exc)
+            LOG.warning("Quarantined invalid toolchain cache %s: %s", key, redact_diagnostic(str(exc)))
             return None
-        audit.update({"actual_sha256": actual, "sha256_verified": True, "verification_object": "cached-download-archive", "verification_source": "configured-sha256", "verified_at": metadata.get("verified_at"), "cache_used": True, "install_path": str(install), "version": details["version"], "version_check": "passed", "binary_host_arch": details["binary_host_arch"], "host_arch_check": details["host_arch_check"], "detected_target_arch": details["detected_target_arch"], "target_arch_check": details["target_arch_check"], "verification_seconds": duration, "trust_source": "verified-cache"})
+        audit.update({"actual_sha256": actual, "sha256_verified": True, "verification_object": "cached-download-archive", "verification_source": "configured-sha256", "verified_at": metadata.get("verified_at"), "cache_used": True, "install_path": str(install), "version": details["version"], "version_check": "passed", "binary_host_arch": details["binary_host_arch"], "host_arch_check": details["host_arch_check"], "detected_target_arch": details["detected_target_arch"], "target_arch_check": details["target_arch_check"], "verification_seconds": duration, "trust_source": "verified-cache", "independent_archive_tree_verified": True})
         audit["environment_summary"] = {"keys": sorted(env), "bin_directories": [str(Path(env.get("CC", next(iter(details["executables"].values())))).parent)]}
         return {"root": str(install), "version": details["version"], "executables": details["executables"], "environment": env, "audit": audit}
 
@@ -422,8 +490,8 @@ class ToolchainManager:
                 quarantine.mkdir(parents=True, exist_ok=True)
                 try:
                     atomic_replace(path, quarantine / f"{index}-{path.name}")
-                except OSError:
-                    shutil.rmtree(path, ignore_errors=True) if path.is_dir() else path.unlink(missing_ok=True)
+                except OSError as exc:
+                    raise ToolchainManagerError("cache quarantine failed; original retained", phase="cache") from exc
 
     def _recover_install(self, key: str, install: Path) -> None:
         backups = (sorted((*install.parent.glob(f".{key}.old-*"),
@@ -526,12 +594,17 @@ class ToolchainManager:
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 key = data["key"]
+                if (not isinstance(key, str) or re.fullmatch(r"[0-9a-f]{64}", key) is None
+                        or path.parent != meta_root or path.stem != key or path.is_symlink()):
+                    continue  # malformed metadata cannot nominate a deletion target
                 known_keys.add(key)
                 install, _, archive = self._metadata_paths(key)
                 valid = install.is_dir() and archive.is_file() and _digest(archive) == data.get("actual_sha256") == data.get("expected_sha256") and _tree_digest(install) == data.get("installed_tree_sha256")
                 rows.append({"key": key, "kind": data.get("kind"), "name": data.get("name"), "version": data.get("version"), "host_arch": data.get("host_arch"), "target_arch": data.get("target_arch"), "source": data.get("source"), "install_path": str(install), "valid": valid, "size_bytes": _tree_size(install) + (archive.stat().st_size if archive.exists() else 0)})
             except (OSError, ValueError, KeyError, json.JSONDecodeError):
                 key = path.stem
+                if path.parent != meta_root or re.fullmatch(r"[0-9a-f]{64}", key) is None or path.is_symlink():
+                    continue
                 known_keys.add(key)
                 install, _, archive = self._metadata_paths(key)
                 rows.append({"key": key, "metadata": str(path), "install_path": str(install), "valid": False, "size_bytes": (path.stat().st_size if path.exists() else 0) + _tree_size(install) + (archive.stat().st_size if archive.exists() else 0)})
@@ -542,16 +615,20 @@ class ToolchainManager:
         if download_root.exists():
             orphan_keys.update(path.stem for path in download_root.glob("*.archive") if path.stem not in known_keys)
         for key in sorted(orphan_keys):
+            if re.fullmatch(r"[0-9a-f]{64}", key) is None:
+                continue
             install, _, archive = self._metadata_paths(key)
             rows.append({"key": key, "valid": False, "install_path": str(install), "size_bytes": _tree_size(install) + (archive.stat().st_size if archive.exists() else 0)})
         return rows
 
     def list_cache(self) -> list[dict]:
+        self._check_cache_layout()
         with FileLock(self.cache_dir / "locks" / "maintenance.lock", timeout=self.lock_timeout):
             return self._cache_rows()
 
     def clean_cache(self, *, kind: str | None = None, name: str | None = None, version: str | None = None, damaged_only: bool = False) -> list[str]:
         removed = []
+        self._check_cache_layout()
         with FileLock(self.cache_dir / "locks" / "maintenance.lock", timeout=self.lock_timeout):
             for row in self._cache_rows():
                 if row.get("valid") and damaged_only:
@@ -568,7 +645,10 @@ class ToolchainManager:
                     if self._has_live_use(key):
                         continue
                     paths = self._metadata_paths(key)
-                    for path in (*paths, self.cache_dir / "metadata" / f"{key}.json"):
+                    if any(path.is_symlink() or (path.exists() and getattr(path.lstat(), "st_file_attributes", 0) &
+                                                 getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)) for path in paths):
+                        continue
+                    for path in paths:
                         if path.is_dir():
                             shutil.rmtree(path)
                         else:

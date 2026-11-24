@@ -395,6 +395,43 @@ class ManagerCacheTests(ManagerFixture):
         self.assertFalse(result["audit"]["cache_used"])
         self.assertEqual(self.server.requests, 2)
 
+    def test_forged_metadata_cannot_authorize_changed_executable(self):
+        from kernelforge.toolchains.manager import _tree_digest
+        first = self.manager.prepare(self.spec())
+        install = Path(first["root"])
+        compiler = Path(first["executables"]["CC"])
+        compiler.write_bytes(b"forged compiler")
+        metadata = next((self.root / "cache/metadata").glob("*.json"))
+        data = json.loads(metadata.read_text())
+        data["installed_tree_sha256"] = _tree_digest(install)
+        metadata.write_text(json.dumps(data))
+        with self.assertLogs("kernelforge.toolchains.manager", level="WARNING"):
+            result = self.manager.prepare(self.spec())
+        self.assertFalse(result["audit"]["cache_used"])
+        self.assertNotEqual(Path(result["executables"]["CC"]).read_bytes(), b"forged compiler")
+
+    def test_invalid_cache_with_active_lease_is_not_removed(self):
+        first = self.manager.prepare(self.spec(), lease=True)
+        try:
+            compiler = Path(first["executables"]["CC"])
+            compiler.write_bytes(b"changed")
+            with self.assertRaisesRegex(ToolchainManagerError, "active lease"):
+                self.manager.prepare(self.spec())
+            self.assertEqual(compiler.read_bytes(), b"changed")
+        finally:
+            self.manager.release(first)
+
+    def test_metadata_path_cannot_nominate_external_cleanup(self):
+        outside = self.root / "outside"
+        outside.mkdir()
+        marker = outside / "marker"
+        marker.write_text("keep")
+        metadata = self.root / "cache" / "metadata"
+        metadata.mkdir(parents=True)
+        (metadata / "malformed.json").write_text(json.dumps({"key": str(outside)}))
+        self.assertEqual(self.manager.clean_cache(), [])
+        self.assertEqual(marker.read_text(), "keep")
+
     def test_interrupted_install_backup_is_restored(self):
         first = self.manager.prepare(self.spec())
         install = Path(first["root"])

@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 from jsonschema import Draft202012Validator
 from kernelforge.build import BuildError, _artifacts, run_build
-from kernelforge.security import redact_diagnostic, redact_tree
+from kernelforge.security import redact_diagnostic, redact_tree, publish_redacted_log
 from kernelforge.source import SourceError, _run_git
 from kernelforge.toolchains.archive import ArchiveError, extract
 from kernelforge.toolchains.download import DownloadError, download
@@ -257,6 +257,24 @@ class RedactionTests(unittest.TestCase):
             with self.assertRaises(SourceError) as caught:
                 _run_git(["fetch", "origin"])
         self.assertNotIn("fake-pass", str(caught.exception))
+
+    def test_raw_log_redaction_and_overlong_line(self):
+        source = io.BytesIO(b"Authorization: Bearer example-secret\n" +
+                             b"x" * 100 + b"password=must-not-leak\nnormal output\n")
+        dest = io.StringIO()
+        result = publish_redacted_log(source, dest, line_limit=64)
+        self.assertNotIn("example-secret", dest.getvalue())
+        self.assertNotIn("must-not-leak", dest.getvalue())
+        self.assertIn("normal output", dest.getvalue())
+        self.assertFalse(result["truncated"])
+
+    def test_raw_log_limit_and_control_sanitizing(self):
+        source = io.BytesIO(b"\x1b[31mhello\x1b[0m\nsecond line\n")
+        dest = io.StringIO()
+        result = publish_redacted_log(source, dest, byte_limit=7)
+        self.assertTrue(result["truncated"])
+        self.assertNotIn("\x1b", dest.getvalue())
+        self.assertNotIn("second line", dest.getvalue())
 
     def test_nested_report_redaction(self):
         self.assertEqual(redact_tree({"list": ["https://u:p@example.invalid"]}),
