@@ -168,6 +168,33 @@ class Stage73BuildIntegration(unittest.TestCase):
         self.assertTrue((Path(report["build_cache"]["path"]) /
                          ".kernelforge-cache-invalid.json").exists())
 
+    def test_lease_remains_active_through_artifact_collection(self):
+        from kernelforge.build import _artifacts
+        def inspect(source, output, patterns):
+            ctl = BuildCacheNamespaces(self.base/"workspace/.kernelforge-build-cache/ccache")
+            markers = list((ctl.root / "uses").glob("*.use"))
+            self.assertEqual(len(markers), 1)
+            key = markers[0].name.split(".")[0]
+            with self.assertRaisesRegex(BuildCacheError, "lease blocks cleanup"):
+                ctl.prune(key, dry_run=False)
+            return _artifacts(source, output, patterns)
+        with patch("kernelforge.build._artifacts", side_effect=inspect):
+            result = self.execute(self.config())
+        self.assertEqual(result["build"]["status"], "success")
+        ctl = BuildCacheNamespaces(self.base/"workspace/.kernelforge-build-cache/ccache")
+        self.assertEqual(ctl.inspect(result["build_cache"]["key"])["active_or_unreconciled_leases"], 0)
+
+    def test_failed_invalidation_retains_lease(self):
+        from kernelforge.build_cache import CacheLease
+        with patch.object(CacheLease, "invalidate", side_effect=OSError("fixture failure")):
+            with self.assertRaisesRegex(BuildError, "exit code 3"):
+                self.execute(self.config(script="raise SystemExit(3)"))
+        report = json.loads((self.base/"output/build-report.json").read_text())
+        self.assertTrue(report["build_cache"]["lease_retained_for_manual_reconciliation"])
+        ctl = BuildCacheNamespaces(self.base/"workspace/.kernelforge-build-cache/ccache")
+        with self.assertRaisesRegex(BuildCacheError, "lease blocks cleanup"):
+            ctl.prune(report["build_cache"]["key"], dry_run=False)
+
     def test_build_schema_cache_policy_is_disabled_by_default_and_strict(self):
         from jsonschema import Draft202012Validator
         root = Path(__file__).resolve().parents[1]

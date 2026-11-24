@@ -23,7 +23,7 @@ from ..security import redact_diagnostic
 from .archive import ArchiveError, extract
 from .download import DownloadError, download
 from .release_mirror import ReviewedGithubReleaseAdapter, ReleaseMirrorError
-from .locking import FileLock, LockTimeout, _pid_alive, _linked
+from .locking import FileLock, LockTimeout, _linked
 
 LOG = logging.getLogger(__name__)
 SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")

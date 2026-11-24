@@ -311,6 +311,7 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     managed_prepared = None
     manager = None
     cache_lease = None
+    retain_cache_lease = False
     versions = None
     try:
         if mode not in ADAPTERS:
@@ -480,7 +481,9 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
                 try:
                     cache_lease.invalidate()
                 except Exception as quarantine_exc:
+                    retain_cache_lease = True
                     report.setdefault("build_cache", {})["quarantine_error"] = str(quarantine_exc)
+                    report["build_cache"]["lease_retained_for_manual_reconciliation"] = True
         report["build"]["status"] = "failure"
         report["error"] = redact_diagnostic(f"{type(exc).__name__}: {exc}")
         if not log_path.exists():
@@ -493,11 +496,14 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         raise BuildError(redact_diagnostic(str(exc))) from exc
     except BaseException:
         if cache_lease is not None:
-            cache_lease.invalidate()
+            try:
+                cache_lease.invalidate()
+            except BaseException:
+                retain_cache_lease = True
         raise
     finally:
         try:
-            if cache_lease is not None:
+            if cache_lease is not None and not retain_cache_lease:
                 cache_lease.close()
         finally:
             if manager and managed_prepared:
