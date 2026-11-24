@@ -8,3 +8,7 @@ Baseline: 64c1ae421dc0213a8b407a18b88f322d06a58bae. Latest prior scoped one-shot
 - These changes require fresh cross-platform tests; no new test success is claimed here.
 
 References: https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file ; https://learn.microsoft.com/en-us/windows/win32/fileio/file-streams ; https://docs.python.org/3/library/tarfile.html ; https://github.com/github/codeql-action/blob/1bd86f2fdb4b86187fa4059f16f31a3202acc9ea/analyze/action.yml
+
+## F-03 — Git repository operand boundaries
+
+The generic repository validator's SCP-style form previously admitted an option-prefixed repository string. The KernelSU tag/branch resolution also invoked ls-remote before the generic checkout validator. Reject option-prefixed repository strings before spawning Git; validate the provider repository before direct ref lookup, and delimit repository operands with -- for clone and ls-remote. Existing HTTPS/SSH/file fixtures remain supported. Two offline regression tests assert no Git process is launched for rejected operands. This closes a conditional command-option injection boundary, not a proven remote execution incident. The build profiles, Git runtime PATH and local Git/SSH configuration must still be trusted. No source-lock or request marker change. A local disposable Git fixture verified that clone and ls-remote accept the operand delimiter, but the project suite must pass separately.

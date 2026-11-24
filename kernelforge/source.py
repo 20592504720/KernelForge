@@ -31,6 +31,8 @@ _FULL_SHA = re.compile(r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
 def validate_repository(repository: str) -> None:
     if not isinstance(repository, str) or not repository or any(ord(ch) < 32 for ch in repository):
         raise SourceError("source repository URL is empty or contains control characters")
+    if repository.startswith("-"):
+        raise SourceError("source repository URL must not begin with an option prefix")
     if repository.startswith(("https://", "http://", "ssh://", "git://", "file://")):
         parts = urlsplit(repository)
         if parts.scheme in {"http", "https", "ssh", "git"} and not parts.hostname:
@@ -74,7 +76,7 @@ def _resolve_fetch_ref(repository: str, ref: str, timeout: int) -> str:
     for candidate in (f"refs/heads/{ref}", f"refs/tags/{ref}", f"refs/tags/{ref}^{{}}"):
         env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_CONFIG_")}
         try:
-            result = subprocess.run(["git", "ls-remote", repository, candidate], env=env, text=True, capture_output=True, check=False, timeout=timeout)
+            result = subprocess.run(["git", "ls-remote", "--", repository, candidate], env=env, text=True, capture_output=True, check=False, timeout=timeout)
         except subprocess.TimeoutExpired as exc:
             raise SourceError(f"Git ref lookup timed out after {timeout} seconds") from exc
         if result.returncode == 0 and result.stdout.strip():
@@ -98,7 +100,7 @@ def checkout(repository: str, ref: str, destination: Path, *, timeout: int = 300
         raise SourceError(f"source destination exists and is not empty; refusing to overwrite: {destination}")
     fetch_ref = _resolve_fetch_ref(repository, ref, timeout)
     try:
-        _run_git(["clone", "--config", "core.autocrlf=false", "--no-checkout", "--filter=blob:none", repository, str(destination)], timeout=timeout)
+        _run_git(["clone", "--config", "core.autocrlf=false", "--no-checkout", "--filter=blob:none", "--", repository, str(destination)], timeout=timeout)
         _run_git(["fetch", "--depth=1", "origin", fetch_ref], cwd=destination, timeout=timeout)
         _run_git(["checkout", "--detach", "FETCH_HEAD"], cwd=destination, timeout=timeout)
         _run_git(["fsck", "--connectivity-only", "--no-dangling"], cwd=destination, timeout=timeout)

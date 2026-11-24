@@ -51,6 +51,16 @@ class SourceCheckoutTests(unittest.TestCase):
                 checkout("not a remote", "main", destination)
             self.assertFalse(destination.exists())
 
+    def test_option_shaped_scp_repository_rejected_before_git(self):
+        with tempfile.TemporaryDirectory() as td:
+            destination = Path(td) / "checkout"
+            for ref in ("main", "a" * 40):
+                with self.subTest(ref=ref), patch("kernelforge.source.subprocess.run") as run:
+                    with self.assertRaisesRegex(SourceError, "option prefix"):
+                        checkout("-example@host.invalid:path", ref, destination)
+                    run.assert_not_called()
+                    self.assertFalse(destination.exists())
+
     def test_missing_ref_failure_cleans_created_directory(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td); repo, _ = make_repo(root); destination = root / "bad-checkout"

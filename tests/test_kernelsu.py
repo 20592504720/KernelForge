@@ -78,6 +78,15 @@ class KernelSUIntegrationTests(unittest.TestCase):
         with self.assertRaisesRegex(IntegrationError,'repository URL'):
             integrate(self.spec(repository='invalid'),self.source,self.out,mode='gki')
 
+    def test_provider_option_shaped_repository_blocked_before_ref_lookup(self):
+        for ref_type, ref in (("tag", "fixture-v1"), ("branch", "main")):
+            with self.subTest(ref_type=ref_type), patch("kernelforge.kernelsu._run_git") as run:
+                with self.assertRaises(IntegrationError):
+                    integrate(self.spec(repository="-example@host.invalid:path",
+                                        ref_type=ref_type, ref=ref),
+                              self.source, self.out, mode="gki")
+                run.assert_not_called()
+
     def test_invalid_commit(self):
         with self.assertRaises(IntegrationError):
             integrate(self.spec(ref='0'*40,expected_commit='0'*40),self.source,self.out,mode='gki')

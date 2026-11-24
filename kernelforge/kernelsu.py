@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator
 
-from .source import checkout, remove_checkout, _run_git
+from .source import checkout, remove_checkout, _run_git, validate_repository
 from .toolchains.locking import FileLock
 from .providers import OfficialModern, BakaModern
 
@@ -165,16 +165,17 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout, s
             report["compatibility"] = [{"check": "source version, mode and requested config", "status": "PASS"},
                                        {"check": "Kconfig resolution, compile, ABI and boot", "status": "UNTESTED"}]
             record(f"Preflight passed: {family}, {mode}, ARM64; requested configuration checked")
+            validate_repository(spec["repository"])
             ref = spec["ref"]
             if spec["ref_type"] in ("tag", "stable"):
                 # Disambiguate tags from branches before using the existing fetcher.
                 ref = spec["expected_commit"]
-                resolved = _run_git(["ls-remote", spec["repository"], f"refs/tags/{spec['ref']}", f"refs/tags/{spec['ref']}^{{}}"], timeout=60)
+                resolved = _run_git(["ls-remote", "--", spec["repository"], f"refs/tags/{spec['ref']}", f"refs/tags/{spec['ref']}^{{}}"], timeout=60)
                 rows = resolved.splitlines()
                 if not rows or rows[-1].split()[0].lower() != ref.lower():
                     raise ValueError("tag does not resolve to expected_commit")
             elif spec["ref_type"] == "branch":
-                resolved = _run_git(["ls-remote", spec["repository"], f"refs/heads/{ref}"], timeout=60)
+                resolved = _run_git(["ls-remote", "--", spec["repository"], f"refs/heads/{ref}"], timeout=60)
                 if not resolved.strip() or resolved.split()[0].lower() != spec["expected_commit"].lower():
                     raise ValueError("branch does not resolve to expected_commit")
                 ref = spec["expected_commit"]
