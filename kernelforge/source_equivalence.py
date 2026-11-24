@@ -12,7 +12,7 @@ import re
 import stat
 import subprocess
 from pathlib import Path
-from xml.etree import ElementTree
+from .xml_safety import parse_manifest_xml, ManifestXMLerror
 
 from .source_archive import locked_projects, _safe_member
 
@@ -60,12 +60,12 @@ def workspace_plan(lock: dict, manifest_xml: str | None = None) -> dict:
     directives = []
     manifest_state = "NOT_SUPPLIED"
     if manifest_xml is not None:
-        if not isinstance(manifest_xml, str) or any(s in manifest_xml.upper() for s in ("<!DOCTYPE", "<!ENTITY")):
+        if not isinstance(manifest_xml, str):
             raise SourceEquivalenceError("unsafe manifest XML")
         try:
-            doc = ElementTree.fromstring(manifest_xml)
-        except ElementTree.ParseError as exc:
-            raise SourceEquivalenceError("invalid manifest XML") from exc
+            doc = parse_manifest_xml(manifest_xml)
+        except ManifestXMLerror as exc:
+            raise SourceEquivalenceError("invalid or unsafe manifest XML") from exc
         if doc.tag != "manifest" or doc.findall("include") or doc.findall("submanifest") or doc.findall("extend-project"):
             raise SourceEquivalenceError("manifest must be a fully resolved snapshot")
         items = doc.findall("project")
@@ -224,7 +224,7 @@ def verify_archive_git_tree(lock: dict, project_name: str, staging: Path, git_re
             raise SourceEquivalenceError("Git/archive comparison exceeds byte budget")
         if (bool(archive_file.stat().st_mode & 0o111)) != (mode == "100755"):
             raise SourceEquivalenceError("Git/archive executable mode differs")
-        blob = hashlib.sha1()
+        blob = hashlib.sha1(usedforsecurity=False)  # Git SHA-1 blob identity, not a signature
         blob.update(b"blob " + str(size).encode("ascii") + b"\x00")
         with archive_file.open("rb") as src:
             while True:

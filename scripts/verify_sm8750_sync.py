@@ -10,7 +10,8 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 import time
-import xml.etree.ElementTree as ET
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from kernelforge.xml_safety import read_manifest_xml, ManifestXMLerror
 
 
 def disk_sample(path, stage):
@@ -215,7 +216,10 @@ def verify_manifest_selection(work, lock):
         if selected.resolve() != expected.resolve():
             raise RuntimeError('selected manifest symlink differs from lock')
     else:
-        root = ET.parse(selected).getroot()
+        try:
+            root = read_manifest_xml(selected)
+        except ManifestXMLerror as exc:
+            raise RuntimeError('invalid selected manifest XML') from exc
         if (root.tag != 'manifest' or len(root) != 1 or root[0].tag != 'include' or
                 root[0].attrib != {'name': name}):
             raise RuntimeError('selected generated manifest differs from lock')

@@ -12,7 +12,12 @@ import re
 import socket
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import Request
+from ..http_safety import open_metadata, require_https_host, MetadataURLerror
+
+
+def urlopen(request, timeout):
+    return open_metadata(request, host='api.github.com', timeout=timeout)
 
 from .download import DownloadError
 
@@ -115,10 +120,10 @@ def verify_release_spec(spec: dict) -> dict:
 
 def github_api_json(url: str) -> dict:
     """Only controlled GitHub API endpoints are passed by this adapter."""
-    p = urlsplit(url)
-    _require(p.scheme == "https" and p.hostname == "api.github.com"
-             and not p.query and not p.fragment and not p.username,
-             "unexpected GitHub metadata API origin")
+    try:
+        require_https_host(url, "api.github.com")
+    except MetadataURLerror as exc:
+        raise ReleaseMirrorError("unexpected GitHub metadata API origin") from exc
     request = Request(url, headers={
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
@@ -131,6 +136,8 @@ def github_api_json(url: str) -> dict:
                      and final.port in (None, 443) and not final.username and not final.password,
                      "GitHub metadata request redirected outside authenticated HTTPS API")
             raw = r.read(2 * 1024 * 1024 + 1)
+    except MetadataURLerror as exc:
+        raise ReleaseMirrorError("GitHub metadata request outside authenticated HTTPS API") from exc
     except HTTPError as exc:
         if exc.code == 429 or 500 <= exc.code <= 599:
             raise MirrorUnavailable("GitHub Release metadata temporarily unavailable") from exc

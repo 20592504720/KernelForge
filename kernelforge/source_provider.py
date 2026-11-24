@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from xml.etree import ElementTree
+from .xml_safety import parse_manifest_xml
 
 from jsonschema import Draft202012Validator
 
@@ -34,12 +34,13 @@ def load_profile(repository_root: Path, profile_id: str) -> dict:
 
 def audit_manifest(xml: str, profile: dict) -> dict:
     """Parse a trusted repo manifest snapshot and reject mixed vendor revisions."""
-    if '<!DOCTYPE' in xml or '<!ENTITY' in xml:
-        raise ValueError('manifest external entities are forbidden')
-    document = ElementTree.fromstring(xml)
+    document = parse_manifest_xml(xml)
     if document.tag != 'manifest':
         raise ValueError('expected Android repo manifest')
-    projects = {p.get('name'): p for p in document.findall('project')}
+    entries = document.findall('project')
+    projects = {p.get('name'): p for p in entries}
+    if len(projects) != len(entries):
+        raise ValueError('duplicate manifest project names')
     if profile['source_kind'] != 'oneplus-oss':
         raise ValueError('official manifest cannot be used for a community profile')
     missing = OFFICIAL_PROJECTS - projects.keys()
@@ -64,9 +65,7 @@ def manifest_source_lock(xml: str, resolved_branches: dict[str, str]) -> dict:
     A pinned SHA in XML is a declaration, not proof that the commit is fetchable
     or that the vendor build is complete.
     """
-    if '<!DOCTYPE' in xml or '<!ENTITY' in xml:
-        raise ValueError('manifest external entities are forbidden')
-    document = ElementTree.fromstring(xml)
+    document = parse_manifest_xml(xml)
     if document.tag != 'manifest' or document.findall('include'):
         raise ValueError('manifest must be a complete, non-including snapshot')
     remotes = {item.get('name'): item.get('fetch') for item in document.findall('remote')}

@@ -5,7 +5,8 @@ import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import Request
+from .http_safety import open_metadata, read_bounded, require_https_host
 
 from .source import _run_git, validate_repository
 
@@ -15,16 +16,16 @@ def timestamp():
 
 
 def releases(repository):
-    parsed = urlsplit(repository)
-    if parsed.hostname != 'github.com':
-        raise ValueError('release discovery currently requires a GitHub repository')
+    parsed = require_https_host(repository, 'github.com')
     name = parsed.path.strip('/').removesuffix('.git')
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._-]*', name) or '..' in name:
+        raise ValueError('invalid GitHub release repository identity')
     rows = []
     for page in range(1, 11):
         request = Request(f'https://api.github.com/repos/{name}/releases?per_page=100&page={page}', headers={'User-Agent': 'KernelForge'})
-        with urlopen(request, timeout=60) as response:
-            batch = json.load(response)
-        if not isinstance(batch, list):
+        with open_metadata(request, host='api.github.com', timeout=60, allow_query=True) as response:
+            batch = json.loads(read_bounded(response, 8 * 1024 * 1024))
+        if not isinstance(batch, list) or len(batch) > 100 or any(not isinstance(row, dict) for row in batch):
             raise ValueError('invalid release API response')
         rows.extend(batch)
         if len(batch) < 100:

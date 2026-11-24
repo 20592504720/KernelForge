@@ -2,12 +2,14 @@
 import json
 import sys
 from pathlib import Path
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from kernelforge.source_provider import load_profile, audit_manifest, manifest_source_lock
 from kernelforge.versions import resolve, timestamp
+from kernelforge.http_safety import open_metadata, read_bounded
+from kernelforge.xml_safety import MAX_XML_BYTES
 
 
 def main(output: Path):
@@ -20,8 +22,9 @@ def main(output: Path):
                         'version_policy': 'latest_branch', 'branch': manifest['branch']})
         url = ('https://raw.githubusercontent.com/OnePlusOSS/kernel_manifest/'
                f'{lock["commit_sha"]}/{manifest["path"]}')
-        with urlopen(Request(url, headers={'User-Agent': 'KernelForge'}), timeout=30) as response:
-            xml = response.read(1024 * 1024).decode('utf-8')
+        with open_metadata(Request(url, headers={'User-Agent': 'KernelForge'}),
+                           host='raw.githubusercontent.com', timeout=30) as response:
+            xml = read_bounded(response, MAX_XML_BYTES).decode('utf-8-sig')
         result = audit_manifest(xml, profile)
         branch_commits = {}
         for name in result['projects']:

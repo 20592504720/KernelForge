@@ -6,7 +6,10 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from urllib.request import Request, urlopen
+from urllib.request import Request
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from kernelforge.http_safety import open_metadata, read_bounded
 from urllib.error import HTTPError
 
 UNICODE_COMMIT = '70c394f16d82b0f85a4f07617630d82dde6d203c'
@@ -18,11 +21,9 @@ BASELINES = {
 
 
 def get(url: str) -> bytes:
-    with urlopen(Request(url, headers={'User-Agent': 'KernelForge-source-audit'}), timeout=30) as response:
-        data = response.read(2 * 1024 * 1024 + 1)
-    if len(data) > 2 * 1024 * 1024:
-        raise ValueError('candidate audit input exceeds 2 MiB')
-    return data
+    with open_metadata(Request(url, headers={'User-Agent': 'KernelForge-source-audit'}),
+                       host='raw.githubusercontent.com', timeout=30) as response:
+        return read_bounded(response, 2 * 1024 * 1024)
 
 
 def audit(output: Path) -> dict:

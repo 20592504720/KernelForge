@@ -29,7 +29,7 @@ def _blob(content, expected_size: int, budget: list[int], max_bytes: int) -> str
         _reject("invalid archive member size")
     if budget[0] + expected_size > max_bytes:
         _reject("archive payload exceeds byte budget")
-    digest = hashlib.sha1()
+    digest = hashlib.sha1(usedforsecurity=False)  # Git SHA-1 blob identity, not a signature
     digest.update(b"blob " + str(expected_size).encode("ascii") + b"\0")
     read = 0
     while read < expected_size:
