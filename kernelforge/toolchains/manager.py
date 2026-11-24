@@ -183,6 +183,9 @@ class ToolchainManager:
         self.cache_dir = Path(cache_dir).expanduser().absolute()
         if any(_linked(p) for p in (self.cache_dir, *self.cache_dir.parents)):
             raise ToolchainManagerError("linked cache path refused", phase="cache")
+        # Resolve only AFTER checking the requested path for links. Windows
+        # Path.resolve() also canonicalizes existing directory-name casing.
+        self.cache_dir = self.cache_dir.resolve()
         self.mode = mode.upper()
         if self.mode not in MODES:
             raise ToolchainManagerError(f"unsupported toolchain mode: {mode}", phase="requirements")
@@ -542,6 +545,12 @@ class ToolchainManager:
             extract_start = time.monotonic()
             extracted = stage / "root"
             source_adapter.extract(self, spec, staged_archive, extracted)
+            # Use the actual physical path while it exists, before moving it.
+            # Executable discovery resolves each path, so the relocation base
+            # must match that canonical root (especially on Windows).
+            if _linked(extracted):
+                raise ToolchainManagerError("linked extracted toolchain root", phase="layout")
+            extracted = extracted.resolve(strict=True)
             layout = extracted / layout_root
             if not layout.is_dir():
                 raise ToolchainManagerError(f"configured layout_root does not exist in archive: {layout_root or '.'}", phase="layout")
@@ -557,10 +566,13 @@ class ToolchainManager:
             temp_meta = None
             try:
                 atomic_replace(extracted, install)
+                # Recompute published executable paths from the destination,
+                # not case-sensitive string substitution of staging paths.
+                final_paths = {role: str(path) for role, path in self._tool_paths(install, spec).items()}
                 metadata = {"schema_version": self.METADATA_VERSION, "key": key, "kind": spec["kind"], "name": spec["name"], "version": details["version"],
                             "host_arch": audit["host_arch"], "target_arch": spec["target_arch"], "source_type": audit["source_type"], "source": _safe_source(source_url),
                             "expected_sha256": expected, "actual_sha256": actual, "verified_at": audit["verified_at"], "archive_format": _archive_format, "adapter_version": spec.get("adapter_version", "1"),
-                            "installed_tree_sha256": installed_digest, "executables": details["executables"], "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+                            "installed_tree_sha256": installed_digest, "executables": final_paths, "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
                             "source_route": audit.get("source_route"), "mirror_provenance": audit.get("mirror_provenance"),
                             "mirror_fallback": audit.get("mirror_fallback", False)}
                 temp_meta = metadata_path.with_name(f".{key[:16]}.{uuid.uuid4().hex[:12]}.tmp")
@@ -577,10 +589,14 @@ class ToolchainManager:
             if backup.exists():
                 shutil.rmtree(backup, ignore_errors=True)
             audit.update({"install_path": str(install), "version": details["version"], "version_check": "passed", "install_seconds": round(time.monotonic() - extract_start, 3), "trust_source": "configured-sha256"})
-            audit["environment_summary"] = {"keys": sorted(env), "bin_directories": [str(Path(env.get("CC", next(iter(details["executables"].values())))).parent).replace(str(extracted), str(install))]}
-            executable_paths = {key_name: value.replace(str(extracted), str(install)) for key_name, value in details["executables"].items()}
             relocated_environment = self._relocate_environment(env, extracted, install)
-            return {"root": str(install), "version": details["version"], "executables": executable_paths, "environment": relocated_environment, "audit": audit}
+            # Executable environment roles must not retain a staging path;
+            # final_paths is verified against the published install directory.
+            for role, value in final_paths.items():
+                if role not in spec.get("environment", {}):
+                    relocated_environment[role] = value
+            audit["environment_summary"] = {"keys": sorted(relocated_environment), "bin_directories": [str(Path(final_paths.get("CC", next(iter(final_paths.values())))).parent)]}
+            return {"root": str(install), "version": details["version"], "executables": final_paths, "environment": relocated_environment, "audit": audit}
         except BaseException:
             shutil.rmtree(stage, ignore_errors=True)
             raise
@@ -589,7 +605,9 @@ class ToolchainManager:
 
     @staticmethod
     def _relocate_environment(environment: dict, source: Path, target: Path) -> dict:
-        return {key: value.replace(str(source), str(target)) if isinstance(value, str) else value for key, value in environment.items()}
+        pattern = re.compile(re.escape(str(source)), re.IGNORECASE if os.name == "nt" else 0)
+        return {key: pattern.sub(lambda _match: str(target), value) if isinstance(value, str) else value
+                for key, value in environment.items()}
 
     def _cache_rows(self) -> list[dict]:
         rows = []

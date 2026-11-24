@@ -290,7 +290,14 @@ class ManagerInstallTests(ManagerFixture):
         self.assertTrue(Path(result["root"]).is_dir())
         self.assertEqual(result["audit"]["actual_sha256"], hashlib.sha256(self.payload).hexdigest())
         self.assertTrue(result["audit"]["sha256_verified"])
-        self.assertTrue(Path(result["executables"]["CC"]).is_file())
+        compiler = Path(result["executables"]["CC"])
+        self.assertTrue(compiler.is_file())
+        self.assertEqual(compiler, Path(result["environment"]["CC"]))
+        self.assertTrue(compiler.is_relative_to(Path(result["root"]).resolve()))
+        metadata = next((self.root / "cache/metadata").glob("*.json"))
+        self.assertEqual(json.loads(metadata.read_text())["executables"]["CC"], str(compiler))
+        self.assertNotIn(str(self.root / "cache" / "staging").casefold(),
+                         result["environment"]["PATH"].casefold())
 
     def test_sha_mismatch_blocks_extraction_install_and_cache(self):
         spec = self.spec(sha256="0" * 64)

@@ -121,7 +121,7 @@ class CaptureTests(unittest.TestCase):
                 return rc, spool.read(), evidence
 
     def test_noisy_process_drained_and_partial_line_dropped(self):
-        rc, content, evidence = self.capture("import sys; sys.stdout.write('ok\\n'+'x'*200000)", limit=64)
+        rc, content, evidence = self.capture("import sys; sys.stdout.buffer.write(b'ok\\n'+b'x'*200000)", limit=64)
         self.assertEqual(rc, 0)
         self.assertEqual(content, b"ok\n")
         self.assertTrue(evidence["raw_capture_truncated"])
