@@ -141,6 +141,15 @@ class AcquisitionTests(unittest.TestCase):
         self.assertFalse(self.dest.exists())
         self.assertFalse((self.work / "outside.txt").exists())
 
+    def test_windows_alias_rejected_before_archive_promotion(self):
+        for bad in ("project/file:stream", "project/NUL.txt", "project/name.", "project/name "):
+            payload = self.make_tar([(bad, b"x", "file", 0o644)])
+            self.candidate = self.make_candidate(payload)
+            with self.subTest(bad=bad), self.assertRaises((ArchivePreflightError, SourceAcquisitionError)):
+                self.run_acquire(payload=payload)
+            self.assertFalse(self.dest.exists())
+            self.assertFalse(self.report.exists())
+
     def test_case_conflict_and_nested_file_rejected(self):
         for entries in ([('A', b'a','file',0o644),('a', b'b','file',0o644)],
                         [('a', b'a','file',0o644),('a/b', b'b','file',0o644)]):

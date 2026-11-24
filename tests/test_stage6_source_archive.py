@@ -95,6 +95,22 @@ class SourceArchivePreflightTests(unittest.TestCase):
             with self.subTest(bad=bad), self.assertRaises(ArchivePreflightError):
                 inspect_archive(path, "tar")
 
+    def test_windows_aliases_and_streams_rejected_on_all_hosts(self):
+        for bad in ("root/file:stream", "root/NUL.txt", "root/COM1.log",
+                    "root/name.", "root/name ", "root/bad?name", "root/bad|name"):
+            for fmt in ("tar", "zip"):
+                path = (self.tar([(bad, b"x", "file")]) if fmt == "tar"
+                        else self.zip([(bad, b"x", False)]))
+                with self.subTest(bad=bad, fmt=fmt), self.assertRaises(ArchivePreflightError):
+                    inspect_archive(path, fmt)
+
+    def test_windows_project_path_aliases_rejected(self):
+        for bad in ("root/file:stream", "root/AUX", "root/name.", "root/name "):
+            lock = copy.deepcopy(self.lock)
+            lock["source_lock"]["projects"][0]["path"] = bad
+            with self.subTest(bad=bad), self.assertRaises(ArchivePreflightError):
+                locked_projects(lock)
+
     def test_tar_link_and_special_rejected(self):
         path = self.tar([("root/link", b"", "link")])
         with self.assertRaisesRegex(ArchivePreflightError, "link"):

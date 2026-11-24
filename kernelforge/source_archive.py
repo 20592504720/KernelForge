@@ -11,7 +11,7 @@ import re
 import stat
 import tarfile
 import zipfile
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from urllib.parse import urlsplit
 
 
@@ -39,14 +39,21 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _portable_component(part: str) -> bool:
+    """Reject Windows aliases, device paths and alternate streams on every host."""
+    return (bool(part) and part not in (".", "..")
+            and not part.endswith((".", " "))
+            and not PureWindowsPath(part).is_reserved()
+            and not any(c in '<>:"|?*' or ord(c) < 32 or ord(c) == 127 for c in part))
+
+
 def _safe_project_path(path: str) -> str:
     _require(isinstance(path, str) and bool(path), "project path is empty")
     if path == "./":
         return path
     _require(not path.startswith(("/", "\\")) and "\\" not in path, "unsafe project path")
     parts = path.split("/")
-    _require(all(part not in ("", ".", "..") for part in parts), "unsafe project path")
-    _require(":" not in parts[0] and not any(ord(c) < 32 for c in path), "unsafe project path")
+    _require(all(_portable_component(part) for part in parts), "unsafe project path")
     return path
 
 
@@ -91,8 +98,7 @@ def _safe_member(name: str, *, directory: bool) -> str:
     _require("\\" not in name and not name.startswith("/"), "unsafe archive member path")
     normalized = name[:-1] if directory and name.endswith("/") else name
     components = normalized.split("/")
-    _require(all(p not in ("", ".", "..") for p in components), "unsafe archive member path")
-    _require(":" not in components[0] and not any(ord(c) < 32 for c in normalized), "unsafe archive member path")
+    _require(all(_portable_component(p) for p in components), "unsafe archive member path")
     return normalized
 
 

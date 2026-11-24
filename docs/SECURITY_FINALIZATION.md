@@ -1,0 +1,10 @@
+# Security finalization — targeted archive-path and CodeQL evidence review
+
+Baseline: 64c1ae421dc0213a8b407a18b88f322d06a58bae. Latest prior scoped one-shot regression 45303277963: 12/12 jobs, 474 tests per OS/Python combination (40 Windows conditional skips per job), five real ACK6.1 Image jobs. Bandit inventory 0 HIGH / 1 MEDIUM / 56 LOW, pip-audit no known vulnerabilities, Gitleaks 146 reachable commits / zero findings. CodeQL uploaded analysis but connector could not list alerts.
+
+- F-01: Stage 6 source archive member and project path checks now reject Windows reserved devices, alternate streams, trailing dot/space aliases and forbidden Windows filename characters in every component on all hosts. The explicit root project "./" remains supported. The shared member validator is used by preflight and source extraction. New offline ZIP/TAR, project-lock and no-promotion regression tests. Trusted archive digest and quarantine are unchanged; this is not proof of an exploitable RCE in the baseline.
+- F-02: CodeQL uses its pinned action's supported output directory and emits rule IDs and security-severity counts, including unknown/nonsecurity results, without printing SARIF source snippets or changing the existing GitHub upload. An empty result inventory must not be inferred merely from a successful scan. This workflow change is a candidate until an actual run is reviewed.
+- Pending: trusted host executable resolution and Git environment/config boundary, XML/Expat host-version evidence, CodeQL result review, local WSL2 lock digest reconciliation and final regression. No source locks changed; no main edit/merge, OEM build, release or heavy one-shot request authorized. Keep build_eligible=false.
+- These changes require fresh cross-platform tests; no new test success is claimed here.
+
+References: https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file ; https://learn.microsoft.com/en-us/windows/win32/fileio/file-streams ; https://docs.python.org/3/library/tarfile.html ; https://github.com/github/codeql-action/blob/1bd86f2fdb4b86187fa4059f16f31a3202acc9ea/analyze/action.yml
