@@ -1,0 +1,77 @@
+name: CodeQL Python analysis
+on:
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - "kernelforge/**"
+      - "scripts/**"
+      - ".github/workflows/codeql.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "kernelforge/**"
+      - "scripts/**"
+      - ".github/workflows/codeql.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
+        with:
+          languages: python
+          build-mode: none
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
+        with:
+          category: "/language:python"
+          output: ${{ runner.temp }}/kernelforge-codeql
+      - name: Record CodeQL rule and security severity inventory
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from collections import Counter
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "kernelforge-codeql"
+          paths = sorted(root.glob("*.sarif"))
+          if not paths:
+              raise SystemExit("CodeQL SARIF output missing")
+          counts = Counter()
+          severity = Counter()
+          runs = 0
+          for path in paths:
+              sarif = json.loads(path.read_text(encoding="utf-8"))
+              for run in sarif["runs"]:
+                  runs += 1
+                  tool = run["tool"]
+                  rules = {rule["id"]: rule
+                           for component in [tool["driver"], *tool.get("extensions", [])]
+                           for rule in component.get("rules", [])}
+                  for result in run.get("results", []):
+                      rule_id = result.get("ruleId")
+                      if not isinstance(rule_id, str):
+                          raise SystemExit("CodeQL result has no rule ID")
+                      counts[rule_id] += 1
+                      raw = rules.get(rule_id, {}).get("properties", {}).get("security-severity")
+                      if raw is None:
+                          severity["unknown_or_nonsecurity"] += 1
+                      else:
+                          score = float(raw)
+                          if not 0 <= score <= 10:
+                              raise SystemExit("invalid security severity")
+                          severity["critical" if score >= 9 else "high" if score >= 7
+                                   else "medium" if score >= 4 else "low"] += 1
+          if not runs:
+              raise SystemExit("CodeQL SARIF contains no analysis runs")
+          print("CODEQL_RESULT_COUNT", sum(counts.values()))
+          print("CODEQL_RULE_COUNTS", json.dumps(dict(sorted(counts.items()))))
+          print("CODEQL_SEVERITY_COUNTS", json.dumps(dict(sorted(severity.items()))))
+          print("Inventory only; inspect unknown/nonsecurity results and actual alerts before acceptance.")
+          PY

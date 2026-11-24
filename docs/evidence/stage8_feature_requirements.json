@@ -1,0 +1,621 @@
+{
+  "schema_version": 2,
+  "stage": "8",
+  "status": "SCOPED_TO_TEN_SELECTED_PLANNING_ONLY",
+  "recorded_date": "2026-11-24",
+  "reference_screenshots": [
+    "third_party_feature_list",
+    "third_party_actions_workflows"
+  ],
+  "reference_repo": "https://github.com/cctv18/oppo_oplus_realme_sm8750",
+  "reference_claims_not_kernel_forge_proof": true,
+  "primary_device": "oneplus13-pjz110",
+  "primary_soc": "SM8750",
+  "features": [
+    {
+      "id": "F01",
+      "title": "Official PJZ110 OKI and GKI",
+      "priority": "P0",
+      "origin": "original",
+      "scope": "Full locked 35-project OKI modules, DTB/DTBO, ABI/KMI, firmware, Image, boot. GKI separate; not automatic no-wipe.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "PARTIALLY_SELECTED",
+      "selected_slice": "完整 PJZ110 官方 OKI 主线",
+      "deferred_slice": "扩展 GKI/跨机型移植"
+    },
+    {
+      "id": "F02",
+      "title": "Additional SM8750 kernel variants",
+      "priority": "P2",
+      "origin": "screenshot",
+      "scope": "6.6.30 OnePlus13, 6.6.56 OnePlus13T, 6.6.57 Pad2Pro, 6.6.66/6.6.89 OnePlus13, 6.6.118 shown in Actions. Each requires own source and device gate.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "SM8750 多设备多版本"
+    },
+    {
+      "id": "F03",
+      "title": "MT6991 OnePlus Ace5 Supreme",
+      "priority": "P2",
+      "origin": "screenshot",
+      "scope": "Separate MediaTek 6.6.50 source/toolchain/vendor target; not SM8750-compatible by assertion.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "MT6991"
+    },
+    {
+      "id": "F04",
+      "title": "Root providers and SUSFS",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Official KernelSU, BakaSU, ReSukiSU, SukiSU Ultra, KernelSU-Next. One pinned provider per build, exact hook/kernel/SUSFS compatibility.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "PARTIALLY_SELECTED",
+      "selected_slice": "BakaSU + SUSFS",
+      "deferred_slice": "其他 KSU 分支"
+    },
+    {
+      "id": "F05",
+      "title": "Hooks",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Kprobes, manual, syscall/tracepoint and SUSFS inline checked per upstream commit. Struck-through legacy screenshot item is NOT automatically supported.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "PARTIALLY_SELECTED",
+      "selected_slice": "仅 BakaSU 兼容的 Hook",
+      "deferred_slice": "各式旧 Hook 模式"
+    },
+    {
+      "id": "F06",
+      "title": "Fengchi governor",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Vendor original scx/HMBIRD and its sched modules/KABI; preserve stable OEM scheduling by default.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "SELECTED",
+      "selected_slice": "原生风驰 HMBIRD",
+      "deferred_slice": "其他调度器叠加"
+    },
+    {
+      "id": "F07",
+      "title": "ccache-ECS",
+      "priority": "P2",
+      "origin": "merged",
+      "scope": "Stage 7.3 cache policy already exists. Shared preseed and ~6-min claims need trusted byte provenance and comparable cold/warm benchmarks; no automatic user-cache deletion.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "PARTIALLY_SELECTED",
+      "selected_slice": "Stage 7.3 安全 ccache",
+      "deferred_slice": "ECS 公共预制缓存/宣传性能"
+    },
+    {
+      "id": "F08",
+      "title": "Compiler O2",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Opt-in, measurable optimization with unchanged security flags CFI/KCFI and OEM ABI/KMI.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "额外 O2 改动"
+    },
+    {
+      "id": "F09",
+      "title": "Compression and ZRAM",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "LZ4 1.10.0, zstd 1.5.7 kernel-compatible backports; built-in ZRAM versus zram.ko, actual runtime tests.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "PARTIALLY_SELECTED",
+      "selected_slice": "ZRAM + 已适配压缩算法",
+      "deferred_slice": "强制上游新版本/内置 ZRAM"
+    },
+    {
+      "id": "F10",
+      "title": "TCP algorithms",
+      "priority": "P1",
+      "origin": "merged",
+      "scope": "Existing BBR/Westwood/BBG plus Brutal; BBG source/meaning to be reviewed. Per-algorithm Kconfig and behavior.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "PARTIALLY_SELECTED",
+      "selected_slice": "BBR + Westwood",
+      "deferred_slice": "Brutal/未定义 BBG"
+    },
+    {
+      "id": "F11",
+      "title": "Netfilter configuration",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "ipset, iptables, IPv4/IPv6 advanced networking capabilities conditional on vendor kernel and userspace.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "PARTIALLY_SELECTED",
+      "selected_slice": "必要 netfilter 等配置",
+      "deferred_slice": "非必要全量网络特性"
+    },
+    {
+      "id": "F12",
+      "title": "ADIOS I/O",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Optional Linux 6.6 block-mq and UFS/OEM driver compatibility tests.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "SELECTED_CONDITIONAL",
+      "selected_slice": "ADIOS 可选且需隔离验证",
+      "deferred_slice": "无收益或冲突则 BLOCKED"
+    },
+    {
+      "id": "F13",
+      "title": "Droidspaces",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Namespaces, seccomp, cgroups, networking, OverlayFS and actual container runtime requirements.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "SELECTED",
+      "selected_slice": "Droidspaces 所需内核能力",
+      "deferred_slice": "非必要容器优化"
+    },
+    {
+      "id": "F14",
+      "title": "Mountify",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Root/module requirements, source pin and Android-version validation.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "SELECTED",
+      "selected_slice": "Mountify 兼容",
+      "deferred_slice": "无依据的内核补丁"
+    },
+    {
+      "id": "F15",
+      "title": "Re:Kernel/Freezer/NoActive",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Userspace interfaces, measured power behavior, compatibility and rollback.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "SELECTED",
+      "selected_slice": "Re:Kernel / Freezer / NoActive 逐项适配",
+      "deferred_slice": "无测量的功耗声称"
+    },
+    {
+      "id": "F16",
+      "title": "Baseband-guard",
+      "priority": "P2",
+      "origin": "new",
+      "scope": "Audit partition protection source/license and safe OTA/recovery carve-outs; cannot promise total protection from wipes.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "Baseband Guard"
+    },
+    {
+      "id": "F17",
+      "title": "GKI F2FS data preservation",
+      "priority": "P3",
+      "origin": "new_pending",
+      "scope": "Experimental no-wipe compatibility study only. Backup and explicit device tests; no data-safety guarantee.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "GKI/F2FS 保数据"
+    },
+    {
+      "id": "F18",
+      "title": "NetHunter monitor mode",
+      "priority": "P3",
+      "origin": "new_pending",
+      "scope": "Optional driver/firmware/USB wireless compatibility, not asserted on built-in WiFi.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "NetHunter"
+    },
+    {
+      "id": "F19",
+      "title": "kexec",
+      "priority": "P3",
+      "origin": "new_pending",
+      "scope": "Secure boot/signature, SELinux, rollback and physical-device impact study.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "kexec"
+    },
+    {
+      "id": "F20",
+      "title": "Unicode zero-width request",
+      "priority": "P2",
+      "origin": "original",
+      "scope": "Preserved, not implemented until source and precise behavior are established.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "DEFERRED",
+      "selected_slice": null,
+      "deferred_slice": "Unicode 零宽补丁"
+    },
+    {
+      "id": "F21",
+      "title": "Actions/build versions and delivery",
+      "priority": "P0",
+      "origin": "merged",
+      "scope": "Independent pinned Run IDs, source/patch lock, artifact sha, modules and ABI verification. Public release gated in Stage 9.",
+      "implemented_by_this_commit": false,
+      "stage8_disposition": "FOUNDATION_NOT_COUNTED",
+      "selected_slice": "GitHub Actions 锁版本、构建溯源与 Stage9 Release 门禁",
+      "deferred_slice": "不是可选内核功能"
+    }
+  ],
+  "subphases": [
+    {
+      "phase": "8.1",
+      "name": "PJZ110 源码/固件/Kleaf/DFR 前置准入",
+      "selected_ids": [
+        "S01",
+        "S03"
+      ],
+      "gate": "同一设备/固件/工具链/Manifest 锁可核验；DFR 实际依赖确定；不改锁。"
+    },
+    {
+      "phase": "8.2",
+      "name": "未经增强的官方 OKI 基线与 ccache 只读预检",
+      "selected_ids": [
+        "S01",
+        "S04"
+      ],
+      "gate": "Image、vmlinux、厂商模块、DTB/DTBO 与 ABI/KMI 的实际构建和校验；ccache 默认关闭，工具版本不明不得启用。"
+    },
+    {
+      "phase": "8.3",
+      "name": "BakaSU + SUSFS 与原生风驰",
+      "selected_ids": [
+        "S02",
+        "S03"
+      ],
+      "gate": "精确兼容组合、单一 Hook、模块/KMI、启动与用户授权设备测试记录。"
+    },
+    {
+      "phase": "8.4",
+      "name": "BBR/Westwood、必要网络与 ZRAM/压缩",
+      "selected_ids": [
+        "S05",
+        "S06"
+      ],
+      "gate": "配置与内核/网络/内存运行证据，默认保守。"
+    },
+    {
+      "phase": "8.5",
+      "name": "Droidspaces / Mountify / Re:Kernel / Freezer / NoActive",
+      "selected_ids": [
+        "S07",
+        "S08",
+        "S10"
+      ],
+      "gate": "分应用的实际接口、兼容性、隔离、安全与回滚记录。"
+    },
+    {
+      "phase": "8.6",
+      "name": "ADIOS I/O 独立实验与回归",
+      "selected_ids": [
+        "S09"
+      ],
+      "gate": "冲突、KMI、性能、安全确认；不适配时明确 BLOCKED，不能强行整合。"
+    },
+    {
+      "phase": "8.7",
+      "name": "全量选定范围验收与 Stage9 交接",
+      "selected_ids": [
+        "S01",
+        "S02",
+        "S03",
+        "S04",
+        "S05",
+        "S06",
+        "S07",
+        "S08",
+        "S09",
+        "S10"
+      ],
+      "gate": "每项 TESTED/UNTESTED/BLOCKED；完整基线、设备/许可授权的实测与可追溯产物。"
+    }
+  ],
+  "deferrals": [
+    "no_verified_Mt6991_toolchain_build",
+    "no_nonwipe_data_guarantee",
+    "no_trusted_public_ccache_preseed",
+    "no_firmware_ABI_KMI_or_device_boot_claim",
+    "no_actual_Stage8_build_executed"
+  ],
+  "scope_original_preserved": true,
+  "stage8_started": false,
+  "flash_authorized": false,
+  "scope_revision": "2026-11-24",
+  "source_baseline_commit": "febf45b53a8378543d4b9922bd4a3287365d7b39",
+  "selection_policy": "TEN_USER_SELECTED_FEATURES_PLUS_MANDATORY_BUILD_EVIDENCE",
+  "selected_feature_groups": [
+    {
+      "id": "S01",
+      "title": "一加 13 完整官方 OKI 基线",
+      "source_ids": [
+        "F01"
+      ],
+      "priority": "P0",
+      "scope": "锁定的 PJZ110/SM8750 官方 35 项源码、对应固件/工具链/Kleaf、内核和厂商模块/DTB/DTBO/ABI/KMI；与其他机型或通用 GKI 扩展分开。",
+      "acceptance": "必须建立未经增强的 OKI 参考构建与真实产物证据，设备启动验证须单独授权。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S02",
+      "title": "BakaSU + SUSFS",
+      "source_ids": [
+        "F04",
+        "F05"
+      ],
+      "priority": "P0",
+      "scope": "仅以固定 BakaSU、SUSFS 和内核 Commit 为批准组合；仅使用该版本兼容的 Hook，不引入其他 Root 分支。",
+      "acceptance": "精确 SHA/补丁/Kconfig/编译/链接；实际设备 Root/SUSFS 行为另行验证。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S03",
+      "title": "原生风驰 HMBIRD",
+      "source_ids": [
+        "F06"
+      ],
+      "priority": "P0",
+      "scope": "优先保留一加 13 官方 OEM 风驰及依赖模块；原版已有的能力不重复打补丁。",
+      "acceptance": "Kconfig/模块/KMI/启动/调度日志确认；禁止叠加冲突的第二套调度器。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S04",
+      "title": "ccache 安全构建缓存",
+      "source_ids": [
+        "F07"
+      ],
+      "priority": "P1",
+      "scope": "使用 Stage 7.3 的完整身份隔离、租约和失败隔离；真实 ccache 在获得可信二进制及编译入口后才可启用。",
+      "acceptance": "安全回归与缓存身份测试必须通过；真实命中率和加速效果只有在真实 ccache/cold-warm 实测后才算 TESTED。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S05",
+      "title": "BBR + Westwood + 必需网络配置",
+      "source_ids": [
+        "F10",
+        "F11"
+      ],
+      "priority": "P1",
+      "scope": "仅对网络功能所需 Kconfig、netfilter、IPv4/IPv6、ipset/iptables 进行缺口补齐；保留 OEM 默认路由与拥塞控制。",
+      "acceptance": "以实际内核配置、模块加载/选择能力和网络回归验证；不默认切换全局拥塞算法。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S06",
+      "title": "ZRAM + 适配过的压缩算法",
+      "source_ids": [
+        "F09"
+      ],
+      "priority": "P1",
+      "scope": "优先保留现有 ZRAM 和成熟 LZ4/zstd 支持；只有确认适配 Linux 6.6 后才选用升级补丁。",
+      "acceptance": "核查解压路径/启动、内存及性能与稳定性；不强制 LZ4 1.10.0、zstd 1.5.7 或内置 ZRAM。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S07",
+      "title": "Droidspaces 支持",
+      "source_ids": [
+        "F13"
+      ],
+      "priority": "P2",
+      "scope": "根据实际 Droidspaces 要求补全必要 namespaces、cgroups、seccomp、OverlayFS、veth 等；不全量开放不必要内核能力。",
+      "acceptance": "兼容的 Kconfig、模块、实际容器启动/网络/文件系统验证。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S08",
+      "title": "Mountify 兼容",
+      "source_ids": [
+        "F14"
+      ],
+      "priority": "P2",
+      "scope": "优先验证现有 BakaSU/SUSFS 挂载接口；只有明确缺少的内核能力才允许最小补丁。",
+      "acceptance": "真实 Mountify 操作、挂载/卸载、Root/SUSFS 交互、异常恢复与 Android 兼容性。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S09",
+      "title": "ADIOS I/O 调度器",
+      "source_ids": [
+        "F12"
+      ],
+      "priority": "P2",
+      "scope": "明确列为条件性可选增强；若与 OEM UFS/blk-mq 路径冲突、KMI 破坏或没有收益，不强制合入。",
+      "acceptance": "独立补丁/编译/模块/实际 I/O 指标与回滚；无法适配须标 BLOCKED 并保留记录。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "S10",
+      "title": "Re:Kernel / Freezer / NoActive",
+      "source_ids": [
+        "F15"
+      ],
+      "priority": "P2",
+      "scope": "按实际应用接口分别评估 Freezer/NoActive，优先复用现有内核能力；禁止无证据的功耗优化补丁。",
+      "acceptance": "每个应用独立安装/接口/冻结与唤醒/功耗及稳定性验证；无法复现不可宣称完成。",
+      "evidence_status": "UNTESTED",
+      "implemented_by_this_change": false
+    }
+  ],
+  "deferred_feature_items": [
+    {
+      "id": "D01",
+      "source_ids": [
+        "F01"
+      ],
+      "title": "跨设备通用 GKI、移植 F2FS 且免清数据的承诺",
+      "reason": "与本次一加13官方 OKI 基线不同；免清数据无安全保证。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D02",
+      "source_ids": [
+        "F02"
+      ],
+      "title": "其他 SM8750 设备及 6.6.30/.56/.57/.66/.89/.118 的多版本适配",
+      "reason": "不同内核版本/固件/厂商模块与 ABI 需独立证据；不扩大主线。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D03",
+      "source_ids": [
+        "F03"
+      ],
+      "title": "MT6991（一加 Ace 5 至尊版）独立平台",
+      "reason": "不同 SoC，需另一套源码与厂商驱动。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D04",
+      "source_ids": [
+        "F04",
+        "F05"
+      ],
+      "title": "官方 KernelSU、KernelSU-Next、ReSukiSU、SukiSU Ultra 及多 Hook 组合",
+      "reason": "本阶段只验收 BakaSU + SUSFS 的一个已审查组合；历史代码不删除。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D05",
+      "source_ids": [
+        "F07"
+      ],
+      "title": "公共 ccache-ECS 预置缓存、6 分钟编译承诺与14天自动清缓存",
+      "reason": "未核实供应链身份、命中率与指标；不得导入或自动删缓存。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D06",
+      "source_ids": [
+        "F08"
+      ],
+      "title": "额外 O2 编译优化补丁",
+      "reason": "OEM 默认编译优化尚需核查，增益不足以成为强制目标。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D07",
+      "source_ids": [
+        "F09"
+      ],
+      "title": "强制 LZ4 1.10.0 / zstd 1.5.7 回移植及 ZRAM 内置化",
+      "reason": "仅保留与现有内核兼容的算法，特殊版本不作为里程碑。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D08",
+      "source_ids": [
+        "F10"
+      ],
+      "title": "Brutal TCP 和未界定的 BBG",
+      "reason": "只保留 BBR/Westwood；BBG 的原始含义/补丁来源尚待独立确认。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D09",
+      "source_ids": [
+        "F11"
+      ],
+      "title": "全量 iptables/ipset/高级网络选项",
+      "reason": "仅补 Droidspaces 和 BBR/Westwood 所必需的能力。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D10",
+      "source_ids": [
+        "F16"
+      ],
+      "title": "Baseband Guard / 分区保护新补丁",
+      "reason": "可能干扰 OTA、恢复与权限模型；暂不纳入本次交付。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D11",
+      "source_ids": [
+        "F17"
+      ],
+      "title": "GKI/F2FS 免清数据实验",
+      "reason": "风险高，现阶段不允许作为免清数据保证。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D12",
+      "source_ids": [
+        "F18"
+      ],
+      "title": "NetHunter 监听模式",
+      "reason": "需要芯片/固件/驱动特异验证，与主要目标关联较低。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D13",
+      "source_ids": [
+        "F19"
+      ],
+      "title": "kexec 内核切换",
+      "reason": "Secure Boot、AVB、SELinux 与回滚风险较高。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    },
+    {
+      "id": "D14",
+      "source_ids": [
+        "F20"
+      ],
+      "title": "Unicode 零宽相关内核补丁",
+      "reason": "尚无明确源、补丁效果及安全性证据；保留历史需求，不实施。",
+      "disposition": "DEFERRED_NOT_IN_STAGE8_ACCEPTANCE",
+      "implemented_by_this_change": false
+    }
+  ],
+  "acceptance_contract": "docs/STAGE8_SCOPED_ACCEPTANCE.md",
+  "history_preserved": true,
+  "selected_feature_count": 10,
+  "mandatory_foundation": [
+    "EXACT_GIT_SOURCE_AND_TOOLCHAIN_LOCKS",
+    "GITHUB_ACTIONS_AND_ARTIFACT_HASHES",
+    "ABI_KMI_REPORTS",
+    "GUARDED_STAGE9_RELEASE"
+  ],
+  "readiness": {
+    "actual_oki_baseline": "UNTESTED",
+    "actual_device_boot": "UNTESTED",
+    "selected_scope": "UNTESTED",
+    "ccache_runtime_performance": "UNTESTED",
+    "adios_kernel_compatibility": "UNTESTED",
+    "dfr_external_module_dependency": "BLOCKED_UNDETERMINED"
+  },
+  "hardware_flash_authorized": false,
+  "real_kernel_build_authorized": false,
+  "main_modified": false,
+  "release_authorized": false
+}

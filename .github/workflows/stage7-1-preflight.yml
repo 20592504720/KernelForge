@@ -1,0 +1,37 @@
+name: Stage 7.1 read-only preflight
+on:
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - scripts/stage7_1_preflight.py
+      - tests/test_stage7_1_preflight.py
+      - .github/workflows/stage7-1-preflight.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/stage7_1_preflight.py
+      - tests/test_stage7_1_preflight.py
+      - .github/workflows/stage7-1-preflight.yml
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - name: Offline Stage 7.1 static admission and toolchain inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B scripts/stage7_1_preflight.py > "$RUNNER_TEMP/stage7_1_cloud_preflight.json"
+          python3 -m json.tool "$RUNNER_TEMP/stage7_1_cloud_preflight.json" >/dev/null
+          python3 -B -m unittest tests.test_stage7_1_preflight -v
+      - name: Preserve read-only inventory
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: stage7-1-cloud-inventory
+          path: ${{ runner.temp }}/stage7_1_cloud_preflight.json
+          if-no-files-found: warn
+          retention-days: 30

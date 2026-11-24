@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "status": "SCOPED_PASS_WITH_DEFERRED_BLOCKERS",
+  "date": "2026-11-24",
+  "validation_commit": "0a6e702dda6d1851153490ac0aea22814bb06c49",
+  "validation_tree": "c670eed00c39c21dbeed8ced993e4bf754122042",
+  "code_baseline": "176834803cdca2310d023ef72351d08af238d131",
+  "main_unchanged": "77af49c47acbfd384a4e22993797eebfa8d9eee6",
+  "scope": "Stage 1–7.4 cloud software, immutable source evidence, default/custom timestamp admission policy, five fixed ACK6.1 generic GKI builds; not OEM device release",
+  "run_id": 45375493788,
+  "run_url": "https://github.com/20592504720/KernelForge/actions/runs/45375493788",
+  "completed_at": "2026-11-24T11:26:21Z",
+  "jobs": {
+    "successful": 12,
+    "failed": 0,
+    "skipped": 0,
+    "aggregate": 138410554356
+  },
+  "software": {
+    "environments": 4,
+    "tests_per_environment": 479,
+    "total_including_skips": 1916,
+    "windows_skips_per_environment": 40,
+    "non_skipped_passed": 1836,
+    "failures": 0,
+    "errors": 0,
+    "job_ids": [
+      138380675413,
+      138380675451,
+      138380675452,
+      138380675538
+    ],
+    "additional_validate_run": 45375493832
+  },
+  "security": {
+    "scan_code_baseline": "176834803cdca2310d023ef72351d08af238d131",
+    "codeql_runs": [
+      45334703072,
+      45334695163
+    ],
+    "codeql_results": 0,
+    "bandit_run": 45334703123,
+    "bandit": {
+      "high": 0,
+      "medium": 1,
+      "low": 56,
+      "errors": 0
+    },
+    "pip_audit_known_vulnerabilities": 0,
+    "gitleaks_run": 45375493960,
+    "gitleaks_reachable_commits": 149,
+    "gitleaks_findings": 0,
+    "assertion": "No high-risk findings in assessed scanners; not a guarantee of vulnerability absence."
+  },
+  "source_evidence": {
+    "job_id": 138380675361,
+    "reviewed_remote_blob": "814f568d1431fb2a6682ef4d4634b9c25c818c13",
+    "reviewed_remote_sha256": "22cde7f21306497f47ffdd81b04da5661a24921a37cf8ae94203fd4c830e79a7",
+    "historic_local_sha256": "7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e",
+    "local_live_reconciliation": "PENDING",
+    "stage7_4_default_and_custom": "POLICY_TESTED_SOURCE_UNTESTED",
+    "build_eligible": false
+  },
+  "gki": {
+    "kernel_commit": "498f91c17b0822a09aede17d26a63bf8c6813725",
+    "variants": [
+      {
+        "variant": "official-susfs-off",
+        "job_id": 138381420721,
+        "artifact_id": 14912337049,
+        "objects": 40,
+        "image_bytes": 36223488,
+        "image_sha256": "9e656ca02cd81174b31ad543ad597ee15e2fa7518f41ea349df8158d2e1abd53",
+        "vmlinux_reported_sha256": "1f0409e36bbbe31756e18c39eb84b48373571d24af1d2e3c4de49f993c9c6393",
+        "provider_commit": "2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4",
+        "source_report_status": "success",
+        "kconfig": "TESTED",
+        "object_compilation": "TESTED",
+        "relocatable_link": "TESTED",
+        "kernel_compile": "TESTED",
+        "unresolved_root_hooks": 0,
+        "image_independently_rehashed": true,
+        "vmlinux_independently_rehashed": false,
+        "boot": "UNTESTED",
+        "root": "UNTESTED"
+      },
+      {
+        "variant": "official-susfs-on",
+        "job_id": 138381420664,
+        "artifact_id": 14912157883,
+        "objects": 61,
+        "image_bytes": 36293120,
+        "image_sha256": "f080665340ca6b7e116cb2d6fcfea06bb1ede7d2cb6eca0a9448ca3d22826d07",
+        "vmlinux_reported_sha256": "0dfee7ab4b3c80e5f0d818ba95343e918495cb8f69b696d0640eb460085a8f2d",
+        "provider_commit": "2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4",
+        "source_report_status": "success",
+        "kconfig": "TESTED",
+        "object_compilation": "TESTED",
+        "relocatable_link": "TESTED",
+        "kernel_compile": "TESTED",
+        "unresolved_root_hooks": 0,
+        "image_independently_rehashed": true,
+        "vmlinux_independently_rehashed": false,
+        "boot": "UNTESTED",
+        "root": "UNTESTED"
+      },
+      {
+        "variant": "bakasu-susfs-off",
+        "job_id": 138381420528,
+        "artifact_id": 14912584813,
+        "objects": 44,
+        "image_bytes": 36289024,
+        "image_sha256": "f77b8d000066e68db1116e759b2d579f798de11470648db79440fbc6f4f46801",
+        "vmlinux_reported_sha256": "21a7fe0a0688c7033dbf6407aad0de982ce8d9ba25f000a0fa2ea164238d7c76",
+        "provider_commit": "7b65bde0710b5e7c6f755545cb15a4abd417f3a8",
+        "source_report_status": "success",
+        "kconfig": "TESTED",
+        "object_compilation": "TESTED",
+        "relocatable_link": "TESTED",
+        "kernel_compile": "TESTED",
+        "unresolved_root_hooks": 0,
+        "image_independently_rehashed": true,
+        "vmlinux_independently_rehashed": false,
+        "boot": "UNTESTED",
+        "root": "UNTESTED"
+      },
+      {
+        "variant": "bakasu-susfs-on",
+        "job_id": 138381420739,
+        "artifact_id": 14915560681,
+        "objects": 67,
+        "image_bytes": 36293120,
+        "image_sha256": "f8657643a71c2a448154ac66ff4505250ba7a095e58980cdc40889a41f228570",
+        "vmlinux_reported_sha256": "1ee01a3eb6a31ea50b03bb870e22c33f1aef07eafbccc2b6089ac1b4e21d0f2e",
+        "provider_commit": "7b65bde0710b5e7c6f755545cb15a4abd417f3a8",
+        "source_report_status": "success",
+        "kconfig": "TESTED",
+        "object_compilation": "TESTED",
+        "relocatable_link": "TESTED",
+        "kernel_compile": "TESTED",
+        "unresolved_root_hooks": 0,
+        "image_independently_rehashed": true,
+        "vmlinux_independently_rehashed": false,
+        "boot": "UNTESTED",
+        "root": "UNTESTED"
+      },
+      {
+        "variant": "bakasu-reviewed-new-susfs-on",
+        "job_id": 138381421140,
+        "artifact_id": 14914244085,
+        "objects": 67,
+        "image_bytes": 36293120,
+        "image_sha256": "5b306d972937c7aed56b7796868c8cbd89b621e5f1ba6a654fc535a4737038aa",
+        "vmlinux_reported_sha256": "c1985dbbd606fbc82a4e60ecad404d7298805b2b50c144001dc3c15d14ec8965",
+        "provider_commit": "2734e0bc155759955880f5fb99be640fc5b92156",
+        "source_report_status": "success",
+        "kconfig": "TESTED",
+        "object_compilation": "TESTED",
+        "relocatable_link": "TESTED",
+        "kernel_compile": "TESTED",
+        "unresolved_root_hooks": 0,
+        "image_independently_rehashed": true,
+        "vmlinux_independently_rehashed": false,
+        "boot": "UNTESTED",
+        "root": "UNTESTED"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "name": "stage1-6-full-outcome",
+      "id": 14916045051,
+      "size_bytes": 285,
+      "sha256": "5dd4448c3bbb9cb6283bbd09257e750af23b6bd34e1378016ae80f8457799e8d",
+      "downloaded_zip_sha256_matches": true,
+      "expires_at": "2026-12-24T11:26:17Z"
+    },
+    {
+      "name": "stage1-6-real-gki-bakasu-susfs-on",
+      "id": 14915560681,
+      "size_bytes": 15182458,
+      "sha256": "06643bf7bfbf030e9606e4ca971c575771ee6d0f9170e9bbbb7625fb66238360",
+      "downloaded_zip_sha256_matches": true,
+      "expires_at": "2026-12-24T11:20:05Z"
+    },
+    {
+      "name": "stage1-6-real-gki-bakasu-reviewed-new-susfs-on",
+      "id": 14914244085,
+      "size_bytes": 15181154,
+      "sha256": "44cb8f411683bee772d5b4e07e1aa2c78b330f2050f14cca48fabf7d04153622",
+      "downloaded_zip_sha256_matches": true,
+      "expires_at": "2026-12-24T11:26:01Z"
+    },
+    {
+      "name": "stage1-6-real-gki-bakasu-susfs-off",
+      "id": 14912584813,
+      "size_bytes": 15148535,
+      "sha256": "f01822d4f29fde1250e7e9036725389549bf1d70608dd516567f34c97efa096a",
+      "downloaded_zip_sha256_matches": true,
+      "expires_at": "2026-12-24T11:07:59Z"
+    },
+    {
+      "name": "stage1-6-real-gki-official-susfs-off",
+      "id": 14912337049,
+      "size_bytes": 15136537,
+      "sha256": "ae7dee68dcf19012187bd5e3623a3265ab88261619c5ad79bdbba2402125fcd3",
+      "downloaded_zip_sha256_matches": true,
+      "expires_at": "2026-12-24T10:50:21Z"
+    },
+    {
+      "name": "stage1-6-real-gki-official-susfs-on",
+      "id": 14912157883,
+      "size_bytes": 15167132,
+      "sha256": "7c9cf99a94892d63e59919049bbe9289950017133beb3dc23c76a7fa5ceff0c7",
+      "downloaded_zip_sha256_matches": true,
+      "expires_at": "2026-12-24T10:49:40Z"
+    },
+    {
+      "name": "stage1-6-reconciled-evidence",
+      "id": 14911266016,
+      "size_bytes": 5765,
+      "sha256": "b4c219310fdf73e8eacccdef0409a5728aa96f66713da93c1a1f60f7521acab3",
+      "downloaded_zip_sha256_matches": true,
+      "expires_at": "2026-12-24T10:31:28Z"
+    }
+  ],
+  "aggregate_json": {
+    "strict_parse": "PASS",
+    "source_sha": "0a6e702dda6d1851153490ac0aea22814bb06c49",
+    "preflight": "success",
+    "evidence": "success",
+    "software": "success",
+    "gki": "success",
+    "device_release_eligible": false
+  },
+  "deferred": [
+    "B314 residual XML parser warning; verify host Expat runtime; existing DTD/entity and input budgets retained",
+    "B404/B603/B607/B405 residual inventory; trusted executable PATH, local Git/SSH configuration and build inputs required",
+    "CodeQL repository-wide historical alert list not directly accessible; current SARIF scans zero",
+    "Local WSL2 source lock mismatch unresolved",
+    "DFR include BLOCKED_UNDETERMINED",
+    "Independent supplier vendor archive provenance UNTESTED",
+    "OnePlus13 actual OKI, vendor modules, ABI/KMI, boot/Root/SUSFS runtime UNTESTED",
+    "Actual OEM compiler/Bazel timestamp propagation UNTESTED",
+    "Stage7.5 and stage8 remain separate"
+  ],
+  "device_release_eligible": false,
+  "next": "Chinese README and implementation status matrix only; no OEM compilation or release authorization"
+}

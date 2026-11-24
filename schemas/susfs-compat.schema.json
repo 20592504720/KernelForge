@@ -1,0 +1,71 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "android_gki",
+    "kernel_version",
+    "kernel_commit",
+    "susfs_commit",
+    "provider_commits",
+    "upstream_patch_sha256",
+    "file",
+    "sha256",
+    "reason",
+    "verification"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "android_gki": {
+      "type": "string"
+    },
+    "kernel_version": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "file": {
+      "type": "string"
+    },
+    "kernel_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "susfs_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "upstream_patch_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "provider_commits": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{40}$"
+      }
+    },
+    "verification": {
+      "type": "object"
+    },
+    "upstream": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    }
+  }
+}

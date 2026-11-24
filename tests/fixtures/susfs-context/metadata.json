@@ -1,0 +1,17 @@
+{
+  "kernel_commit": "498f91c17b0822a09aede17d26a63bf8c6813725",
+  "files": [
+    {
+      "file": "fs/exec.c",
+      "original_sha256": "a0b6982ddd4ec7b13a8d110e11a61ab1e4d1ddba44c4ab2fd2dd6408223a8da4",
+      "excerpt_sha256": "3e2cd059d706ac5b186d852d71e0b5e3ef078bfc596eb587a2ac771f0f6c81d7",
+      "lines": 100
+    },
+    {
+      "file": "fs/namespace.c",
+      "original_sha256": "7b1d8bad14e4f999303cea96c335c32613fc8e7dfaa3ca78587a2794d33bf48d",
+      "excerpt_sha256": "425577b806e3c4e53e3022c2c040d6b22f32e2d24c6e4723abcf8f30fb00edda",
+      "lines": 70
+    }
+  ]
+}

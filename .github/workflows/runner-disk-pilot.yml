@@ -1,0 +1,105 @@
+name: Safe Ubuntu Runner disk pilot
+
+on:
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - .github/workflows/runner-disk-pilot.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  disk-pilot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Measure safe allowlist cleanup without syncing kernel source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          report="$RUNNER_TEMP/runner-disk-pilot.txt"
+          {
+            echo "KernelForge isolated Runner disk experiment"
+            echo "commit=$GITHUB_SHA image=${ImageVersion:-unknown}"
+            if [[ "${RUNNER_ENVIRONMENT:-}" != "github-hosted" || "${RUNNER_OS:-}" != "Linux" ]]; then
+              echo "Refusing to remove files outside a GitHub-hosted Linux runner" >&2
+              exit 1
+            fi
+            source /etc/os-release
+            if [[ "$ID" != "ubuntu" || "$VERSION_ID" != "24.04" ]]; then
+              echo "Refusing cleanup on unexpected operating system" >&2
+              exit 1
+            fi
+            echo "=== Before ==="
+            df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            free_before=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+            declare -A protected_tools
+            for tool in git python python3 node java javac clang gcc make bash curl tar unzip; do
+              protected_tools[$tool]=$(command -v "$tool") || {
+                echo "Required preinstalled build tool missing before pilot: $tool" >&2
+                exit 1
+              }
+            done
+            echo "=== Inspect exactly two candidate directories ==="
+            for dir in /usr/share/dotnet /opt/ghc; do
+              if [[ ! -d "$dir" ]]; then
+                echo "SKIP absent: $dir"
+                continue
+              fi
+              if [[ -L "$dir" || "$(realpath -e -- "$dir")" != "$dir" ]] || mountpoint -q "$dir"; then
+                echo "SKIP symlink, changed path or mountpoint: $dir"
+                continue
+              fi
+              du -sh -- "$dir"
+              echo "Removing only allowlisted preinstall: $dir"
+              sudo rm -rf --one-file-system -- "$dir"
+            done
+            echo "=== Verify required tools remain at their original locations ==="
+            for tool in "${!protected_tools[@]}"; do
+              actual=$(command -v "$tool" || true)
+              if [[ "$actual" != "${protected_tools[$tool]}" ]]; then
+                echo "Protected tool changed or disappeared: $tool" >&2
+                exit 1
+              fi
+              printf '%s=%s\n' "$tool" "$actual"
+            done
+            for dir in "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}" "${ANDROID_HOME:-/usr/local/lib/android/sdk}" /usr/lib/jvm; do
+              if [[ ! -d "$dir" ]]; then
+                echo "Warning: protected directory not present: $dir"
+              else
+                echo "Protected directory retained: $dir"
+              fi
+            done
+            python --version
+            node --version
+            java -version
+            clang --version | head -1
+            echo "=== After ==="
+            df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            free_after=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+            echo "free_before_kib=$free_before"
+            echo "free_after_kib=$free_after"
+            echo "reclaimed_kib=$((free_after-free_before))"
+            echo "NOTE: No Android SDK/NDK, Java, Python/Node toolcache, Clang, Bazel, Docker, repo, or kernel source was intentionally removed."
+            echo "NOTE: This is an isolated safety/space pilot, NOT a 35-project sync or kernel compilation test."
+          } 2>&1 | tee "$report"
+          {
+            echo "## KernelForge Runner disk pilot"
+            tail -n 8 "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload disk evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: runner-disk-pilot
+          path: ${{ runner.temp }}/runner-disk-pilot.txt
+          if-no-files-found: warn
+          retention-days: 14

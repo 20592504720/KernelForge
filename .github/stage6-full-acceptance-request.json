@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "request_id": "stage1-6-full-acceptance-20261123",
+  "scope": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6"
+  ],
+  "pinned_gki_full_image": true,
+  "gki_combinations": [
+    "official-susfs-off",
+    "official-susfs-on",
+    "bakasu-susfs-off",
+    "bakasu-susfs-on",
+    "bakasu-reviewed-new-susfs-on"
+  ],
+  "sm8750_new_sync": false,
+  "sm8750_evidence_replay": true,
+  "oki_vendor_build": false,
+  "device_release": false,
+  "base_commit": "176834803cdca2310d023ef72351d08af238d131"
+}

@@ -1,0 +1,123 @@
+name: Real development sources
+on:
+  # Heavy GKI matrices are opt-in, never implicit for ordinary PR changes.
+  # Branch-push verification requires one explicit, pinned request-file edit.
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - .github/stage5-exact-gki-request.json
+  schedule:
+    - cron: '15 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      full_kernel:
+        description: 'Compile complete Image for pinned baseline'
+        type: boolean
+        default: false
+    exact_bakasu_commit:
+      description: 'Optional 40-hex BakaSU commit; runs only one pinned ACK6.1 + SUSFS job'
+      required: false
+      type: string
+      default: ''
+permissions:
+  contents: read
+jobs:
+  sources:
+    if: ${{ github.event_name != 'push' && (github.event_name != 'workflow_dispatch' || inputs.exact_bakasu_commit == '') }}
+    # Clang 17 preserves ACK KCFI. Pin the host compiler separately to avoid
+    # newer GNU host diagnostics in this older ACK revision.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [official, bakasu]
+        susfs: [false, true]
+        strategy: [pinned, latest]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: sudo apt-get update && sudo apt-get install -y flex bison libelf-dev libssl-dev clang-17 lld-17 llvm-17 gcc-11 g++-11 rsync dwarves
+      - run: echo /usr/lib/llvm-17/bin >> "$GITHUB_PATH"
+      - run: clang --version && llvm-nm --version && ld.lld --version
+      - name: Validate real sources
+        env:
+          PROVIDER: ${{ matrix.provider }}
+          WITH_SUSFS: ${{ matrix.susfs }}
+          VERSION_STRATEGY: ${{ matrix.strategy }}
+        run: |
+          args=(--provider "$PROVIDER" --workspace "$RUNNER_TEMP/source-validation")
+          if [ "$WITH_SUSFS" = true ]; then args+=(--susfs); fi
+          if [ "$VERSION_STRATEGY" = pinned ]; then args+=(--pinned-baseline); fi
+          if { [ "${{ inputs.full_kernel }}" = true ] || [ "${{ github.event_name }}" = pull_request ]; } && [ "$VERSION_STRATEGY" = pinned ]; then args+=(--full-kernel); fi
+          python scripts/validate_upstreams.py "${args[@]}"
+      - name: Print verification reports
+        if: always()
+        run: |
+          python -c "from pathlib import Path; import os; p=Path(os.environ['RUNNER_TEMP'])/'source-validation/report'; [(print(f.name), print(f.read_text())) for f in p.glob('*.json')]"
+          python -c "from pathlib import Path; import os; p=Path(os.environ['RUNNER_TEMP'])/'source-validation/report/source-check.log'; print(p.read_text()[-16000:] if p.exists() else 'No Kconfig/Kbuild commands executed')"
+      - name: Preserve full logs, config and source locks
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: real-${{ matrix.provider }}-susfs-${{ matrix.susfs }}-${{ matrix.strategy }}
+          path: ${{ runner.temp }}/source-validation/report
+          if-no-files-found: error
+          retention-days: 14
+
+  exact_bakasu:
+    # Explicit manual single-combination verification only. A SHA is passed
+    # via environment, never interpolated into a shell script.
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.exact_bakasu_commit != '') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Reject invalid SHA before checkout or dependency install
+        env:
+          BAKASU_COMMIT: ${{ github.event_name == 'push' && '2734e0bc155759955880f5fb99be640fc5b92156' || inputs.exact_bakasu_commit }}
+        shell: bash
+        run: |
+          if [[ ! "$BAKASU_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo 'exact_bakasu_commit must be a full 40-hex Commit SHA' >&2
+            exit 2
+          fi
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - name: Verify one-shot branch request before setup or dependency installation
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: python3 scripts/stage5_exact_request.py
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Confirm exact reference in Python
+        env:
+          BAKASU_COMMIT: ${{ github.event_name == 'push' && '2734e0bc155759955880f5fb99be640fc5b92156' || inputs.exact_bakasu_commit }}
+        shell: bash
+        run: |
+          python -c 'import sys; from scripts.validate_upstreams import parse_exact_bakasu_commit; parse_exact_bakasu_commit(sys.argv[1])' "$BAKASU_COMMIT"
+      - run: sudo apt-get update && sudo apt-get install -y flex bison libelf-dev libssl-dev clang-17 lld-17 llvm-17 gcc-11 g++-11 rsync dwarves
+      - run: echo /usr/lib/llvm-17/bin >> "$GITHUB_PATH"
+      - name: Validate pinned BakaSU and SUSFS real source (objects + relocatable link)
+        shell: bash
+        env:
+          BAKASU_COMMIT: ${{ github.event_name == 'push' && '2734e0bc155759955880f5fb99be640fc5b92156' || inputs.exact_bakasu_commit }}
+        run: |
+          python scripts/validate_upstreams.py --provider bakasu --susfs --pinned-baseline \
+            --bakasu-commit "$BAKASU_COMMIT" --workspace "$RUNNER_TEMP/source-validation"
+      - name: Print exact-source reports
+        if: always()
+        run: |
+          python -c "from pathlib import Path; import os; p=Path(os.environ['RUNNER_TEMP'])/'source-validation/report'; [(print(f.name), print(f.read_text())) for f in p.glob('*.json')]"
+          python -c "from pathlib import Path; import os; p=Path(os.environ['RUNNER_TEMP'])/'source-validation/report/source-check.log'; print(p.read_text()[-16000:] if p.exists() else 'No Kconfig/Kbuild commands executed')"
+      - name: Preserve exact source lock and compilation evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: real-bakasu-susfs-true-exact
+          path: ${{ runner.temp }}/source-validation/report
+          if-no-files-found: error
+          retention-days: 14

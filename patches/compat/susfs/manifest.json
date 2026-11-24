@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "android14-6.1-498f91c-756abbf",
+  "android_gki": "android14-6.1",
+  "kernel_version": "6.1.155",
+  "kernel_commit": "498f91c17b0822a09aede17d26a63bf8c6813725",
+  "susfs_commit": "756abbf2d81557e36664fc67dffaee26d3dfc57c",
+  "provider_commits": [
+    "2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4",
+    "7b65bde0710b5e7c6f755545cb15a4abd417f3a8",
+    "2734e0bc155759955880f5fb99be640fc5b92156"
+  ],
+  "upstream_patch_sha256": "4c74f1862ad5a4851bd201e334c1149b9776e774274574ce58aa23a1da318364",
+  "file": "android14-6.1-498f91c-756abbf.patch",
+  "sha256": "82903768ca26a1eb3385c0a6337eb07f4ccf31c223e26bb321717e57c78510dd",
+  "reason": "Only include-context differences: exec lacks GENKSYMS/dma-buf context; namespace lacks trace/hooks/blk.h. All upstream +/- code lines retained. Exact BakaSU 2734e0bc source/API reviewed against SUSFS 756abbf; compile/link remain UNTESTED.",
+  "verification": {
+    "applicability": "TESTED on 27 exact Git blob targets",
+    "object_compilation": "TESTED (scope-limited): exact BakaSU 2734e0bc155759955880f5fb99be640fc5b92156 + SUSFS 756abbf2d81557e36664fc67dffaee26d3dfc57c + ACK 6.1 498f91c17b0822a09aede17d26a63bf8c6813725 passed 67/67 ARM64 ELF relocatable objects and ld.lld -r, GitHub Actions Run 45105067150, job 137464346250. Also previous official/BakaSU pinned baselines passed historical GKI runs; full vmlinux, Image, boot, Root UNTESTED.",
+    "scope": "Exact source triple and patch bytes fixed; ARM64 67/67 objects, Clang17 + hardened Kconfig, zero unresolved KernelSU/SUSFS hooks and relocatable link tested in GitHub Run 45105067150 (job 137464346250, workflow commit 5fb591438a12a7184d32cf496042baf289a7c0de). Only generic ACK6.1 object/link, not full vmlinux/Image, OnePlus13 OKI/ABI or boot/Root. Dynamic latest_branch is separate and remains BLOCKED.",
+    "boot": "UNTESTED",
+    "root": "UNTESTED",
+    "new_bakasu_source_api": "STATIC_AUDITED on exact SUSFS Git SHA 756abbf2d81557e36664fc67dffaee26d3dfc57c; matching SUSFS source declarations for two BakaSU susfs_add_* calls. REAL OBJECT/LINK TESTED for exact combination in Run 45105067150, 67 ELF ARM64 objects, no unresolved KernelSU/SUSFS hooks; no full Image or runtime testing.",
+    "real_gki_run_id": 45105067150,
+    "real_gki_job_id": 137464346250,
+    "real_gki_commit": "5fb591438a12a7184d32cf496042baf289a7c0de",
+    "real_gki_object_count": 67,
+    "relocatable_link_sha256": "9cf5c10656d5795f28d977468775efd9f476f0d12cbbc6885321e331674bfd63"
+  },
+  "upstream": "https://gitlab.com/simonpunk/susfs4ksu/-/blob/756abbf2d81557e36664fc67dffaee26d3dfc57c/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch",
+  "license": "GPL-3.0 (upstream repository license; see LICENSE.upstream)"
+}

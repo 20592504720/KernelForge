@@ -1,0 +1,863 @@
+{
+  "all_29_risk_counts_after_this_audit": {
+    "BLOCKED_BUILD": 0,
+    "BLOCKED_UNDETERMINED": 1,
+    "VERIFIED_NOT_REQUIRED": 28
+  },
+  "bazel_query_executed": false,
+  "bounded_reference_scan": {
+    "file_types": [
+      "*.bzl",
+      "*.bazel",
+      "*.bazelrc",
+      "BUILD*",
+      "build.config*"
+    ],
+    "files_scanned": 344,
+    "matches": {
+      "clang-r522817": [],
+      "linux-musl-x86": [],
+      "llvm-binutils-stable": [],
+      "mkdtboimg.py": []
+    },
+    "scope": [
+      "kernel_platform/build",
+      "kernel_platform/msm-kernel",
+      "kernel_platform/prebuilts/clang/host/linux-x86/kleaf",
+      "kernel_platform/prebuilts/clang/host/linux-x86/BUILD.bazel",
+      "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel",
+      "kernel_platform/prebuilts/rust/linux-x86/1.73.0b/BUILD.bazel",
+      "vendor/oplus/kernel/dfr"
+    ],
+    "skipped_large": []
+  },
+  "branch": "stage1/initial-foundation",
+  "deferred_dynamic_checks": [
+    {
+      "item": "Bazel analysis of vendor DFR DDK modules and header globs",
+      "stage": "Stage 7/8",
+      "status": "BLOCKED_UNDETERMINED"
+    },
+    {
+      "item": "Execution of sun perf/consolidate Kleaf targets and all actions",
+      "stage": "Stage 7/8",
+      "status": "UNTESTED"
+    },
+    {
+      "item": "Full OKI build, ABI/KMI, Image, device boot",
+      "stage": "Stage 7/8",
+      "status": "UNTESTED"
+    }
+  ],
+  "external_raw_evidence": [
+    {
+      "path": "E:\\内核构建\\project\\docs\\evidence\\stage6_3_wsl2_blocker_diagnosis.json",
+      "sha256": "7ab283f240488fa2b82e174caea24fcad3b21d1a20a1f61547c5505f205afaea"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage6.3-lz4-clean-check.json",
+      "sha256": "bf2e821ec51dd4f4971a24b3e7c3050490798b51d6bc96126432221079ad9a79"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage6.3-dependency-trace.json",
+      "sha256": "f5ed85a65e464ce703fd2a6526ad87c4571c117ca2dc97982374f69b71b974b2"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage6.3-reference-scan.json",
+      "sha256": "cb3831ae2087690f74f8d30f5978409f027bbb2e5267e513fd68f3accd35ac6c"
+    }
+  ],
+  "input_tree_sha": "83c648bfbba0a85f972568c779469b59d63d3618",
+  "kernel_build_executed": false,
+  "links": [
+    {
+      "category": "root_mkdtboimg",
+      "conclusion": "The named sun perf/consolidate image rule calls mkdtimg, whose prebuilt exists. A separate VM rule explicitly labels the existing ELF mkdtboimg, not the broken mkdtboimg.py shortcut. The scoped BUILD/bzl/config scan has zero mkdtboimg.py references. No Bazel action was executed.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/msm_kernel_la.bzl:467-499",
+        "kernel_platform/build/kernel/kleaf/impl/image/kernel_images.bzl:512-520",
+        "kernel_platform/build/kernel/kleaf/impl/image/dtbo.bzl:42-54",
+        "kernel_platform/build/BUILD.bazel:93",
+        "kernel_platform/msm-kernel/msm_kernel_vm.bzl:31-39"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "android_kernel_modules_and_devicetree_oneplus_sm8750:kernel_platform/build/kernel/build-tools/path/linux-x86/mkdtboimg.py",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../../../../../prebuilts/kernel-build-tools/linux-x86/bin/mkdtboimg.py",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/kernel-build-tools/linux-x86/bin/mkdtboimg.py",
+      "selection_condition": "nonempty sun dtbo_list sets build_dtbo=True; Kleaf dtbo action invokes mkdtimg; explicit hermetic tools list includes mkdtimg",
+      "target_label_or_rule": "//msm-kernel:sun_perf_images or :sun_consolidate_images -> *_dtbo -> //prebuilts/kernel-build-tools:linux-x86/bin/mkdtimg"
+    },
+    {
+      "category": "root_dfr_include",
+      "conclusion": "The symlink resolves to missing vendor/oplus/kernel/dfr/soc/include, while vendor/oplus/kernel/dfr/include exists elsewhere. Static inspection does not prove that the external DDK module graph or its header globs exclude this path; it also does not prove a build failure. Keep blocked pending bounded Bazel analysis or later module build.",
+      "evidence_files": [
+        "vendor/oplus/kernel/dfr/BUILD.bazel:7-9",
+        "vendor/oplus/kernel/dfr/oplus_local_modules.bzl:5-16",
+        "kernel_platform/msm-kernel/drivers/soc/oplus/dfr/oplus_local_modules.bzl:15-16"
+      ],
+      "final_risk": "BLOCKED_UNDETERMINED",
+      "in_linux_sun_core_kleaf_path": "UNDETERMINED_FOR_EXTERNAL_MODULES",
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "android_kernel_modules_and_devicetree_oneplus_sm8750:vendor/oplus/kernel/dfr/soc/oplus/dfr/include",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../../include/",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/vendor/oplus/kernel/dfr/soc/include",
+      "selection_condition": "vendor DFR BUILD always defines local modules; several modules glob **/*.h and cross-reference other DFR labels; inclusion in the full OnePlus module build is unresolved",
+      "target_label_or_rule": "//vendor/oplus/kernel/dfr:oplus_bsp_dfr_* (external DDK module family)"
+    },
+    {
+      "category": "rust_linux_musl",
+      "conclusion": "The Kleaf Rust tools label is hardwired to linux-x86 for a nonempty version and absent otherwise. The scoped BUILD/bzl/config scan has zero linux-musl-x86 references. These linux-musl stable shortcuts are not selected by the named Linux sun Kleaf path.",
+      "evidence_files": [
+        "kernel_platform/build/kernel/kleaf/impl/kernel_env.bzl:588-594",
+        "kernel_platform/build/kernel/kleaf/impl/kernel_env.bzl:642-645",
+        "kernel_platform/prebuilts/rust/linux-x86/1.73.0b/BUILD.bazel:6-10"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernel_platform/prebuilts/rust:linux-musl-x86/stable/rust-analyzer",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../1.77.1.p1/bin/rust-analyzer",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-musl-x86/1.77.1.p1/bin/rust-analyzer",
+      "selection_condition": "kernel_env._get_rust_tools selects linux-x86, not linux-musl-x86",
+      "target_label_or_rule": "//prebuilts/rust/linux-x86/<RUSTC_VERSION>:binaries (only when rust_toolchain_version is nonempty)"
+    },
+    {
+      "category": "rust_linux_musl",
+      "conclusion": "The Kleaf Rust tools label is hardwired to linux-x86 for a nonempty version and absent otherwise. The scoped BUILD/bzl/config scan has zero linux-musl-x86 references. These linux-musl stable shortcuts are not selected by the named Linux sun Kleaf path.",
+      "evidence_files": [
+        "kernel_platform/build/kernel/kleaf/impl/kernel_env.bzl:588-594",
+        "kernel_platform/build/kernel/kleaf/impl/kernel_env.bzl:642-645",
+        "kernel_platform/prebuilts/rust/linux-x86/1.73.0b/BUILD.bazel:6-10"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernel_platform/prebuilts/rust:linux-musl-x86/stable/rustfmt",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../1.77.1.p1/bin/rustfmt",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-musl-x86/1.77.1.p1/bin/rustfmt",
+      "selection_condition": "kernel_env._get_rust_tools selects linux-x86, not linux-musl-x86",
+      "target_label_or_rule": "//prebuilts/rust/linux-x86/<RUSTC_VERSION>:binaries (only when rust_toolchain_version is nonempty)"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-addr2line",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-addr2line",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-addr2line",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-ar",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-ar",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-ar",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-as",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-as",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-as",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-cov",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-cov",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-cov",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-cxxfilt",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-cxxfilt",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-cxxfilt",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-dis",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-dis",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-dis",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-dwarfdump",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-dwarfdump",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-dwarfdump",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-link",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-link",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-link",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-modextract",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-modextract",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-modextract",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-nm",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-nm",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-nm",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-objcopy",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-objcopy",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-objcopy",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-objdump",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-objdump",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-objdump",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-profdata",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-profdata",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-profdata",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-ranlib",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-ranlib",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-ranlib",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-readelf",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-readelf",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-readelf",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-readobj",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-readobj",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-readobj",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-size",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-size",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-size",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-strings",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-strings",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-strings",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-strip",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-strip",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-strip",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    },
+    {
+      "category": "clang_llvm_stable",
+      "conclusion": "The selected Kleaf toolchain package is clang-r510928 and its filegroup contains its own bin/lib, not sibling llvm-binutils-stable. The scoped BUILD/bzl/config scan has zero stable-shortcut or r522817 references. This is static non-reachability for the named sun Kleaf targets, not a successful build.",
+      "evidence_files": [
+        "kernel_platform/msm-kernel/build.config.constants:1",
+        "kernel_platform/msm-kernel/build.config.common:8",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/versions.bzl:38",
+        "kernel_platform/prebuilts/clang/host/linux-x86/kleaf/clang_toolchain_repository.bzl:151-161",
+        "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/BUILD.bazel:3-8"
+      ],
+      "final_risk": "VERIFIED_NOT_REQUIRED",
+      "in_linux_sun_core_kleaf_path": false,
+      "previous_risk": "BLOCKED_UNDETERMINED",
+      "project_and_link": "kernelplatform/prebuilts-master/clang/host/linux-x86:llvm-binutils-stable/llvm-symbolizer",
+      "proof_scope": "static sun_perf_dist/sun_consolidate_dist core Kleaf rules only; no Bazel query or compilation",
+      "raw_target": "../clang-r522817/bin/llvm-symbolizer",
+      "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r522817/bin/llvm-symbolizer",
+      "selection_condition": "sun perf/consolidate Kleaf target; CLANG_VERSION=r510928; versioned toolchain package and binaries filegroup",
+      "target_label_or_rule": "@kleaf_clang_toolchain//:3_default_*_clang_toolchain -> //prebuilts/clang/host/linux-x86/clang-r510928:binaries"
+    }
+  ],
+  "lz4": {
+    "file_count": 33,
+    "files": [
+      {
+        "clean_blob": "e24f961de4d282c037630b878ec3f28fac29a152",
+        "clean_matches_tree": true,
+        "expected_blob": "e24f961de4d282c037630b878ec3f28fac29a152",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/datagen/datagen.vcxproj",
+        "raw_blob": "b9eef06c5cc16342162eccffa0355ca7d812847b",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "3196768729d48eeeaf0c0141754cb017a51518a1",
+        "clean_matches_tree": true,
+        "expected_blob": "3196768729d48eeeaf0c0141754cb017a51518a1",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/frametest/frametest.vcxproj",
+        "raw_blob": "88188eef95d17e0ed50173f48a3c73c6598e051a",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "8f503f565807d6a2818511be78d067153262c7c9",
+        "clean_matches_tree": true,
+        "expected_blob": "8f503f565807d6a2818511be78d067153262c7c9",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/fullbench-dll/fullbench-dll.vcxproj",
+        "raw_blob": "d3ec47a1a385677732b0b944acbade80db51fa52",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "aa6743152a1ecb5be48563920ceea763749aac1b",
+        "clean_matches_tree": true,
+        "expected_blob": "aa6743152a1ecb5be48563920ceea763749aac1b",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/fullbench/fullbench.vcxproj",
+        "raw_blob": "74deffe839e219211136f43e37e11696d1190d0b",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "21cbf5622ec2547371ffae49997e9ece6316c8c5",
+        "clean_matches_tree": true,
+        "expected_blob": "21cbf5622ec2547371ffae49997e9ece6316c8c5",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/fuzzer/fuzzer.vcxproj",
+        "raw_blob": "72f84ef6635f6ae23453bdc8a62f14616658f1ae",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "e089c24cd7d427076d59cb65062ff15574cadc6e",
+        "clean_matches_tree": true,
+        "expected_blob": "e089c24cd7d427076d59cb65062ff15574cadc6e",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/liblz4-dll/liblz4-dll.rc",
+        "raw_blob": "8e3e661f35350014465726cba4c4a8f36e06d737",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "56ec3b98120fb8cf7d15d437d2756a7a7cdeeba0",
+        "clean_matches_tree": true,
+        "expected_blob": "56ec3b98120fb8cf7d15d437d2756a7a7cdeeba0",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/liblz4-dll/liblz4-dll.vcxproj",
+        "raw_blob": "d153163539bb6f9af94ff108d344da508d009cec",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "61ea159b412bf8f3996498172aa561ff5ca51e60",
+        "clean_matches_tree": true,
+        "expected_blob": "61ea159b412bf8f3996498172aa561ff5ca51e60",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/liblz4/liblz4.vcxproj",
+        "raw_blob": "897a6acc5a41b0c2ab20ffab6ef3ce9dd293c704",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "78f223bf48713f4a041e61de11360cf4329432e7",
+        "clean_matches_tree": true,
+        "expected_blob": "78f223bf48713f4a041e61de11360cf4329432e7",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/lz4.sln",
+        "raw_blob": "9e2b4af2126043fb154cc0d8ad071e2dcff8ae6b",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "5eec36bfc4a6dc69317bdeeaa6f7723100c81f6b",
+        "clean_matches_tree": true,
+        "expected_blob": "5eec36bfc4a6dc69317bdeeaa6f7723100c81f6b",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/lz4/lz4.rc",
+        "raw_blob": "d9f6ec2caac934ec666884308672a0fe5cf2636a",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "de7a7143eea78ba8c667164d473db45aaa541ed9",
+        "clean_matches_tree": true,
+        "expected_blob": "de7a7143eea78ba8c667164d473db45aaa541ed9",
+        "git_clean_equivalent": true,
+        "path": "build/VS2010/lz4/lz4.vcxproj",
+        "raw_blob": "33801f90717f3c663785a8b288f4c0c64000d0ad",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "30e159ea5d29df1293fc0ca73ef320128a9126c4",
+        "clean_matches_tree": true,
+        "expected_blob": "30e159ea5d29df1293fc0ca73ef320128a9126c4",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/datagen/datagen.vcxproj",
+        "raw_blob": "4016f17d21f028fe67ca094d8e246ca64bddef1d",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "a3a403d1b1c82ed0d19f2869668403fc237a80d7",
+        "clean_matches_tree": true,
+        "expected_blob": "a3a403d1b1c82ed0d19f2869668403fc237a80d7",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/frametest/frametest.vcxproj",
+        "raw_blob": "06a59b201c6ff4945577b7c90395e051aa98b657",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "d54a8d7281941b00a7f8e917fed4ace01ed6114a",
+        "clean_matches_tree": true,
+        "expected_blob": "d54a8d7281941b00a7f8e917fed4ace01ed6114a",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/fullbench-dll/fullbench-dll.vcxproj",
+        "raw_blob": "45b7f1c1e6431fca9dbe810d57a08ecf1b58423f",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "54c97439019c3fb3ed2c9285ddc7891cd9cc9fc1",
+        "clean_matches_tree": true,
+        "expected_blob": "54c97439019c3fb3ed2c9285ddc7891cd9cc9fc1",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/fullbench/fullbench.vcxproj",
+        "raw_blob": "6bacd1ed60e4c468748200134563ff157e17851f",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "aa6fe42508553a919487a3981318b3f6e828a68b",
+        "clean_matches_tree": true,
+        "expected_blob": "aa6fe42508553a919487a3981318b3f6e828a68b",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/fuzzer/fuzzer.vcxproj",
+        "raw_blob": "1a2b3d034f167be70bfc474b3a718381dee9e70b",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "e089c24cd7d427076d59cb65062ff15574cadc6e",
+        "clean_matches_tree": true,
+        "expected_blob": "e089c24cd7d427076d59cb65062ff15574cadc6e",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/liblz4-dll/liblz4-dll.rc",
+        "raw_blob": "8e3e661f35350014465726cba4c4a8f36e06d737",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "8e7ee3b978bb69a50853e9df29a15c5073b0db40",
+        "clean_matches_tree": true,
+        "expected_blob": "8e7ee3b978bb69a50853e9df29a15c5073b0db40",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/liblz4-dll/liblz4-dll.vcxproj",
+        "raw_blob": "6f9875efd053791b8a763d3b8109b9cfcdb79fe5",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "948f7db377e75aa25e38df87f34842354d843aaf",
+        "clean_matches_tree": true,
+        "expected_blob": "948f7db377e75aa25e38df87f34842354d843aaf",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/liblz4/liblz4.vcxproj",
+        "raw_blob": "93d1b1920113f53877b6847ca5c0f35d5665b1c0",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "6a2779f915b8f016c0eb0e23a6f7f7c805f6c529",
+        "clean_matches_tree": true,
+        "expected_blob": "6a2779f915b8f016c0eb0e23a6f7f7c805f6c529",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/lz4.sln",
+        "raw_blob": "863b823d2899d11a61e968fe190bdb5f767aeccc",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "5eec36bfc4a6dc69317bdeeaa6f7723100c81f6b",
+        "clean_matches_tree": true,
+        "expected_blob": "5eec36bfc4a6dc69317bdeeaa6f7723100c81f6b",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/lz4/lz4.rc",
+        "raw_blob": "d9f6ec2caac934ec666884308672a0fe5cf2636a",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "f16c1ec22d07ea9ab613c1647ce424272cb00062",
+        "clean_matches_tree": true,
+        "expected_blob": "f16c1ec22d07ea9ab613c1647ce424272cb00062",
+        "git_clean_equivalent": true,
+        "path": "build/VS2017/lz4/lz4.vcxproj",
+        "raw_blob": "559a2461e553d49d625c0df8e4937fa276b7e3cb",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "69034d410e1c718abf9cac2abb8908b1ba352a2b",
+        "clean_matches_tree": true,
+        "expected_blob": "69034d410e1c718abf9cac2abb8908b1ba352a2b",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/datagen/datagen.vcxproj",
+        "raw_blob": "e940289fa37b160c4477e8dae2524eac72a7c142",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "6b7ff756f3559daad56c1686376cf9f99d1585b8",
+        "clean_matches_tree": true,
+        "expected_blob": "6b7ff756f3559daad56c1686376cf9f99d1585b8",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/frametest/frametest.vcxproj",
+        "raw_blob": "6239f4e12d455c705f88b03e8a8953ac18fae6e7",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "143dc061458be7411b4d8e2dec8c9e623d5fd116",
+        "clean_matches_tree": true,
+        "expected_blob": "143dc061458be7411b4d8e2dec8c9e623d5fd116",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/fullbench-dll/fullbench-dll.vcxproj",
+        "raw_blob": "228dde1cf9a36f80746ec0c310d82b7edcedc225",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "57f4b5a28e201f1567b2d8824386c6b440f99d76",
+        "clean_matches_tree": true,
+        "expected_blob": "57f4b5a28e201f1567b2d8824386c6b440f99d76",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/fullbench/fullbench.vcxproj",
+        "raw_blob": "9b0552d83dc8edf1074c45897d67bdd9c11b4565",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "83482c21727c665d76ee23c6c788ee98aef1d097",
+        "clean_matches_tree": true,
+        "expected_blob": "83482c21727c665d76ee23c6c788ee98aef1d097",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/fuzzer/fuzzer.vcxproj",
+        "raw_blob": "ca09428e1d3b0296b98d94d5d46e6dbbfa53bb58",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "e089c24cd7d427076d59cb65062ff15574cadc6e",
+        "clean_matches_tree": true,
+        "expected_blob": "e089c24cd7d427076d59cb65062ff15574cadc6e",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/liblz4-dll/liblz4-dll.rc",
+        "raw_blob": "8e3e661f35350014465726cba4c4a8f36e06d737",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "532ac751fc22395eaaa0beca2c447d833a2a0f01",
+        "clean_matches_tree": true,
+        "expected_blob": "532ac751fc22395eaaa0beca2c447d833a2a0f01",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/liblz4-dll/liblz4-dll.vcxproj",
+        "raw_blob": "2844b84f69d746da4af262b547a24eecaaf34662",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "fdddaaaad33207e6f0eefe161b0b10720fe36151",
+        "clean_matches_tree": true,
+        "expected_blob": "fdddaaaad33207e6f0eefe161b0b10720fe36151",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/liblz4/liblz4.vcxproj",
+        "raw_blob": "7079331d222b6eb15d1603cd40016ca930ce5f3a",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "6a2779f915b8f016c0eb0e23a6f7f7c805f6c529",
+        "clean_matches_tree": true,
+        "expected_blob": "6a2779f915b8f016c0eb0e23a6f7f7c805f6c529",
+        "git_clean_equivalent": true,
+        "path": "build/VS2022/lz4.sln",
+        "raw_blob": "863b823d2899d11a61e968fe190bdb5f767aeccc",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "72e302e7f5d4dcbffa24b8495fd4eab1c712b11b",
+        "clean_matches_tree": true,
+        "expected_blob": "72e302e7f5d4dcbffa24b8495fd4eab1c712b11b",
+        "git_clean_equivalent": true,
+        "path": "lib/dll/example/fullbench-dll.sln",
+        "raw_blob": "ef8d4c024629f30593e253f844b1ce9eadeff2a1",
+        "raw_worktree_byte_equal": false
+      },
+      {
+        "clean_blob": "cdb553422a2dff73cc7b602b199c4276277d811c",
+        "clean_matches_tree": true,
+        "expected_blob": "cdb553422a2dff73cc7b602b199c4276277d811c",
+        "git_clean_equivalent": true,
+        "path": "lib/dll/example/fullbench-dll.vcxproj",
+        "raw_blob": "4f69f4c91b4cb99a7552ca69a3880c63e9b46981",
+        "raw_worktree_byte_equal": false
+      }
+    ],
+    "git_clean_equivalence": "TESTED",
+    "raw_byte_equivalence": "BLOCKED",
+    "source_unchanged": true
+  },
+  "remote_input_commit": "fdb6113afda0e242c4a0d76108d3e41ef9c92005",
+  "reviewed_link_count": 24,
+  "reviewed_risk_counts": {
+    "BLOCKED_UNDETERMINED": 1,
+    "VERIFIED_NOT_REQUIRED": 23
+  },
+  "schema_version": 1,
+  "scope": "static named Linux sun perf/consolidate Kleaf core dependency audit of the 24 previously undetermined broken links",
+  "source_modified": false,
+  "workspace": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750"
+}

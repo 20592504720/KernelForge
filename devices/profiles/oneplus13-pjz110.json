@@ -1,0 +1,12 @@
+{
+  "schema_version": 1, "id": "oneplus13-pjz110", "manufacturer": "OnePlus",
+  "model": "PJZ110", "codename": null, "soc": "SM8750", "architecture": "arm64",
+  "android_version": null, "firmware_build": null, "kernel_version": "6.6",
+  "android_gki": null, "source_kind": "oneplus-oss",
+  "manifest": {"repository": "https://github.com/OnePlusOSS/kernel_manifest", "path": "oneplus_13_b.xml", "branch": "oneplus/sm8750", "commit": "f8e50677874c65b6da41057d2f39be7b4ef3c08a", "revision": "oneplus/sm8750_b_16.0.0_oneplus_13"},
+  "kernel_commit": null, "vendor_modules": "https://github.com/OnePlusOSS/android_kernel_modules_and_devicetree_oneplus_sm8750",
+  "devicetree": "https://github.com/OnePlusOSS/android_kernel_modules_and_devicetree_oneplus_sm8750",
+  "abi_kmi": null, "toolchain": null, "root_provider": null,
+  "patch_allowlist": [], "patch_conflicts": ["fengchi", "bbg", "unicode-zero-width"],
+  "verification": {"source_mapping": "TESTED", "full_build": "UNTESTED", "module_abi": "UNTESTED", "device_boot": "UNTESTED", "root": "UNTESTED"}
+}

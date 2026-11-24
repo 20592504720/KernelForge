@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "stage": "7.3",
+  "scope": "WSL2 read-only ccache inventory and isolated fixture validation",
+  "branch": "stage1/initial-foundation",
+  "remote_review_commit": "b86bc39996efd9f592b9bd8f600660bd0df82290",
+  "local_review_commit": "d408f93c1dde78a3a9b94c72bf960ea7ce230f3d",
+  "identical_review_tree": "8030ba2163095caac4e95cc4041449d2fd004e98",
+  "report_sha256": "b8d1d2e77fb4cb59e5a11ebf070b6a0304f1906bb21bfaa9f4cd5b74c5b6dd9b",
+  "cloud_ci": {
+    "stage7_3_run": 45223495003,
+    "stage7_3_conclusion": "success",
+    "validate_run": 45223495085,
+    "validate_conclusion": "success"
+  },
+  "wsl": {
+    "distro": "Ubuntu-24.04",
+    "kernel": "6.18.58.1-microsoft-standard-WSL2",
+    "arch": "x86_64",
+    "cpu_count": 8,
+    "python3": "/usr/bin/python3 -> /usr/bin/python3.12",
+    "git": "/usr/bin/git",
+    "source_workspace": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
+    "source_repo_metadata_exists": true,
+    "source_contents_rescanned": false,
+    "ccache_path": null,
+    "sccache_path": null,
+    "ccache_environment_names": [],
+    "ccache_runtime_status": "BLOCKED_NO_CCACHE_BINARY",
+    "systemd_user_session_warning_seen": true,
+    "systemd_warning_impact": "UNTESTED"
+  },
+  "resources": {
+    "status": "TESTED",
+    "wsl_mem_total_bytes": 4045041664,
+    "wsl_mem_available_bytes": 3484413952,
+    "wsl_swap_total_bytes": 1073741824,
+    "wsl_swap_free_bytes": 1073741824,
+    "ext4_available_kib": 839801572,
+    "ext4_free_inodes": 66821538,
+    "windows_e_total_bytes": 371516764160,
+    "windows_e_actual_available_bytes": 198018408448,
+    "windows_e_minimum_reserve_gib": 50,
+    "reserve_satisfied": true,
+    "ext4_is_virtual_capacity": true
+  },
+  "fixture_tests": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s tests -p 'test_stage7_3_*.py' -v",
+    "cwd": "/mnt/e/内核构建/project",
+    "status": "TESTED",
+    "passed": 29,
+    "failures": 0,
+    "errors": 0,
+    "exit_code": 0,
+    "temporary_fixture_directories_only": true,
+    "checks": [
+      "ccache disabled by default",
+      "device-profile cache blocked pending Stage 7.4",
+      "source/toolchain/output and cache path separation",
+      "dry-run prune does not remove namespace",
+      "active and stale lease block prune",
+      "corrupt metadata and symlinked namespace refusal",
+      "failed build and changed config quarantine"
+    ]
+  },
+  "raw_evidence": [
+    {
+      "path": "E:\\内核构建\\reports\\stage7_3_wsl2_passive_inventory.log",
+      "sha256": "04c947a7ccc746a8b46a23c872dd1a47eb31c55adbd2e6ea6d2c39d121ed3a73"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage7_3_passive_probe.json",
+      "sha256": "dc01fd956440ac19d2e7d2a660c1c0646cedf3d5645e7abb46a1906af8b44bac"
+    },
+    {
+      "path": "E:\\内核构建\\reports\\stage7_3_wsl2_fixture_tests.log",
+      "sha256": "5eeb9c0f2c93caa04093eb4b7b381578ad9ef1ff8f7f6bf8a668bf05ca1f4a25"
+    }
+  ],
+  "not_tested": [
+    "actual ccache binary execution",
+    "real compiler interception",
+    "cache hit rate or speedup",
+    "Bazel/Kleaf build",
+    "OnePlus 13 OKI build",
+    "physical disk hard quota"
+  ],
+  "stage7_4_software_can_proceed_with_ccache_off": true,
+  "real_cache_root_created": false,
+  "source_or_existing_cache_modified": false
+}

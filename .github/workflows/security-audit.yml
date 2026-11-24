@@ -1,0 +1,102 @@
+name: Python dependency security audit
+on:
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - requirements-dev.txt
+      - requirements-dev-pins.txt
+      - "kernelforge/**"
+      - "scripts/**"
+      - "tests/**"
+      - "schemas/**"
+      - ".github/workflows/**"
+      - .github/workflows/security-audit.yml
+  pull_request:
+    paths:
+      - requirements-dev.txt
+      - requirements-dev-pins.txt
+      - "kernelforge/**"
+      - "scripts/**"
+      - "tests/**"
+      - "schemas/**"
+      - ".github/workflows/**"
+      - .github/workflows/security-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pip-audit==2.10.1
+      - name: Audit exact locked development dependencies
+        run: python -m pip_audit -r requirements-dev.txt --require-hashes --no-deps --progress-spinner off --format json --output "$RUNNER_TEMP/dependency-audit.json"
+      - name: Retain advisory result (including failure)
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: dependency-security-audit
+          path: ${{ runner.temp }}/dependency-audit.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  static-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install bandit==1.9.4
+      - name: Inventory all security findings (report-only until individually reviewed)
+        run: python -m bandit -r kernelforge scripts -f json --exit-zero -o "$RUNNER_TEMP/bandit.json"
+      - name: Summarize findings and fail on scanner errors
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from collections import Counter
+          d = json.loads((Path(os.environ["RUNNER_TEMP"]) / "bandit.json").read_text())
+          print("BANDIT_FINDINGS", dict(Counter(x["issue_severity"] for x in d["results"])))
+          print("BANDIT_ERRORS", len(d["errors"]))
+          for x in d["results"]:
+              print(x["filename"], x["line_number"], x["test_id"], x["issue_severity"], x["issue_confidence"])
+          raise SystemExit(bool(d["errors"]))
+          PY
+      - name: Retain full findings
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: static-security-findings
+          path: ${{ runner.temp }}/bandit.json
+          if-no-files-found: error
+          retention-days: 14
+
+  dependency-lock-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.12"
+      - name: Generate four-platform wheel evidence without installing wheels
+        run: python scripts/dependency_lock_candidate.py "$RUNNER_TEMP/lock-candidate"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: dependency-lock-review-candidate
+          path: ${{ runner.temp }}/lock-candidate/
+          if-no-files-found: error
+          retention-days: 14

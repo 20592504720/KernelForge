@@ -1,0 +1,440 @@
+{
+  "audit_time_utc": "2026-11-23T15:35:28.451836+00:00",
+  "bazel_or_compiler_executed": false,
+  "bounded_build_validation_readiness": {
+    "decision": "No bounded build authorized or tested; 4 GiB WSL RAM, actual E: capacity, absent ccache, missing device toolchain/firmware pins and unresolved DFR path require separate plan.",
+    "status": "BLOCKED"
+  },
+  "branch": "stage1/initial-foundation",
+  "caches_and_outputs": {
+    "paths": {
+      "bazel_user_cache": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/.cache/bazel"
+      },
+      "ccache_legacy": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/.ccache"
+      },
+      "ccache_user_cache": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/.cache/ccache"
+      },
+      "e_artifacts": {
+        "exists": true,
+        "immediate_entries": 1,
+        "is_dir": true,
+        "path": "/mnt/e/内核构建/artifacts",
+        "recursive_bytes": "UNTESTED_RESOURCE"
+      },
+      "e_builds": {
+        "exists": true,
+        "immediate_entries": 1,
+        "is_dir": true,
+        "path": "/mnt/e/内核构建/builds",
+        "recursive_bytes": "UNTESTED_RESOURCE"
+      },
+      "e_cache": {
+        "exists": true,
+        "immediate_entries": 0,
+        "is_dir": true,
+        "path": "/mnt/e/内核构建/cache",
+        "recursive_bytes": "UNTESTED_RESOURCE"
+      },
+      "e_toolchains": {
+        "exists": true,
+        "immediate_entries": 0,
+        "is_dir": true,
+        "path": "/mnt/e/内核构建/toolchains",
+        "recursive_bytes": "UNTESTED_RESOURCE"
+      },
+      "source_bazel_out": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/bazel-out"
+      },
+      "source_out": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/out"
+      },
+      "toolchain_manager_cache": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/kernelforge/.cache/toolchains"
+      },
+      "wsl_builds": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/kernelforge/builds"
+      },
+      "wsl_toolchains": {
+        "exists": false,
+        "is_dir": false,
+        "path": "/home/kernelforge/kernelforge/toolchains"
+      }
+    },
+    "recursive_bytes": "UNTESTED_RESOURCE",
+    "repo_metadata": {
+      ".repo": {
+        "exists": true,
+        "immediate_entries": 11,
+        "is_dir": true,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/.repo",
+        "recursive_bytes": "UNTESTED_RESOURCE"
+      },
+      ".repo/manifests": {
+        "exists": true,
+        "immediate_entries": 18,
+        "is_dir": true,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/.repo/manifests",
+        "recursive_bytes": "UNTESTED_RESOURCE"
+      }
+    },
+    "status": "TESTED_PRESENCE_ONLY"
+  },
+  "config_readiness": {
+    "abi_kmi": "UNTESTED",
+    "device_toolchain_pin": "BLOCKED_MISSING",
+    "df_external_modules": "BLOCKED_UNDETERMINED",
+    "firmware_build_pin": "BLOCKED_MISSING",
+    "status": "BLOCKED"
+  },
+  "host": {
+    "passive": {
+      "cpu_model": "Intel(R) Core(TM) i7-4770K CPU @ 3.50GHz",
+      "logical_cpus": 8,
+      "uname": {
+        "machine": "x86_64",
+        "node": "PC-20260219PIWD",
+        "processor": "x86_64",
+        "release": "6.18.58.1-microsoft-standard-WSL2",
+        "system": "Linux",
+        "version": "#1 SMP PREEMPT_DYNAMIC Tue Oct 27 00:24:11 UTC 2026"
+      }
+    },
+    "preflight": {
+      "architecture": "x86_64",
+      "cpus": 8,
+      "memory": {
+        "MemAvailable_kib": 3410768,
+        "MemTotal_kib": 3950244,
+        "SwapFree_kib": 1048576,
+        "SwapTotal_kib": 1048576
+      },
+      "python": "3.12.3",
+      "system": "Linux"
+    },
+    "status": "TESTED"
+  },
+  "input_tree_sha": "27db8d5c158650e5b0b9485b4fd7c830e200cb95",
+  "local_input_commit": "c1ca40dc038b6760924a59f8d01802ea7fdfef8c",
+  "raw_evidence": {
+    "passive_probe": {
+      "path": "E:\\内核构建\\reports\\stage7_1_passive_probe.json",
+      "sha256": "93caa77f8cc68624813e47081a7772c02efe472af083533ea4d2e9d0cb6e250a"
+    },
+    "preflight": {
+      "path": "E:\\内核构建\\reports\\stage7_1_local_inventory.json",
+      "sha256": "442790b4b32d6ba3525e7a962c135a2ca07ec47d3eb62f7f5fe14500c8b96e30"
+    },
+    "system_snapshot": {
+      "path": "E:\\内核构建\\reports\\stage7_1_system_snapshot.txt",
+      "sha256": "516b901f2cfe8097623b34451d0c5a8376c41d50e15c90403874820ad42eba2a"
+    }
+  },
+  "read_only": true,
+  "remote_input_commit": "e17229705bfa220597439eb60b2463eee1bbfe0e",
+  "schema_version": 1,
+  "software_install_executed": false,
+  "source_sync_executed": false,
+  "stage": "7.1",
+  "stage7_2_mirror_development_readiness": {
+    "decision": "Existing WSL2/Linux workspace and current host free capacity support isolated mirror-development work without touching sources; provenance, checksum and cache policy still require implementation and review.",
+    "status": "TESTED_CONDITIONAL"
+  },
+  "status": "LOCAL_ENVIRONMENT_TESTED_WITH_BUILD_BLOCKERS",
+  "storage": {
+    "ext4": {
+      "available_inodes": 66821557,
+      "exists": true,
+      "free_bytes": 860100542464,
+      "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
+      "total_bytes": 1081101176832,
+      "total_inodes": 67108864,
+      "used_bytes": 166008279040
+    },
+    "mnt_e": {
+      "available_inodes": 1000000,
+      "exists": true,
+      "free_bytes": 198168997888,
+      "path": "/mnt/e",
+      "total_bytes": 371516764160,
+      "total_inodes": 999,
+      "used_bytes": 173347766272
+    },
+    "ntfs_inode_metric": "NOT_MEANINGFUL",
+    "source_disk_identity_not_rechecked": true,
+    "status": "TESTED",
+    "windows_e_physical": {
+      "above_reserve": true,
+      "free_bytes": 198101848064,
+      "safety_reserve_bytes": 53687091200,
+      "total_bytes": 371516764160,
+      "used_bytes": 173414916096
+    }
+  },
+  "tool_path_inventory": {
+    "bazel_entry_chain": [
+      "kernel_platform/tools/bazel",
+      "kernel_platform/build/kernel/kleaf/bazel.sh",
+      "kernel_platform/build/kernel/kleaf/bazel.origin.sh",
+      "kernel_platform/build/kernel/kleaf/bazel.py",
+      "kernel_platform/prebuilts/kernel-build-tools/bazel/linux-x86_64/bazel"
+    ],
+    "ccache_on_path": false,
+    "declared_versions": {
+      "bazel_filename": "7.1.1",
+      "clang_pin": "r510928",
+      "java_release_file": "11.0.15",
+      "rust_directory": "1.73.0b"
+    },
+    "gcc_on_path": false,
+    "path_tools": {
+      "bazel": {
+        "status": "NOT_ON_PATH"
+      },
+      "bazelisk": {
+        "status": "NOT_ON_PATH"
+      },
+      "ccache": {
+        "status": "NOT_ON_PATH"
+      },
+      "clang": {
+        "status": "NOT_ON_PATH"
+      },
+      "gcc": {
+        "status": "NOT_ON_PATH"
+      },
+      "git": {
+        "bytes": 4066232,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/usr/bin/git",
+        "resolved_exists": true,
+        "resolved_path": "/usr/bin/git",
+        "sha256": "eb54b535467e0975c1284d4c4d08eea779aeb248a5d34b02e2ee171382e22201",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "java": {
+        "status": "NOT_ON_PATH"
+      },
+      "ld.lld": {
+        "status": "NOT_ON_PATH"
+      },
+      "llvm-nm": {
+        "status": "NOT_ON_PATH"
+      },
+      "python3": {
+        "bytes": 8019136,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": true,
+        "link_target": "python3.12",
+        "path": "/usr/bin/python3",
+        "resolved_exists": true,
+        "resolved_path": "/usr/bin/python3.12",
+        "sha256": "359ca926ba4596147d7d558c1e0cbf6a5784f5475d7e8bf0a55d9d7c4fa7106c",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "repo": {
+        "bytes": 44477,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/usr/bin/repo",
+        "resolved_exists": true,
+        "resolved_path": "/usr/bin/repo",
+        "sha256": "e5936887dae79c734aaa7e4f0dd4a4152fb8b4299233ebbb862787f06e6e853a",
+        "shebang": "#!/usr/bin/python3",
+        "type": "script",
+        "version_executed": false
+      }
+    },
+    "pinned_prebuilts": {
+      "bazel_entry": {
+        "bytes": 497,
+        "executable": true,
+        "exists": true,
+        "is_symlink": true,
+        "link_target": "../build/kernel/kleaf/bazel.sh",
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/tools/bazel",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.sh",
+        "sha256": "605658c08b39021360e16763e6823229e5855f279982446b1f510bec3cea7b9f",
+        "shebang": "#!/bin/bash -e",
+        "type": "script",
+        "version_executed": false
+      },
+      "bazel_original_wrapper": {
+        "bytes": 819,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.origin.sh",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.origin.sh",
+        "sha256": "c59fc88a5ffe715656384d02150776ae4c714cf8c46f0e763fbff94b67791135",
+        "shebang": "#!/bin/bash -e",
+        "type": "script",
+        "version_executed": false
+      },
+      "bazel_prebuilt": {
+        "bytes": 69391589,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": true,
+        "link_target": "bazel-7.1.1-linux-x86_64",
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/kernel-build-tools/bazel/linux-x86_64/bazel",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/kernel-build-tools/bazel/linux-x86_64/bazel-7.1.1-linux-x86_64",
+        "sha256": "d93508529d41136065c7b1e5ff555fbfb9d18fd00e768886f2fc7dfb53b05b43",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "bazel_python_driver": {
+        "bytes": 35293,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.py",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.py",
+        "sha256": "2a97bb14ecaac0591d132b0b61e671fb3283e061b7e8859b133f6ccb4dcd2dab",
+        "type": "other_binary_or_data",
+        "version_executed": false
+      },
+      "bazel_wrapper": {
+        "bytes": 497,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.sh",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.sh",
+        "sha256": "605658c08b39021360e16763e6823229e5855f279982446b1f510bec3cea7b9f",
+        "shebang": "#!/bin/bash -e",
+        "type": "script",
+        "version_executed": false
+      },
+      "clang": {
+        "bytes": 3002612,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang",
+        "sha256": "dc739fc44bb889146bd47732912cad457200af7de7c2fb5a7509b7a9974d6d67",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "java": {
+        "bytes": 8152,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/jdk/jdk11/linux-x86/bin/java",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/jdk/jdk11/linux-x86/bin/java",
+        "sha256": "fda7b89fcfe8f0ddecc4607731061df717fc5d47b7d94e855fcb4967a7d3a65b",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "lld": {
+        "bytes": 63054040,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": true,
+        "link_target": "lld",
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/ld.lld",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/lld",
+        "sha256": "27fdf99341929eab1f615a3172169b8dadd117b76a05b0abfa0a21873d1626a0",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "llvm_nm": {
+        "bytes": 13944392,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/llvm-nm",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/llvm-nm",
+        "sha256": "06e6634e0abe46ce464e09907955d5202451f7c545896e4c56162b721e74e3a6",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "make": {
+        "bytes": 221992,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/build-tools/linux-x86/bin/make",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/build-tools/linux-x86/bin/make",
+        "sha256": "a9472ab2dc5ab512bd946ca73dc84e4d911df4ad028f48bdbfaf3a500a88ffee",
+        "type": "ELF",
+        "version_executed": false
+      },
+      "rustc": {
+        "bytes": 9488,
+        "elf_machine": 62,
+        "executable": true,
+        "exists": true,
+        "is_symlink": false,
+        "link_target": null,
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-x86/1.73.0b/bin/rustc",
+        "resolved_exists": true,
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/rust/linux-x86/1.73.0b/bin/rustc",
+        "sha256": "0b0909f6a20e94ab2ae38d7875629ed0b4d334906cb6e3c23d01c57994c1b763",
+        "type": "ELF",
+        "version_executed": false
+      }
+    },
+    "runtime_versions": "UNTESTED",
+    "status": "TESTED_PATH_AND_DIGEST_ONLY"
+  },
+  "workspace": {
+    "content_equivalence": "NOT_RECHECKED",
+    "exists": true,
+    "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750",
+    "repo_manifest_directory_present": true,
+    "selected_manifest_entry_present": true,
+    "source_identity": "NOT_RECHECKED"
+  }
+}

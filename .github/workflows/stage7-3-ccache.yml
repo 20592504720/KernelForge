@@ -1,0 +1,39 @@
+name: Stage 7.3 isolated ccache namespace tests
+on:
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - kernelforge/build_cache.py
+      - kernelforge/build.py
+      - schemas/build.schema.json
+      - tests/test_stage7_3_build_cache.py
+      - tests/test_stage7_3_build_integration.py
+      - .github/workflows/stage7-3-ccache.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - kernelforge/build_cache.py
+      - kernelforge/build.py
+      - schemas/build.schema.json
+      - tests/test_stage7_3_build_cache.py
+      - tests/test_stage7_3_build_integration.py
+      - .github/workflows/stage7-3-ccache.yml
+permissions:
+  contents: read
+jobs:
+  cache-fixtures:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Offline namespace, identity, failure-quarantine and build admission fixtures
+        run: python -m unittest discover -s tests -p "test_stage7_3_*.py" -v

@@ -1,0 +1,152 @@
+name: SM8750 source audit
+on:
+  push:
+    branches: [stage1/initial-foundation]
+    paths:
+      - .github/workflows/source-audit.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/audit_sm8750.py
+      - scripts/verify_sm8750_sync.py
+      - kernelforge/source_provider.py
+      - devices/profiles/oneplus13-pjz110.json
+      - devices/profiles/oneplus-ace6-plq110.json
+      - manifests/*-sm8750-source.lock.json
+      - .github/workflows/source-audit.yml
+  schedule:
+    - cron: '45 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      full_sync:
+        description: 'Run one locked OnePlus 13 source sync on a hosted Ubuntu runner'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  manifest:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/audit_sm8750.py "$RUNNER_TEMP/sm8750-audit.json"
+      - if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: sm8750-source-audit
+          path: ${{ runner.temp }}/sm8750-audit.json
+          if-no-files-found: warn
+  locked-sync:
+    # A named commit message authorizes exactly one branch-push attempt.
+    # Ordinary PRs and the weekly schedule only run the manifest audit.
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/stage1/initial-foundation' && contains(github.event.head_commit.message, '[run-sm8750-once]')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/stage1/initial-foundation' && inputs.full_sync) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Install distro repo tool
+        run: sudo apt-get update && sudo apt-get install -y repo
+      - name: Reclaim only verified optional .NET preinstall
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          report="$RUNNER_TEMP/sm8750-runner-disk.txt"
+          {
+            echo "commit=$GITHUB_SHA image=${ImageVersion:-unknown}"
+            echo "runner_environment=${RUNNER_ENVIRONMENT:-unknown} runner_os=${RUNNER_OS:-unknown}"
+            if [[ "${RUNNER_ENVIRONMENT:-}" != "github-hosted" || "${RUNNER_OS:-}" != "Linux" ]]; then
+              echo 'Refusing cleanup outside GitHub-hosted Linux' >&2
+              exit 1
+            fi
+            source /etc/os-release
+            if [[ "$ID" != ubuntu || "$VERSION_ID" != 24.04 ]]; then
+              echo 'Refusing cleanup on unexpected OS image' >&2
+              exit 1
+            fi
+            df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            before=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+            declare -A protected_tools
+            for tool in git repo python python3 node java javac clang gcc make bash curl tar unzip; do
+              protected_tools[$tool]=$(command -v "$tool") || {
+                echo "Required tool missing before cleanup: $tool" >&2
+                exit 1
+              }
+            done
+            dir=/usr/share/dotnet
+            if [[ ! -d "$dir" ]]; then
+              echo "SKIP absent: $dir"
+            elif [[ -L "$dir" || "$(realpath -e -- "$dir")" != "$dir" ]] || mountpoint -q "$dir"; then
+              echo "SKIP unsafe path or mountpoint: $dir"
+            elif [[ ! -x "$dir/dotnet" || "$(stat -c %U -- "$dir")" != root ]]; then
+              echo "SKIP unrecognized preinstall: $dir"
+            else
+              du -sh -- "$dir"
+              echo "Removing only allowlisted .NET preinstall: $dir"
+              sudo rm -rf --one-file-system -- "$dir"
+            fi
+            for tool in "${!protected_tools[@]}"; do
+              if [[ "$(command -v "$tool" || true)" != "${protected_tools[$tool]}" ]]; then
+                echo "Protected tool changed or disappeared: $tool" >&2
+                exit 1
+              fi
+            done
+            repo version
+            python --version
+            node --version
+            java -version
+            clang --version | head -1
+            for path in "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}" "${ANDROID_HOME:-/usr/local/lib/android/sdk}" /usr/lib/jvm; do
+              [[ -d "$path" ]] && echo "Protected directory retained: $path" || echo "Protected directory absent before or after cleanup: $path"
+            done
+            df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+            after=$(df -Pk "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+            echo "free_before_kib=$before free_after_kib=$after reclaimed_kib=$((after-before))"
+          } 2>&1 | tee "$report"
+      - name: Check runner disk before source sync
+        run: |
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          du -sh "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          free_kib=$(df -Pk "$RUNNER_TEMP" | awk 'NR == 2 {print $4}')
+          # Provisional floor for this 35-project sync; revise from measured peak use.
+          if [ "$free_kib" -lt 36700160 ]; then
+            echo "SM8750 sync requires at least 35 GiB free in RUNNER_TEMP; found ${free_kib} KiB" >&2
+            exit 1
+          fi
+      - name: Inspect capacity and sync locked source
+        run: |
+          df -h "$RUNNER_TEMP"
+          df -i "$RUNNER_TEMP"
+          python scripts/verify_sm8750_sync.py \
+            --lock manifests/oneplus13-pjz110-sm8750-source.lock.json \
+            --workspace "$RUNNER_TEMP/sm8750-locked-source" \
+            --report "$RUNNER_TEMP/sm8750-locked-sync.json" \
+            --reserve-gib 10 --sample-seconds 30
+      - name: Record capacity after sync attempt
+        if: always()
+        run: |
+          df -h "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          df -i "$RUNNER_TEMP" "$GITHUB_WORKSPACE"
+          du -sh "$RUNNER_TEMP/sm8750-locked-source" "$GITHUB_WORKSPACE" 2>/dev/null || true
+      - name: Preserve exact sync result and failure log
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: sm8750-locked-sync
+          path: |
+            ${{ runner.temp }}/sm8750-locked-sync.json
+            ${{ runner.temp }}/sm8750-locked-sync.log
+            ${{ runner.temp }}/sm8750-runner-disk.txt
+          if-no-files-found: warn
+          retention-days: 14

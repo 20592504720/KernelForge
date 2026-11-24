@@ -1,0 +1,58 @@
+name: Kernel build (stage 2 not implemented)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel_version:
+        description: Kernel family configuration to validate
+        type: choice
+        required: true
+        options: ["5.10", "5.15", "6.1", "6.6", "6.12"]
+      build_mode:
+        description: Requested adapter family
+        type: choice
+        required: true
+        options: [gki, vendor]
+      source_repository:
+        description: Optional source repository URL (build engine not yet implemented)
+        type: string
+        required: false
+      source_ref:
+        description: Optional immutable commit or branch (build engine not yet implemented)
+        type: string
+        required: false
+      device:
+        description: Device profile (device profiles not yet implemented)
+        type: string
+        required: false
+      build_timestamp:
+        description: 'Kernel build time (ISO8601 + timezone, e.g. 2026-11-24T17:30:00+08:00); blank = current UTC'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  stage-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Resolve optional kernel build time (preflight only)
+        id: build_time
+        env:
+          KERNELFORGE_BUILD_TIMESTAMP: ${{ inputs.build_timestamp }}
+        run: |
+          python -B -m scripts.resolve_build_timestamp \
+            --json-output "$RUNNER_TEMP/build-time.json" \
+            --github-output "$GITHUB_OUTPUT"
+          echo "Kernel build timestamp resolved (no kernel build started)" >> "$GITHUB_STEP_SUMMARY"
+          python -c "import json,os; from pathlib import Path; x=json.loads((Path(os.environ['RUNNER_TEMP'])/'build-time.json').read_text()); print(x['utc_iso8601'],x['mode'])" >> "$GITHUB_STEP_SUMMARY"
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m kernelforge validate
+      - name: Stop after preflight
+        run: python -c "raise SystemExit('Stage 1 performs preflight only; no kernel build adapter exists.')"

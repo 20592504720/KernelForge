@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "request_id": "stage5-bakasu-susfs-gki-20261123",
+  "provider": "bakasu",
+  "provider_commit": "2734e0bc155759955880f5fb99be640fc5b92156",
+  "kernel_commit": "498f91c17b0822a09aede17d26a63bf8c6813725",
+  "susfs_commit": "756abbf2d81557e36664fc67dffaee26d3dfc57c",
+  "full_kernel": false
+}
