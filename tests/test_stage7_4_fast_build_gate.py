@@ -192,6 +192,27 @@ class Stage74AdmissionTests(unittest.TestCase):
             self.assertEqual(main(args), 2)
             self.assertEqual(report.read_bytes(), original)
 
+    def test_full_regression_uses_reviewed_remote_lock_not_fixture_digest(self):
+        # This digest was computed from the unchanged historical Git blob
+        # 814f568d1431fb2a6682ef4d4634b9c25c818c13, not generated from the working copy.
+        expected = "22cde7f21306497f47ffdd81b04da5661a24921a37cf8ae94203fd4c830e79a7"
+        raw = (ROOT / LOCK).read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), expected)
+        self.assertEqual(hashlib.sha1(
+            b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw,
+            usedforsecurity=False).hexdigest(), "814f568d1431fb2a6682ef4d4634b9c25c818c13")
+        workflow = (ROOT / ".github/workflows/stage1-6-full-acceptance.yml").read_text()
+        self.assertEqual(workflow.count("--reviewed-lock-sha256 " + expected), 2)
+        for stamp in ("", "2026-11-24T08:00:00+08:00"):
+            with self.subTest(timestamp=stamp):
+                result = evaluate(ROOT, expected, build_timestamp=stamp)
+                self.assertEqual(result["status"], "POLICY_TESTED_SOURCE_UNTESTED")
+                self.assertEqual(result["locked_projects"], 35)
+                self.assertFalse(result["build_eligible"])
+                if stamp:
+                    self.assertEqual(result["timestamp_preflight_preview"]["utc_iso8601"],
+                                     "2026-11-24T00:00:00Z")
+
     def test_manual_workflow_does_not_compose_automatic_kernel_job(self):
         yaml = (ROOT / ".github/workflows/stage7-4-fast-build.yml").read_text()
         self.assertIn("workflow_dispatch:", yaml)

@@ -46,8 +46,12 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python -B -m scripts.stage7_4_fast_build_gate --reviewed-lock-sha256 7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e --report "$RUNNER_TEMP/stage7-4-default.json"
-          python -B -m scripts.stage7_4_fast_build_gate --reviewed-lock-sha256 7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e --build-timestamp '2026-11-24T08:00:00+08:00' --report "$RUNNER_TEMP/stage7-4-custom.json"
+          # Independent reviewed Git baseline (not a digest derived from this checkout).
+          # Historical local WSL digest differs and must be reconciled separately.
+          test "$(git rev-parse HEAD:manifests/oneplus13-pjz110-sm8750-source.lock.json)" = '814f568d1431fb2a6682ef4d4634b9c25c818c13'
+          printf '%s  %s\n' '22cde7f21306497f47ffdd81b04da5661a24921a37cf8ae94203fd4c830e79a7' 'manifests/oneplus13-pjz110-sm8750-source.lock.json' | sha256sum --check -
+          python -B -m scripts.stage7_4_fast_build_gate --reviewed-lock-sha256 22cde7f21306497f47ffdd81b04da5661a24921a37cf8ae94203fd4c830e79a7 --report "$RUNNER_TEMP/stage7-4-default.json"
+          python -B -m scripts.stage7_4_fast_build_gate --reviewed-lock-sha256 22cde7f21306497f47ffdd81b04da5661a24921a37cf8ae94203fd4c830e79a7 --build-timestamp '2026-11-24T08:00:00+08:00' --report "$RUNNER_TEMP/stage7-4-custom.json"
       - name: Preserve evidence reports
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
