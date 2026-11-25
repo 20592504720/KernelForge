@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "stage": "7.4-O",
+  "date_local": "2026-11-25",
+  "branch": "stage1/initial-foundation",
+  "remote_commit": "9690047eb4bec86959d5d9cbcc3e894e6326a9e7",
+  "local_review_commit": "2d3b54f6b596fd4c1fe52bcef507d7b9b5e2f4ce",
+  "identical_review_tree": "c8169ae684990f6e59bfa5f570e487c6143c79a5",
+  "source_lock_sha256": "7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e",
+  "status": "READ_ONLY_RESOURCE_TESTED_PERFORMANCE_INCONCLUSIVE",
+  "raw_probe": {
+    "cpu_count": 8,
+    "affinity_count": 8,
+    "cpu_max": "max 100000",
+    "cpuset_effective": "0-7",
+    "memory_max": "max",
+    "memory_current": "959078400",
+    "meminfo": {
+      "MemTotal": "3950236 kB",
+      "MemAvailable": "3366872 kB",
+      "SwapTotal": "1048576 kB",
+      "SwapFree": "1048576 kB"
+    },
+    "ext4": {
+      "free_bytes": 859861880832,
+      "total_bytes": 1081101176832,
+      "free_inodes": 66821107
+    },
+    "mnt_e": {
+      "free_bytes": 196092571648,
+      "total_bytes": 371516764160,
+      "free_inodes": 1000000
+    },
+    "tools": {
+      "clang": {
+        "path": null
+      },
+      "ld.lld": {
+        "path": null
+      },
+      "llvm-nm": {
+        "path": null
+      },
+      "bazel": {
+        "path": null
+      },
+      "bazelisk": {
+        "path": null
+      },
+      "ccache": {
+        "path": null
+      },
+      "sccache": {
+        "path": null
+      },
+      "make": {
+        "path": null
+      },
+      "git": {
+        "path": "/usr/bin/git",
+        "resolved_path": "/usr/bin/git",
+        "symlink": false,
+        "sha256": "eb54b535467e0975c1284d4c4d08eea779aeb248a5d34b02e2ee171382e22201"
+      },
+      "python3": {
+        "path": "/usr/bin/python3",
+        "resolved_path": "/usr/bin/python3.12",
+        "symlink": true,
+        "sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+      },
+      "pinned_clang": {
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang",
+        "symlink": false,
+        "sha256": "dc739fc44bb889146bd47732912cad457200af7de7c2fb5a7509b7a9974d6d67"
+      },
+      "pinned_lld": {
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/ld.lld",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/lld",
+        "symlink": true,
+        "sha256": "27fdf99341929eab1f615a3172169b8dadd117b76a05b0abfa0a21873d1626a0"
+      },
+      "pinned_make": {
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/build-tools/linux-x86/bin/make",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/prebuilts/build-tools/linux-x86/bin/make",
+        "symlink": false,
+        "sha256": "a9472ab2dc5ab512bd946ca73dc84e4d911df4ad028f48bdbfaf3a500a88ffee"
+      },
+      "pinned_bazel": {
+        "path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/tools/bazel",
+        "resolved_path": "/home/kernelforge/kernelforge/sources/oneplus13-pjz110-sm8750/kernel_platform/build/kernel/kleaf/bazel.sh",
+        "symlink": true,
+        "sha256": "605658c08b39021360e16763e6823229e5855f279982446b1f510bec3cea7b9f"
+      }
+    },
+    "ccache_env_names": []
+  },
+  "windows_e_physical_total_bytes": 371516764160,
+  "windows_e_physical_free_bytes": 196092567552,
+  "raw_probe_sha256": "9b44f557970d897b96ab66abc667d1d271efe6278da920cecef3e1c22e3fd693",
+  "report_sha256": "7c1648d1452f4d499b219a76bd425d612213805eb1d93a754ef640e0298f4b70",
+  "local_cache_benchmark": "BLOCKED_NO_VERIFIED_SAMPLE",
+  "ccache_runtime": "BLOCKED_NO_CCACHE_BINARY",
+  "threads_benchmark": "DEFERRED_SEPARATE_AUTHORIZATION",
+  "actual_kernel_build": false,
+  "cloud_fixture_microbenchmark_reference": {
+    "image_bytes": 36293120,
+    "old_hash_median_ms": 34.52,
+    "new_hash_median_ms": 25.51,
+    "old_python_tracemalloc_peak_bytes": 36297658,
+    "new_python_tracemalloc_peak_bytes": 267345,
+    "simulated_tree_old_read_bytes": 33554432,
+    "simulated_tree_new_read_bytes": 16777216,
+    "not_local_or_full_build_measurement": true
+  },
+  "remaining": [
+    "DFR dependency",
+    "Stage 7.5 source admission",
+    "actual peak RSS/swap",
+    "reviewed archive and separate installation sample",
+    "required checks read-only admin access"
+  ]
+}
