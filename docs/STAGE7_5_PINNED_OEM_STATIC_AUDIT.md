@@ -98,3 +98,8 @@ output groups, DFR reachability, actual `KBUILD_BUILD_TIMESTAMP` /
 `SOURCE_DATE_EPOCH` propagation mechanism, safe Bazel/cache roots,
 physical E: disk and WSL RAM/swap. Nothing in this document constitutes
 a run of Bazel or an approved compile.
+
+
+## 2026-11-25 addendum — core Image DFR reachability
+
+The original static classification above is retained as the historical audit result. The subsequent pinned-source trace in [Stage 7.5 DFR static reachability addendum](STAGE7_5_DFR_STATIC_REACHABILITY_ADDENDUM.md) supersedes only the `FAST_IMAGE_DFR_REACHABILITY` question: the external DFR DDK package is not selected by the macro-defined core `sun_perf`/`sun_consolidate` kernel_build/dist path. It does **not** resolve the separate external DFR DDK build, repair its broken include symlink, validate Bazel action graphs, or authorize compilation.

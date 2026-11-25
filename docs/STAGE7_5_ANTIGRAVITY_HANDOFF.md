@@ -126,9 +126,12 @@ Read `README.md`, `docs/ROADMAP.md`, `docs/STAGE7_4_LOCAL_CODEX_AUDIT.md`,
 `docs/STAGE7_5_FAST_IMAGE_PLAN.md`,
 `scripts/stage7_5_artifact_evidence.py`,
 `docs/STAGE7_5_PINNED_OEM_STATIC_AUDIT.md`, and
-`docs/STAGE8_SCOPED_ACCEPTANCE.md`. The pinned OEM static audit already
-identifies candidate `sun_perf`/`sun_consolidate` macro labels and
-actual DFR DDK source files, but **not** a verified runtime Bazel action graph.
+`docs/STAGE8_SCOPED_ACCEPTANCE.md`. The pinned OEM static audit and the follow-up
+[DFR reachability addendum](STAGE7_5_DFR_STATIC_REACHABILITY_ADDENDUM.md)
+identify macro-derived `sun_perf`/`sun_consolidate` labels and establish
+that the separate external DFR DDK package is not selected by the core
+kernel_build/dist macro path. This is **not** a verified runtime Bazel action
+graph or output-group proof; the external DFR package itself remains blocked.
 Verify local/remote Git branch,
 HEAD, Tree, status and source-lock hash. If a safe cherry-pick is needed,
 record the exact commits and compare Trees; do not force-reset.
@@ -145,16 +148,17 @@ from a guessed name. Detect whether a fast Image-only target can avoid
 building all vendor modules without mutating OEM targets or silently
 dropping required dependencies.
 
-**C. Read-only DFR dependency trace**
-Find the recorded DFR external module/include reference in the locked
-BUILD/.bzl files, track the enclosing rules, exact label, location and all
-known in-tree references. Classify its reachability from the proposed fast
-Image/vmlinux target as PROVEN_REQUIRED, PROVEN_NOT_REQUIRED or
-UNDETERMINED. If static inspection cannot prove reachability, preserve
-UNDETERMINED; provide a proposed bounded `bazel cquery` / `aquery`
-command with flags, output/cache roots and no-fetch controls for a later
-separately approved run. **Do not execute Bazel, even for queries, in this
-first task** because it may generate cache/output or contact the network.
+**C. DFR scope reconciliation (read-only)**
+Use the cloud-side addendum rather than repeating the entire trace. Confirm the
+two pinned source SHAs and the local bytes for `modules.ext.oplus`,
+`oplus_build.sh`, `prepare_vendor.sh`, `build_module.sh`, DFR
+`BUILD.bazel` and `oplus_local_modules.bzl`. Verify that the local macro
+context matches the reviewed revisions. Preserve the broken
+`soc/oplus/dfr/include` symlink as evidence; do not patch or mask it. The
+static result is limited to core `sun_perf`/`sun_consolidate`
+kernel_build/dist. The separate DFR external DDK build remains
+BLOCKED_UNDETERMINED until its header/glob behavior is resolved. Do not execute
+Bazel, even for queries, in this first task.
 
 **D. Capacity and execution-envelope proposal**
 Using passive OS queries, record current RAM, swap, CPU, WSL version,

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "date_local": "2026-11-25",
+  "stage": "7.5-A",
+  "status": "CORE_KERNEL_STATIC_DFR_NOT_SELECTED_EXTERNAL_DDK_UNRESOLVED",
+  "source_revisions": {
+    "kernel_platform_msm_kernel": {
+      "repository": "OnePlusOSS/android_kernel_oneplus_sm8750",
+      "commit": "6028f47faddaa27700f8dd3a1d83906ea8f27170"
+    },
+    "oem_modules_devicetree": {
+      "repository": "OnePlusOSS/android_kernel_modules_and_devicetree_oneplus_sm8750",
+      "commit": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3"
+    }
+  },
+  "macro_trace": {
+    "variants": [
+      "consolidate",
+      "perf"
+    ],
+    "target_name": "sun",
+    "candidate_labels": [
+      "//msm-kernel:sun_perf",
+      "//msm-kernel:sun_perf_dist",
+      "//msm-kernel:sun_consolidate",
+      "//msm-kernel:sun_consolidate_dist"
+    ],
+    "label_status": "MACRO_DERIVED_NOT_BAZEL_QUERY_VERIFIED",
+    "core_kernel_build_uses": "in_tree_module_list",
+    "core_dist_contains_external_dfr": false,
+    "evidence_files": [
+      "BUILD.bazel",
+      "msm_platforms.bzl",
+      "sun.bzl",
+      "target_variants.bzl",
+      "msm_kernel_la.bzl"
+    ]
+  },
+  "external_dfr": {
+    "listed_in_modules_ext_oplus": true,
+    "modules_ext_oplus_line": 19,
+    "selected_by_kernel_only_wrapper_argument": false,
+    "separate_external_module_gate": "RECOMPILE_EXT_MODULE != 0",
+    "dfr_build_file_invokes_define_oplus_local_modules": true,
+    "dfr_symlink": {
+      "path": "vendor/oplus/kernel/dfr/soc/oplus/dfr/include",
+      "mode": "120000",
+      "target": "../../include/",
+      "resolved_target": "vendor/oplus/kernel/dfr/soc/include",
+      "resolved_target_exists": false,
+      "root_include_directory_exists": true
+    },
+    "header_glob_reachability": "UNDETERMINED",
+    "build_status": "BLOCKED_UNDETERMINED"
+  },
+  "validation": {
+    "bazel_query": false,
+    "cquery": false,
+    "aquery": false,
+    "compile": false,
+    "source_sync": false,
+    "source_mutation": false,
+    "build_eligible": false
+  }
+}

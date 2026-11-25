@@ -1,6 +1,6 @@
 # Stage 7.5 — pinned OnePlus 13 fast Image/vmlinux acceptance
 
-**State: STARTED — GitHub-side offline evidence software only. The real-build gate is NOT yet met.**
+**State: STARTED — GitHub-side offline software and pinned-source static DFR reachability review. The real-build gate is NOT yet met.**
 Do not interpret Stage 7.4 `STAGE7_4_SOFTWARE_AND_SOURCE_ADMISSION_TESTED`
 as `build_eligible=true`. The source admission report correctly remains
 `SOURCE_LOCK_TESTED_BUILD_BLOCKED`.
@@ -33,8 +33,14 @@ as `build_eligible=true`. The source admission report correctly remains
   advertised free space does **not** substitute for E: physical space.
   Resource samples are per-run and must be refreshed.
 - Source profile lacks confirmed `firmware_build`, ABI/KMI, full device toolchain
-  and resolved fast Kleaf target. OEM DFR external module/include dependency
-  remains `BLOCKED_UNDETERMINED`.
+  and resolved fast Kleaf action/output groups. Cloud-side static macro tracing
+  now shows the DFR external DDK package is not selected by the core
+  `sun_perf`/`sun_consolidate` `kernel_build`/`_dist` dependency definitions.
+  The separate external DFR DDK package remains `BLOCKED_UNDETERMINED`: its
+  `soc/oplus/dfr/include` symlink resolves to absent
+  `vendor/oplus/kernel/dfr/soc/include`. See
+  [DFR static reachability addendum](STAGE7_5_DFR_STATIC_REACHABILITY_ADDENDUM.md).
+  This does not certify the local Bazel action graph or Image/vmlinux outputs.
 
 ## Definition of Stage 7.5 (NOT the full official OKI)
 
@@ -52,7 +58,7 @@ discard DFR dependencies, or relabel a generic GKI 6.1 Image as SM8750 OKI.
 
 | ID | Work package | Passing evidence | Current state |
 | --- | --- | --- | --- |
-| 7.5-A | Confirm actual Kleaf labels, Bazel wrapper/flags, DFR include and exact OEM dependency graph | Read-only citation to pinned BUILD/.bzl files, exact label and target files, whether Image/vmlinux action requires DFR/vendor modules; unresolved edges explicitly BLOCKED | LOCAL_AUDIT_REQUIRED |
+| 7.5-A | Confirm actual Kleaf labels, Bazel wrapper/flags, DFR include and exact OEM dependency graph | Static source references, macro-derived labels, DFR core-path exclusion; local source/BUILD reconciliation and Bazel output/action graph remain pending | STATIC_MACRO_TRACE_COMPLETE; LOCAL_ACTION_GRAPH_PENDING |
 | 7.5-B | Establish resource-protected local build contract | Fresh WSL RAM/swap, CPU, E: physical and ext4/inodes; bounded parallelism, no-fetch policy and output/cache roots, process-group kill-on-limit, log retention and rollback plan; review before costly execution | NOT_AUTHORIZED_TO_RUN_YET |
 | 7.5-C | Verify compiler and timestamp action environment | Exact pinned Clang/LLD/Bazel wrapper bytes; blank timestamp sampled at actual build start, custom ISO8601+timezone normalized UTC; proof that KBUILD_BUILD_TIMESTAMP and SOURCE_DATE_EPOCH reach **actual compiler action** despite Bazel sandbox | UNTESTED |
 | 7.5-D | Run one approved pinned fast Image/vmlinux build | Actual command, exit 0, full unredacted-safe diagnostic log, task time/peak disk/RAM, source HEAD/manifest, .config, build target, actions, output locations and no unexpected fetch/rewrite | NOT_RUN |
@@ -107,11 +113,14 @@ large binaries or sensitive build logs to Git.
 ## Guardrails and handoff
 
 For the **first** Antigravity task, execute only
-`docs/STAGE7_5_ANTIGRAVITY_HANDOFF.md`: read-only Kleaf/DFR and build-resource
-investigation. Only after its findings are audited may a later separately
-issued instruction authorize bounded Bazel graph query or real Image/vmlinux
-compilation. If the DFR dependency cannot be resolved without disabling
-vendor functionality, record BLOCKED; do not patch around it.
+`docs/STAGE7_5_ANTIGRAVITY_HANDOFF.md`: read-only local Git/source admission,
+BUILD/wrapper reconciliation, output-group discovery planning and resource
+review. The cloud-side addendum statically separates the core Image path from
+the external DFR DDK build; local bytes and macro context must still be
+reconciled. Do not run Bazel queries or compile in this task. A later separately
+issued instruction is required for a bounded no-fetch action-graph query or
+real Image/vmlinux build. Do not remove, mask or repair the DFR link without
+review; full external DFR DDK remains BLOCKED until its own path is verified.
 
 Current top-level verdict:
-`STAGE7_5_CLOUD_SOFTWARE_IMPLEMENTED_LOCAL_TARGET_AND_REAL_BUILD_PENDING`.
+`STAGE7_5_CLOUD_STATIC_CORE_DFR_AUDIT_COMPLETE_LOCAL_SOURCE_AND_ACTION_GRAPH_PENDING`.

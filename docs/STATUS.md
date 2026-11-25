@@ -1,6 +1,6 @@
 # KernelForge 功能状态与验证矩阵
 
-更新日期：2026-11-24。当前有效验收基线：`0a6e702dda6d1851153490ac0aea22814bb06c49`。详见[最终安全验收报告](SECURITY_FINAL_ACCEPTANCE_2026_11_24.md)及[结构化证据](evidence/security_final_acceptance_2026_11_24.json)。本页替代早期阶段的状态概览；[旧版状态（历史快照）](https://github.com/20592504720/KernelForge/blob/4ac79893c19d95680bea4acc2374cc299fd6d2ab/docs/STATUS.md)仍可追溯。
+更新日期：2026-11-25。当前有效验收基线：`0a6e702dda6d1851153490ac0aea22814bb06c49`。详见[最终安全验收报告](SECURITY_FINAL_ACCEPTANCE_2026_11_24.md)及[结构化证据](evidence/security_final_acceptance_2026_11_24.json)。本页替代早期阶段的状态概览；[旧版状态（历史快照）](https://github.com/20592504720/KernelForge/blob/4ac79893c19d95680bea4acc2374cc299fd6d2ab/docs/STATUS.md)仍可追溯。
 
 ## 状态说明
 
@@ -31,7 +31,7 @@
 | Stage 7.1：环境预检 | 已实现并验证 | 只读预检；历史资源采样不代表当前容量 |
 | Stage 7.2：Release 镜像与同 SHA256 回退 | 已实现并验证 | 离线身份及回退测试；无已批准生产镜像 |
 | Stage 7.3：ccache 身份隔离、租约与失效保护 | 已实现并验证 | 软件级测试；真实 ccache 命中与加速未验 |
-| Stage 7.4：构建准入、默认/自定义时间、报告防覆盖 | 已实现并验证 | 云端策略与夹具；`build_eligible=false`，OEM 实际编译未验 |
+| Stage 7.4：构建准入、默认/自定义时间、报告防覆盖 | 已实现并验证 | 云端策略与夹具；`build_eligible=false`，OEM 实际编译未验；Stage 7.4-O 本地性能 INCONCLUSIVE，保留 `-j2`、ccache OFF |
 | 安全加固 | 已实现并验证 | 四轮及收尾整改；479 项/环境、五组 GKI、7 ZIP/5 Image 独立哈希；详见最终报告 |
 
 ## 已实现待验证及开发中
@@ -44,7 +44,7 @@
 | 生产 Release 镜像 | 已实现待验证 | 许可、独立可信摘要、真实 Asset 和下载 |
 | 真实 ccache | 已实现待验证 | 可信二进制、编译器拦截、冷热对照，默认关闭 |
 | OEM 实际编译时间传递 | 已实现待验证 | Bazel/Kleaf 实际 action 环境，非仅外层 shell |
-| Stage 7.5 Image/vmlinux 快速构建 | 开发中（受阻） | 已有离线产物检查及静态审计；实际目标图、DFR、资源与本地锁待核验，未实际编译 |
+| Stage 7.5 Image/vmlinux 快速构建 | 开发中（受阻） | 静态宏链已确认 core sun_perf/sun_consolidate 路径不选 DFR external DDK；实际 Bazel action/output groups、本地 35 项源码复核、资源及时间传递仍待核验，未实际编译 |
 | Actions 通用 build 入口 | 已实现待验证（PLACEHOLDER） | 当前仅预检；真实构建工作流另行验收 |
 | Release 发布门禁 | 待实现（PLACEHOLDER） | Stage 9 审批与签名、打包、发布及设备证据 |
 
@@ -75,7 +75,7 @@ Stage 8 实施尚未开始；不得将软件基础能力计为设备交付。详
 
 [完整验收](https://github.com/20592504720/KernelForge/actions/runs/45375493788) 12/12 Job 通过；每环境 479 项，Windows 每环境 40 项条件跳过，合计 1836 次非跳过测试成功。五组真实 ACK6.1 Image 成功，7 份 ZIP、5 份 Image 独立 SHA256 通过。CodeQL 0、Bandit 高 0/中 1/低 56、锁定 Python 依赖无已知漏洞、Gitleaks 149 个提交无发现。扫描不保证零漏洞、不涵盖全部上游 CVE。
 
-DFR 为 BLOCKED_UNDETERMINED，本地 WSL2 源码锁摘要差异未解决；独立 Vendor 归档、OnePlus13 OKI、ABI/KMI、真机 boot/Root/SUSFS、OEM 时间传递均未验证。XML/Expat 及可信 PATH/Git/SSH 边界保留；vmlinux 只有 runner 报告哈希。详细参见最终验收报告。
+DFR external DDK 仍为 BLOCKED_UNDETERMINED（其 symlink/header glob 影响尚未由 Bazel 验证），但固定 OEM 源码的静态宏链显示该外部模块包不属于 core sun_perf/sun_consolidate kernel_build/_dist 依赖。当前 WSL2 报告确认锁文件 SHA256 未变，但本轮未复核 35 个项目 HEAD/cleanliness，不能据此宣告源码准入；须重新运行只读 source admission。独立 Vendor 归档、OnePlus13 OKI、ABI/KMI、真机 boot/Root/SUSFS、OEM 时间传递均未验证。XML/Expat 及可信 PATH/Git/SSH 边界保留；vmlinux 只有 runner 报告哈希。详见 Stage 7.5 DFR addendum 与最终验收报告。
 
 ## 文档维护
 

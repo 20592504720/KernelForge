@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "date_local": "2026-11-25",
+  "status": "LOCAL_PERFORMANCE_INCONCLUSIVE_GIT_RECONCILIATION_RECORDED",
+  "operator_reported": {
+    "local_commit": "e6242ff7df50cde362b1ae70ae26f9c077c799f1",
+    "local_tree": "220a27265fc9871c3f8ac7286c1e5a06a084e50d",
+    "reported_remote_commit": "e3f5fa5a0b6cc92c4c9d73f030ebf3e9b9cf3dc7",
+    "reported_common_tree": "220a27265fc9871c3f8ac7286c1e5a06a084e50d",
+    "local_json_sha256": "3d9fefe3646c9aaceced3f70acb16b7d202e5adb21650e39d6326748d3095186"
+  },
+  "verified_remote": {
+    "branch": "stage1/initial-foundation",
+    "commit": "e3f5fa5a0b6cc92c4c9d73f030ebf3e9b9cf3dc7",
+    "tree": "220a27265fc9871c3f8ac7286c1e5a06a084e50d",
+    "main_commit": "afbef941168e24b8e5bd52db429d70f473f6c995"
+  },
+  "uploaded_report": {
+    "path": "STAGE7_4_O_LOCAL_BENCHMARK.md",
+    "sha256": "7c1648d1452f4d499b219a76bd425d612213805eb1d93a754ef640e0298f4b70",
+    "verified": true
+  },
+  "local_json": {
+    "sha256": "3d9fefe3646c9aaceced3f70acb16b7d202e5adb21650e39d6326748d3095186",
+    "bytes_attached": false,
+    "verified": false
+  },
+  "historical_repo_report": {
+    "remote_commit": "9690047eb4bec86959d5d9cbcc3e894e6326a9e7",
+    "local_commit": "2d3b54f6b596fd4c1fe52bcef507d7b9b5e2f4ce",
+    "tree": "c8169ae684990f6e59bfa5f570e487c6143c79a5",
+    "preserved": true
+  },
+  "pr": {
+    "number": 1,
+    "state": "open",
+    "merged": false,
+    "mergeable_state": "dirty",
+    "head": "e3f5fa5a0b6cc92c4c9d73f030ebf3e9b9cf3dc7",
+    "base_ref": "main",
+    "main_ahead_by": 1,
+    "feature_ahead_by": 149,
+    "merge_base": "77af49c47acbfd384a4e22993797eebfa8d9eee6"
+  },
+  "local_result": {
+    "performance": "INCONCLUSIVE",
+    "local_cache": "BLOCKED_NO_VERIFIED_SAMPLE",
+    "ccache": "BLOCKED_NO_CCACHE_BINARY",
+    "threads": "DEFERRED_SEPARATE_AUTHORIZATION",
+    "kernel_build": false,
+    "keep_j2": true,
+    "ccache_enabled": false
+  },
+  "boundaries": {
+    "main_modified": false,
+    "pr_merged": false,
+    "bazel_run": false,
+    "repo_sync": false,
+    "source_modified": false,
+    "cache_modified": false
+  }
+}
