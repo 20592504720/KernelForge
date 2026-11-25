@@ -60,7 +60,7 @@ Do not delete the DFR module, mask the include, rewrite the symlink or claim DFR
 1. Re-run the read-only Stage 7.4 source admission against the current local 35-project checkout. The latest passive resource report confirms the lock-file SHA only; it did not re-check all 35 live project HEADs and tracked cleanliness. A lock-file hash is not a substitute for live source admission.
 2. Confirm local bytes for the two pinned source commits and relevant BUILD/.bzl/wrapper files; compare local HEAD/tree with remote without reset, force-push, source sync or history rewrite.
 3. Resolve exact Bazel labels and Image/vmlinux output groups only through a separately authorized bounded no-fetch query. This audit did not run Bazel, even for queries.
-4. Re-sample RAM/swap, physical E: reserve, ext4/inodes and toolchain identities. The reported ~3.37 GiB MemAvailable and 1 GiB swap do not establish safe build peak. Keep `-j2`; keep ccache OFF.
+4. Re-sample RAM/swap, physical E: reserve, ext4/inodes and toolchain identities. The reported ~3.21 GiB MemAvailable (3,366,872 KiB) and 1 GiB swap do not establish safe build peak. Keep `-j2`; keep ccache OFF.
 5. A real fast Image/vmlinux compile requires a separate explicit authorization and a reviewed process/resource/time/output envelope. No build was started or authorized by this addendum.
 
 **Final classification:** core Image DFR dependency statically excluded; external DFR DDK unresolved; local source/action graph and real build pending.

@@ -19,7 +19,7 @@ Date: 2026-11-25 (Asia/Shanghai).
 
 ## Technical result retained
 
-The local report remains `READ_ONLY_RESOURCE_TESTED_PERFORMANCE_INCONCLUSIVE`: WSL2 8 logical CPUs, about 3.37 GiB MemAvailable, 1 GiB swap, E: physical free about 182.62 GiB, ext4 reserve satisfied. Toolchain binaries are present in the locked source but not on PATH; ccache is absent. No reviewed complete toolchain archive/independent install tree was available, so local cache comparison is blocked. No actual peak RSS, thread benchmark, ccache hit-rate or kernel build was measured. Keep `-j2`; keep ccache OFF.
+The local report remains `READ_ONLY_RESOURCE_TESTED_PERFORMANCE_INCONCLUSIVE`: WSL2 8 logical CPUs, about 3.21 GiB MemAvailable (3,366,872 KiB), 1 GiB swap, E: physical free about 182.62 GiB, ext4 reserve satisfied. Toolchain binaries are present in the locked source but not on PATH; ccache is absent. No reviewed complete toolchain archive/independent install tree was available, so local cache comparison is blocked. No actual peak RSS, thread benchmark, ccache hit-rate or kernel build was measured. Keep `-j2`; keep ccache OFF.
 
 The source-lock file SHA256 is reported unchanged at `7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e`. This proves the lock-file bytes only. This passive probe did not re-check the 35 live project HEADs and tracked cleanliness; repeat the read-only source-admission gate before any build.
 
