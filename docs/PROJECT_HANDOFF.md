@@ -489,3 +489,8 @@ Stage8 条件启动：仅在Stage7.5全部强制门禁通过、真实证据完�
 - 性能合同：当前策略文档要求每档至少2个完整成功样本，历史O5已要求至少3次对照，正式O5性能验收保留较严格的历史合同，不因策略文档最低值自动降低；Stage7.5一次成功基线与后续性能对照是不同门禁，不为测速度无意义重跑。缓存有效性按实际Kleaf/Bazel action判定，不保证无损断点续编。
 - 证据根 E:/内核构建/reports/stage7_5_final_acceptance_20261127/resource-aware-concurrency；final-report.json、baseline-resource-analysis-v2.json（1513资源样本、7585进程树样本）、admission-window.jsonl、policy-selection.json、final-build-state.json、verification/、resource-policy-only.patch、full-worktree.patch、prior-runner-sources/、final-runner-sources/、evidence-manifest-v2.json、checkpoint.json。初版封存摘要含写入中stdout，原件保留，v2替代。Stage8/9未启动。
 - 下一步先确认宿主机物理RAM、真实提交限额/已提交/余量、分页文件、.wslconfig现状、WSL实际cgroup限额、内存占用与磁盘，再评估容量调整。若宿主机有足够物理内存与提交空间，优先考虑为WSL分配至少8GiB并保证宿主机余量；若容量不足，降低并发或增Swap本身不能保证BTF成功，不盲重试。系统配置修改、扩容Swap、WSL shutdown或额外硬件/云构建需要相应用户授权，先形成最小变更及恢复方案；不禁BTF、不降低原阈值、不清缓存、不重放旧任务。通过新准入才启动下一次单构建。保留Stage7.5最后一轮目标及Stage8条件启动，当前不得标完成。
+
+
+### 16.4 宿主机物理容量确认（2026-11-27，用户系统信息截图）
+
+用户确认宿主机仅8GB DDR3（系统可用物理总量7.88GB），Intel Core i7-4770K 4核8线程，GIGABYTE G1.Sniper Z87，Windows11 Pro Insider Preview。7.88GB是可用物理总量而非当前空闲量；当前提交限额、分页文件、磁盘类型及空闲量仍需实测。截图中的设备/产品ID不归档。现有Make4门槛要求WSL总内存>=8GiB，故该宿主机不适合本地Make4试验，暂以Make2为目标，不降低门槛。建议先只读审计Windows物理及提交内存、分页文件、WSL配置和各磁盘，确认无运行任务；若资源支持且用户授权，备份并合并.wslconfig现有配置，试验memory=5GB、swap=4GB（磁盘适合时可评估6GB）、processors=4，保留其他设置，必要时将swapFile指定到经核验有足够空间的SSD，Windows分页文件保持系统管理并检查提交余量。该配置是候选，不是已通过容量验证；避免同时用光宿主机内存，WSL shutdown前保存所有任务并确认授权，重新采样满足Make2门禁才启动单个构建。若仍不足，优先评估升级16/32GB DDR3（主板官方规格4槽最高32GB，实际修订版、插槽及条型另核实）或有足够资源的原生Linux/云端构建方案；任何新环境/费用/系统配置修改须相应授权。不得禁用BTF、清缓存或强行重试。Microsoft WSL配置参考 https://learn.microsoft.com/windows/wsl/wsl-config ，主板规格参考 https://www.gigabyte.com/sg/Motherboard/G1Sniper-Z87-rev-11/sp 。当前仍为§16.3容量阻塞，未执行配置修改或新构建。
