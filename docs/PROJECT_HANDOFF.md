@@ -81,7 +81,7 @@
 
 较早历史交接（2026-11-27，已被下述 §12.1 最新检查点取代）：LOCAL_PREPARATION_COMPLETE_REAL_BUILD_BLOCKED 后，出现 BLOCKED_WSL_RUNTIME_BEFORE_BAZEL_QUERIES；WSL 两次约90秒退出，18个审计文件零字节，五项 Bazel 查询均未启动，真实编译未执行，perf 命令只是未经授权、未经验证草案。Android repo 链接修复为候选，不自动写官方源。--make_jobs=2、Bazel --jobs=1、ccache OFF；优先 perf common base，不能代替完整 SM8750 OKI。静态宏追踪提示 core sun_perf/sun_consolidate 不选择独立 DFR external DDK，仍需真实本地 Bazel 图确认，外部 DFR include 缺失状态 BLOCKED_UNDETERMINED 不变。build_eligible=false，device_release_eligible=false。真实性能 INCONCLUSIVE/未验证。
 
-下一步：以 §14 为当前状态。local_config_platform 的限定初始化与官方工作区链接整改已完成，先对 kernel_toolchain_info 及其传递生成仓库声明开展只读审计，形成完整初始化合同；读取最新本地执行报告。旧 WSL 运行时故障及无损恢复记录保留，不重复已经通过的准入。不得无条件重试同一故障、运行未经审核 repo sync、下载新二进制、修改 DFR 或源码锁。取得单独授权后才执行有界 nofetch 查询，核对结果及完整安全合同后才启动真实构建。用户规定 Stage 7.5 整阶段最多两轮；内部步骤非额外执行轮次，重大风险仍须批准。
+下一步：以 §15 为当前状态。local_config_platform 限定初始化、官方链接整改、生成仓库集中静态审计均已完成；当前不存在保持 nofetch 的已验证初始化 argv。待用户决定是否单独授权隔离、指定仓库的离线物化例外，不重复静态审计。旧 WSL 运行时故障及无损恢复记录保留，不重复已经通过的准入。不得无条件重试同一故障、运行未经审核 repo sync、下载新二进制、修改 DFR 或源码锁。取得单独授权后才执行有界 nofetch 查询，核对结果及完整安全合同后才启动真实构建。用户规定 Stage 7.5 整阶段最多两轮；内部步骤非额外执行轮次，重大风险仍须批准。
 
 参考：[7.5 快速构建合同](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_FAST_IMAGE_PLAN.md)、[Antigravity 交接](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_ANTIGRAVITY_HANDOFF.md)、[DFR 静态补充](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_DFR_STATIC_REACHABILITY_ADDENDUM.md)。
 
@@ -155,7 +155,7 @@
 | 优先级 | 待办 | 状态 |
 | --- | --- | --- |
 | P0 | T09 剩余独立113文件语义审计、残余风险/权限边界及验收证据归档 | 软件回归已过；审计未全完，不能伪造通过 |
-| P0 | 审查 kernel_toolchain_info 及传递生成仓库的规则、输入、下载行为、主机工具和隔离边界 | BLOCKED_GENERATED_REPOSITORY_NOT_INITIALIZED_NOFETCH（§14）；local_config_platform及官方链接整改已通过 |
+| P0 | 生成仓库集中静态审计已完成；审查是否单独授权指定仓库离线物化例外 | BLOCKED_NO_ADMISSIBLE_INITIALIZATION_COMMAND_UNDER_UNCHANGED_NOFETCH（§15）；原根因未解除 |
 | P0 | 7.5 五项有界 nofetch Bazel 查询、实际 action graph、资源与时间传递 | 最新 query-definitions exit 7、后四项未执行；累计3次尝试、0成功；不放宽门禁（§14） |
 | P0 | 7.5 一次获批准的真实 pinned Image/vmlinux、真实性能与独立产物验收 | 未执行 |
 | P0 | 最新中文交付、默认主页/仓库简介状态核验和经授权同步 | 部分已实施；持续必做 |
@@ -437,3 +437,19 @@ perf 草案状态 BLOCKED_REVIEW_DRAFT_NOT_GRAPH_VERIFIED_NOT_AUTHORIZED；autho
 ### 15.5 后续使用及核验边界
 
 任务开始：先总账当前状态→目标分支README/STATUS/ROADMAP→对应阶段合同及evidence JSON→对应Schema/配置/实现和测试→原始日志/Commit/Tree。Stage7.5优先§14及当前附件；Stage8使用S01–S10及D01–D14矩阵；Stage9从真实build/release工作流、Schema、已验证设备范围和发布合同设计。文件名索引帮助快速定位，不是运行测试结果；此轮未独立逐行审计所有文件、未重新运行测试、未验证真实编译、未改变代码或阶段状态。当前最新阻塞仍按§14，后续只有新证据才更新。用户要求长期熟悉云端内容，每次工作按需读取最新版本并增量修正总账。
+
+
+## 15. Stage 7.5 生成仓库闭包集中静态审计（2026-11-27 11:08 UTC）
+
+来源：用户上传 REPORT_ZH(2).md、REPOSITORY_MATRIX_ZH.md、INITIALIZATION_CONTRACT_ZH.md、HANDOFF_ZH.md、verification(2).json。执行报告11:05:50.900594Z，封存11:08:43.464157Z；本地证据根 E:/内核构建/reports/stage7_5_generated_repository_closure_audit_20261127。独立复审接受限定静态审计范围，不接受初始化、图证明或真实编译准入。根因仍 BLOCKED_GENERATED_REPOSITORY_NOT_INITIALIZED_NOFETCH；合同 BLOCKED_NO_ADMISSIBLE_INITIALIZATION_COMMAND_UNDER_UNCHANGED_NOFETCH，initialization_argv=null、authorized/executed/is_runnable_contract=false。累计原查询3尝试0成功不变，本轮初始化/fetch/查询/编译/下载均0。
+
+- 报告收集520文件、2769677字节，483官方文件绑定source.lock Commit/HEAD及index Blob/工作字节SHA256，37缓存文件另列。入口 kernel_toolchain_ext.bzl Commit d50b305f7da9e14715a25120a4ac7b1a4b8b97c3、Blob fd0357f3ac0a0f0629d178231ae60cda6ac23404、SHA256 7c0ccb101a0f12058dddccedd74cd29432206a14fbe3d95d6287cdcb27105792；declare_toolchain_constants Blob869efc9c082a5e6cc1b544ffc452fbd618f72ed0/SHA256 5a05169e5dfaad1ce35baed819d15fdc34bd53ba4c107a72f0fc00b0383329ee；declare_host_tools Blob a4b207ff9517e47979dba497d0b2af41ba22f4ff/SHA256 ac252f8caab9a5692720add500cae229715594e47272ffde10d6fe385a0c8125；Clang独立预编译Commit b099698c583b8361ca771f3cc8d6af6f729f39b3。
+- 核心三仓库：kernel_toolchain_info 读取common/build.config.constants四常量、写BUILD/dict.bzl，无execute/download，生成BUILD依赖bazel_skylib；kleaf_clang_toolchain 默认无KLEAF_USER_CLANG_TOOLCHAIN_PATH时仅生成WORKSPACE/BUILD，依赖常量及本地锁定Clang；kleaf_host_tools 默认PATH=/usr/bin:/bin，对bash/perl/rsync/sh/find只which与链接，sh→dash。CLANG_VERSION=r510928、AARCH64_NDK_TRIPLE=aarch64-linux-android31、X86_64_NDK_TRIPLE=x86_64-linux-android31、ARM_NDK_TRIPLE=arm-linux-androideabi31，不证明实际action工具链。
+- 独立重计81行 A13/B11/C46/D11（含动态仓库族，非实际闭包仓库总数）。A=核心三仓库+host_platform+九个本地覆盖libcap/libcap_ng/lz4/toybox/zlib/zopfli/pigz/prebuilt_ndk/dtc；B=既有11个external映射/embedded_tools/local_config_platform，仅有限身份复验；C=未物化Java/JDK及14 Python wheel等；D=Python解释器族（含下载zstd后make --jobs=4）、local_config_cc编译探测、local_jdk执行探测、Apple条件分支及其他未确定族。A不是执行许可，B不是完整缓存逐字节验证；C/D未证明实际可达，禁止自动放行。--jobs=1/--make_jobs=2不约束repository_ctx.execute内部并发。
+- 静态识别30 repository_rule、11 module_extension、249操作候选。初始926 load边/119未解析，修正984边/27原始未解析，新增17帮助/覆盖文件；保留原始错误与静态缺口。Python AST不等于Starlark/Bzlmod实际求值，不能声称完整实际依赖图。DFR/产物归属/配置生产者/action工具链/时间戳仍BLOCKED；perf草案三个授权执行验证字段false。
+- 资源门槛：E/ext4启动70/40 GiB、停止55/25、保留50/20；inode启动1000000/停止100000；MemAvailable1536/512 MiB、SwapFree512/256、Windows提交余量1536/512；JVM768m、make_jobs2/jobs1/CPU2/RAM2048、ccache OFF。原五查询600/900/1200/1200/1200秒；历史argv/日志路径不得直接重用。原网络隔离/禁下载/净环境/进程守卫保持。报告称双平台HEAD/Tree、preparation分支、5未提交路径、空暂存区、源锁/Manifest/DFR/源码链接/所观察缓存及历史204/696和发布文件均不变。
+- 封存回执PASS，1099文件11336439字节、无差异；文本清单SHA256 cdf8bef695e9136da14c02651b28a73dbeeb90906289794ab166530020b39c3d；JSON清单65f0f48d02bc4414cfea08dd9e1a421b47bd6408b358b77531968e6ae1285046。ChatGPT实际读取五附件并独立计算SHA256：REPORT 149bf81d2d629813e7cc404b50d87f41ca4f64809bb68764feec139d6703db61；MATRIX bf066cbe14108e49a0105ee7457b9f825c1a7353b0ef6356f55822952dd1da08；CONTRACT 25f6cb1fd9cb16de7b10f43059f1dca36f0a46888f9f192f82206fe08d102e4c；HANDOFF ab94975aa983232ae4a168875ab2d82a2975a576581424274871180703c18b53；verification 941fe0bed84c6790585dfa2c1a10d0562cf94fb9333ac047994cfb7f09d37b35。未上传完整1099文件及两份manifest，不能独立验证全封存或五附件与封存摘要的匹配；不能声称源码483文件已由ChatGPT独立重验。
+
+### 15.1 下一步决策（建议，非已授权）
+
+不重复闭包静态审计。Bazel fetch语义包含本地repository rule物化，并不等于必然联网；nofetch对当前缺失仓库阻止物化。官方文档 https://bazel.build/versions/9.2.0/external/faq 描述指定仓库fetch --repo；不能把新版说明当作锁定本地Bazel支持证据，必须核实实际二进制身份、版本、帮助、wrapper和精确repo映射。建议用户明确授权一次性限定初始化例外，仅允许经复审A类必要仓库在独立受控输出根中物化，B类可信只读输入，拒绝C/D、未知仓库、未授权execute/编译/下载/系统写入；不得执行 broad fetch、--force、repo sync、手造marker、全量wrapper或改生产源码。保留网络隔离、禁下载、无远程缓存/执行、资源守卫；仓库规则自身须有可实施的阻断机制，不仅事后日志；若现有工具无法强制仓库/进程/文件边界或实际版本不支持限定命令则停，不能放行。隔离输出根策略须考虑完整缓存复制、绝对路径、marker和Bazel元数据，不直接拼接external或把生成结果盲移生产缓存。仅获用户明确授权后进行最小指定仓库初始化并复验，如通过再恢复原nofetch五查询（须覆盖当次查询授权），任何非零或未知依赖停止。真实编译、网络下载及C/D实际探测另行审批。此为整改建议，不意味着历史合同已可运行或用户已授权。原项目阶段、分支、PR/main及历史证据保护保持。
