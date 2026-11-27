@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from kernelforge.python_environment import (
+    _canonical_windows_dacl,
     _check_windows_dacl,
     _create_environment,
     _integrity_directory,
@@ -84,6 +85,40 @@ class EnvironmentReviewTests(unittest.TestCase):
                 _check_windows_dacl(descriptor, user)
         _check_windows_dacl(f'D:(A;;FA;;;{user})(A;;FA;;;SY)(A;;FA;;;BA)(A;;FR;;;BU)', user)
         _check_windows_dacl('D:(A;IO;FA;;;WD)', user)
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows native ACL SID canonicalization')
+    def test_native_acl_uses_exact_numeric_sid_identity(self):
+        import ctypes
+        from ctypes import wintypes
+        security = ctypes.WinDLL('advapi32', use_last_error=True)
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        security.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
+            wintypes.LPCWSTR, wintypes.DWORD, ctypes.POINTER(wintypes.LPVOID), ctypes.POINTER(wintypes.ULONG)]
+        security.ConvertStringSecurityDescriptorToSecurityDescriptorW.restype = wintypes.BOOL
+        kernel.LocalFree.argtypes = [wintypes.LPVOID]
+        kernel.LocalFree.restype = wintypes.LPVOID
+        def canonical(sddl):
+            descriptor, size = wintypes.LPVOID(), wintypes.ULONG()
+            if not security.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                    sddl, 1, ctypes.byref(descriptor), ctypes.byref(size)):
+                raise ctypes.WinError(ctypes.get_last_error())
+            try:
+                buffer = ctypes.create_string_buffer(ctypes.string_at(descriptor, size.value), size.value)
+                return _canonical_windows_dacl(buffer, security, kernel)
+            finally:
+                kernel.LocalFree(descriptor)
+        rows = canonical('D:P(A;OICI;FA;;;LA)(A;;FA;;;SY)(A;;FA;;;BA)(A;;FA;;;OW)')
+        aliases = rows.split(';;;')
+        local_admin = aliases[1].split(')', 1)[0]
+        self.assertRegex(local_admin, r'^S-1-5-21-\d+-\d+-\d+-500$')
+        self.assertIn(';;;S-1-5-18)', rows)
+        self.assertIn(';;;S-1-5-32-544)', rows)
+        self.assertIn(';;;S-1-3-4)', rows)
+        _check_windows_dacl(rows, local_admin)
+        with self.assertRaisesRegex(ValueError, 'unrelated users'):
+            _check_windows_dacl(rows, 'S-1-5-21-123-456-789-1001')
+        with self.assertRaisesRegex(ValueError, 'unrelated users'):
+            _check_windows_dacl(canonical('D:(A;;FW;;;WD)'), local_admin)
 
     def test_explicit_repair_retains_old_environment_on_offline_failure(self):
         with tempfile.TemporaryDirectory() as folder:

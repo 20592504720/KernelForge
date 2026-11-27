@@ -1,103 +1,70 @@
-name: T09 Windows ACL diagnostic
+name: Validate
+
 on:
   push:
     branches: [audit/stage7-4-t09]
+
 permissions:
   contents: read
+
 jobs:
-  diagnose:
+  validate:
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.12"]
-    runs-on: windows-latest
-    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
+          ref: '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
       - run: python -m pip install -r requirements-dev.txt
-      - name: Collect redacted native ACL and path diagnostics
+      - run: python -m compileall -q kernelforge scripts tests
+      - run: python -m kernelforge validate
+      - name: Normalize reviewed checkout metadata
+        run: python scripts/normalize_ci_checkout.py
+      - name: Verify exact T09 remediation checkout identity
         shell: bash
         run: |
-          python - <<'PY'
-          import ast, ctypes, os, re, subprocess, tempfile
-          from ctypes import wintypes
-          from pathlib import Path
-          from kernelforge import python_environment as policy
-          from kernelforge.toolchains.manager import ToolchainManager
-          assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip() == '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
-          assert subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip() == '4f79547b9f3b4e587be28387791be7b3e35c0145'
-          security = ctypes.WinDLL('advapi32', use_last_error=True)
-          kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-          security.GetFileSecurityW.argtypes = [wintypes.LPCWSTR,wintypes.DWORD,wintypes.LPVOID,wintypes.DWORD,ctypes.POINTER(wintypes.DWORD)]
-          security.GetFileSecurityW.restype = wintypes.BOOL
-          security.GetSecurityDescriptorDacl.argtypes = [wintypes.LPVOID,ctypes.POINTER(wintypes.BOOL),ctypes.POINTER(wintypes.LPVOID),ctypes.POINTER(wintypes.BOOL)]
-          security.GetSecurityDescriptorDacl.restype = wintypes.BOOL
-          security.GetAce.argtypes = [wintypes.LPVOID,wintypes.DWORD,ctypes.POINTER(wintypes.LPVOID)]
-          security.GetAce.restype = wintypes.BOOL
-          security.ConvertSidToStringSidW.argtypes = [wintypes.LPVOID,ctypes.POINTER(wintypes.LPWSTR)]
-          security.ConvertSidToStringSidW.restype = wintypes.BOOL
-          kernel.LocalFree.argtypes = [wintypes.LPVOID]
-          kernel.LocalFree.restype = wintypes.LPVOID
-          original_check = policy._check_windows_dacl
-          original_owned = policy._owned_directory
-          current = {}
-          def owned(path, **kw):
-              current['path'] = path
-              return original_owned(path, **kw)
-          def check(descriptor, user):
-              print('ACL_SDDL', [(x.split(';')[0:3], x.split(';')[-1] if re.fullmatch(r'[A-Z]{2}', x.split(';')[-1]) else ('CURRENT_USER' if x.split(';')[-1]==user else 'NUMERIC_REDACTED')) for x in re.findall(r'\(([^()]*)\)',descriptor)], flush=True)
-              needed=wintypes.DWORD()
-              security.GetFileSecurityW(str(current['path']),5,None,0,ctypes.byref(needed))
-              assert 0 < needed.value <= 65536
-              buf=ctypes.create_string_buffer(needed.value)
-              assert security.GetFileSecurityW(str(current['path']),5,buf,needed.value,ctypes.byref(needed))
-              present, defaulted, dacl = wintypes.BOOL(),wintypes.BOOL(),wintypes.LPVOID()
-              assert security.GetSecurityDescriptorDacl(buf,ctypes.byref(present),ctypes.byref(dacl),ctypes.byref(defaulted)) and present.value and dacl.value
-              count=ctypes.c_ushort.from_address(dacl.value+4).value
-              for i in range(count):
-                  ace=wintypes.LPVOID()
-                  assert security.GetAce(dacl,i,ctypes.byref(ace))
-                  kind=ctypes.c_ubyte.from_address(ace.value).value
-                  flags=ctypes.c_ubyte.from_address(ace.value+1).value
-                  mask=ctypes.c_uint32.from_address(ace.value+4).value
-                  if kind not in (0,1):
-                      print('ACL_NATIVE_UNSUPPORTED_TYPE',kind,flush=True)
-                      continue
-                  value=wintypes.LPWSTR()
-                  assert security.ConvertSidToStringSidW(wintypes.LPVOID(ace.value+8),ctypes.byref(value))
-                  try:
-                      identity = 'CURRENT_USER' if value.value==user else {'S-1-5-18':'SYSTEM','S-1-5-32-544':'ADMINISTRATORS'}.get(value.value,'OTHER_REDACTED')
-                  finally:
-                      kernel.LocalFree(value)
-                  print('ACL_NATIVE_ACE',i,kind,flags,hex(mask),identity,flush=True)
-              return original_check(descriptor,user)
-          policy._owned_directory=owned
-          policy._check_windows_dacl=check
-          module=ast.parse(Path('scripts/windows_test_runner.py').read_text(encoding='utf-8'))
-          node=next(x for x in module.body if isinstance(x,ast.FunctionDef) and x.name=='_prepare_ci_fixture_owner')
-          namespace={'Path':Path,'os':os}
-          exec(compile(ast.Module(body=[node],type_ignores=[]),'<fixture-probe>','exec'),namespace)
-          root=None
-          try:
-              root=namespace['_prepare_ci_fixture_owner']()
-              print('ACL_PROBE_PASS',flush=True)
-          except (ValueError,OSError) as exc:
-              print('ACL_PROBE_BLOCKED',type(exc).__name__,flush=True)
-          with tempfile.TemporaryDirectory() as folder:
-              base=Path(folder)
-              resolved=base.resolve(strict=True)
-              for label,b in [('raw',base),('canonical',resolved)]:
-                  prefix=b/'long-root-'/'cache'
-                  length=240-100-len(str(prefix.absolute()).encode('utf-16-le'))//2
-                  cache=b/('long-root-'+'x'*length)/'cache'
-                  manager=ToolchainManager(cache)
-                  print('PATH_PROBE',label,'raw',len(str(cache.absolute()).encode('utf-16-le'))//2,'manager',len(str(manager.cache_dir).encode('utf-16-le'))//2,flush=True)
-          if root is not None:
-              os.rmdir(root)
-          PY
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
+          test "$(git rev-parse HEAD^{tree})" = '6d008af76a85926bbe8ec97edd508a251ed89a97'
+          git diff --exit-code HEAD --
+          printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
+      - name: Check repository text and digest-lock bytes
+        run: python scripts/check_repository_text_policy.py
+      - run: python -c "import yaml; from pathlib import Path; [yaml.safe_load(p.read_text(encoding='utf-8')) for p in Path('.github/workflows').glob('*.yml')]"
+      # Run the full suite on both Windows Pythons. The child is isolated
+      # from the workflow console and its exit status is propagated verbatim.
+      - name: Run tests (Windows isolated process group)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -u scripts/windows_test_launcher.py
+          $code = $LASTEXITCODE
+          Write-Host "WINDOWS_SHELL_CHILD_EXIT=$code"
+          exit $code
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
+        run: python -m unittest discover -s tests -v
+      - name: Record Node 24 Actions smoke evidence
+        if: runner.os == 'Linux' && matrix.python-version == '3.12'
+        shell: bash
+        run: |
+          printf 'commit=%s\\nrunner=%s\\npython=%s\\n' "$(git rev-parse HEAD)" "$RUNNER_OS" "$(python --version)" > node24-actions-smoke.txt
+      - name: Upload Node 24 Actions smoke evidence
+        if: runner.os == 'Linux' && matrix.python-version == '3.12'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: node24-actions-smoke
+          path: node24-actions-smoke.txt
+          if-no-files-found: error
+          retention-days: 7

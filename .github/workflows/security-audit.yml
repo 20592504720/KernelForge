@@ -14,14 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
-          ref: '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
+          ref: '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
           persist-credentials: false
       - name: Verify frozen T09 checkout identity
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
-          test "$(git rev-parse HEAD^{tree})" = '4f79547b9f3b4e587be28387791be7b3e35c0145'
+          test "$(git rev-parse HEAD)" = '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
+          test "$(git rev-parse HEAD^{tree})" = '6d008af76a85926bbe8ec97edd508a251ed89a97'
           git diff --exit-code HEAD --
           printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
@@ -45,14 +45,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
-          ref: '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
+          ref: '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
           persist-credentials: false
       - name: Verify frozen T09 checkout identity
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
-          test "$(git rev-parse HEAD^{tree})" = '4f79547b9f3b4e587be28387791be7b3e35c0145'
+          test "$(git rev-parse HEAD)" = '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
+          test "$(git rev-parse HEAD^{tree})" = '6d008af76a85926bbe8ec97edd508a251ed89a97'
           git diff --exit-code HEAD --
           printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
@@ -89,14 +89,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
-          ref: '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
+          ref: '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
           persist-credentials: false
       - name: Verify frozen T09 checkout identity
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = '4684d59c2e840fa3dcb18c3c9a9a71dce024728f'
-          test "$(git rev-parse HEAD^{tree})" = '4f79547b9f3b4e587be28387791be7b3e35c0145'
+          test "$(git rev-parse HEAD)" = '451fb613f3fc0f4e7afbeb648742f60539ec07c4'
+          test "$(git rev-parse HEAD^{tree})" = '6d008af76a85926bbe8ec97edd508a251ed89a97'
           git diff --exit-code HEAD --
           printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
