@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: 'a28895053d16ed6fed7c43d999dec8143b8cddf9'
+          ref: '1663ae21f03ef2513c28997c2d3d8358e0e67336'
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -35,8 +35,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 'a28895053d16ed6fed7c43d999dec8143b8cddf9'
-          test "$(git rev-parse HEAD^{tree})" = 'cb77257d365f7258df10367c300c517972f5a069'
+          test "$(git rev-parse HEAD)" = '1663ae21f03ef2513c28997c2d3d8358e0e67336'
+          test "$(git rev-parse HEAD^{tree})" = '586a1d76de9f7c7659fd862e0ec88d6b04ead412'
           git diff --exit-code HEAD --
           printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - name: Check repository text and digest-lock bytes
