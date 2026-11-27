@@ -216,7 +216,7 @@ B. 用户文件 REPORT.md（标题 Stage 7.4-O-Final 独立复审交付报告，
 
 O4/O5/O6 原始实验合同还见用户文件 KernelForge_T09_cloud_verified_complete.patch（其中 O4/O5/O6 性能后续清单）及对应 GitHub 交付分支。每次真实实验保存原始命令、环境、退出码、资源采样、产物哈希、失败；不从小程序/微基准外推实际内核收益。
 
-C. T09 已在 §3.1 记录；补充用户文件 KernelForge_T09_cloud_acceptance.json：候选259文件独立ZIP blob匹配；Python3.11 AST 102文件、YAML 14工作流、diff check PASS；81修改32新增、4208新增行/560删除行。完整patch SHA256 d7d6513fa2f7299b35b742fcda0feab2d212bdf75ce9adbe3ffb2e316eaca246，代码ZIP SHA256 8e15f4385c267ca45e3367222d44216e300007eb7d333ed3db748ef393ebb967。交付文档 Commit 14467ced92092c564a56d6b5936f7049eb56b62c、Tree a754947495d0e39992d3eb0a430bb2fbc601c9a4（仅 README/ROADMAP/STATUS/T09报告更新，不重跑程序）。结论 SOFTWARE_ACCEPTANCE_PASS; FULL_STAGE_CLOSURE_NOT_CLAIMED; BUILD_NOT_AUTHORIZED。T01–T08 精确任务名/逐字合同仍未恢复，不把 O1–O8 强行映射为 T01–T08。
+C. T09 已在 §3.1 记录；补充用户文件 KernelForge_T09_cloud_acceptance.json：候选259文件独立ZIP blob匹配；Python3.11 AST 102文件、YAML 14工作流、diff check PASS；81修改32新增、4208新增行/560删除行。完整patch SHA256 d7d6513fa2f7299b35b742fcda0feab2d212bdf75ce9adbe3ffb2e316eaca246，代码ZIP SHA256 8e15f4385c267ca45e3367222d44216e300007eb7d333ed3db748ef393ebb967。交付文档 Commit 14467ced92092c564a56d6b5936f7049eb56b62c、Tree a754947495d0e39992d3eb0a430bb2fbc601c9a4（仅 README/ROADMAP/STATUS/T09报告更新，不重跑程序）。结论 SOFTWARE_ACCEPTANCE_PASS; FULL_STAGE_CLOSURE_NOT_CLAIMED; BUILD_NOT_AUTHORIZED。T01–T06 精确任务名/逐字合同仍未恢复；T07、T08 原始专项报告已在 §13 补齐，不把 O1–O8 强行映射为 T01–T08。
 
 ### 12.3 更早回归及用户指令的原文/摘要分离
 
@@ -237,8 +237,68 @@ C. T09 已在 §3.1 记录；补充用户文件 KernelForge_T09_cloud_acceptance
 
 时间语义有真实冲突待复审：仓库 Stage7.5 合同/README 写实际构建开始UTC；用户文件 PENDING_COMMANDS.md 的后续 Stage7.5 命令说明为默认 dispatch 时采样，参数 --build-timestamp、自定义示例 2026-11-24T17:30:00+08:00。须同时保存 dispatch 与实际构建开始时间及最终 action 环境证据；Stage9 的最终默认语义以最新明确批准合同为准，不擅自选定。Stage7.5 默认-j2、ccache OFF、不自动下载/刷写/打包不是已经批准的 Stage9 全部默认参数。
 
-恢复缺口保持 OPEN：Stage9 原始参数表及逐字用户确认、T01–T08 精确原始合同、早期阶段完整聊天逐字文本；本次没有足够证据将其标记已恢复。
+恢复缺口保持 OPEN：Stage9 原始参数表及逐字用户确认、T01–T06 精确原始合同、T07/T08 用户原始指令全文、早期阶段完整聊天逐字文本；本次没有足够证据将其标记已恢复。
 
 ### 12.5 持续维护授权与变更记录
 
 2026-11-27 用户再次授权对固定文档长期增量维护，要求每次新会话恢复项目时先查此文件、在当次授权交互中追加新规划/调整/要求/证据/错误修正，历史记录保留；不另造替代总账。第二次补遗修正最新7.5阻塞、补齐O1–O8报告与早期安全证据、区分逐字可见引文与历史检索摘要、登记Stage9时间语义冲突及精确缺口。文档更新不触发真实构建、改变原代码分支、main、PR或发布。
+
+## 13. 第三次历史恢复（2026-11-27）：T07/T08、R1/R5、现有 Actions 参数及早期决策
+
+本轮经用户明确授权，使用历史上下文检索、ChatGPT 附件库搜索与原报告读取、GitHub 开发/验收/交付分支差异及文档读取交叉核验。只将工程必要事实和证据摘要归档，不公开无关私人资料或凭据。PR #1 讨论读取结果无评论；不能推断未检索到的聊天或附件不存在。新增证据与历史检索摘要分开标注。本轮未执行代码测试、编译、分支整合或新阶段实施。
+
+### 13.1 项目起点与用户长期约束（历史检索摘要）
+
+- 2026-11-20 03:30:07 UTC：初始目标为构建 KernelForge，用于 KernelSU 及第三方修改分支，支持 Linux 5.10–6.12、SUSFS/BBG/Unicode 零宽相关修复、BBR/Westwood TCP、增强压缩、风驰、编译优化。03:30:46 用户接受新建仓库、GKI+Vendor 双适配、仓库名 KernelForge。上述为可检索用户消息摘要，非完整逐字文本；助手提出的更多算法/Root候选不等同用户最终批准清单。Stage8 精简范围仍优先。
+- 2026-11-23 12:43–12:45 UTC：Antigravity 首先完成 GitHub 接入，不因此开始正式开发；每轮不得与上一轮重合，基于报告执行未完成项。
+- 2026-11-24 12:21:41 UTC：用户曾特许仅修改 main 的 README 进行中文首页更新，不合并 PR、不改功能代码。该历史例外解释 main 已中文；不是未来任意修改 main 的常设授权。
+- 2026-11-27 06:07:39 UTC：用户明确认为分支过多造成混乱；后续尽量复用现有分支，不为每项检查创建新分支。先由 ChatGPT 完成可独立完成工作，本地真实构建/设备验证才交执行代理。文档更新复用 docs/project-memory，不再新建归档分支；需要新分支时说明必要性和风险。该约束补入 §8 执行制度。
+- 2026-11-27 本轮：用户授权历史记忆、该 GitHub 仓库及 ChatGPT 附件库相关文件的读取，以恢复任务记忆；此前总账持续写入授权继续有效。授权不增加实际工具能力，不等于任意修改仓库或设备。不能保证恢复所有旧聊天全文或跨对话自动记忆。
+
+### 13.2 R1 与 Stage7.4-O 第一批证据
+
+附件 r1-final-report.md（2026-11-25）为原始第一轮集中环境整改及可靠性报告：基线 da2ed84a185b88ffd782e564c740de893bb173f8，Tree 39a1d9173ff4fc885173667dfdc56da9527c9d0d；38个文件263845字节证据备份逐项验证。隔离复现缺失 GIT_CONFIG_VALUE_0、混合行尾锁摘要问题；单次 core.autocrlf=false LF 检出复验，正式共享工作区旧锁17319字节/363 CRLF 保留，独立LF锁为22cde7f2…e79a7。Windows 三定向模块通过；短路径专项通过，longPathsEnabled=0、WinError145仍阻塞。WSL Python3.12.3既有venv、7项依赖导入通过；独立LF克隆Stage7.4 22项、SM8750同步模块14项、Stage6源码等价29项通过；正式共享树仍BLOCKED。PowerShell Restricted不绕过。历史48跳过未计PASS。GitHub只读审计当时报告 main 未启用分支保护，Actions默认read，PR open/dirty；项目保护main是用户执行政策，不能冒称平台技术保护实时已启用。该轮未运行正式全量回归或真实编译。
+
+仓库原始证据：[O专项优化合同](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_4_O_OPTIMIZATION.md)、[第一批机器证据](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/evidence/stage7_4_o_first_batch.json)。精确 O1 为 monotonic_ns 分阶段计时/失败阶段，O3为精确浅层获取，O4为安装树单次读取双格式摘要、仍保留独立复解压复核，O7为流式Image双哈希及长期归档。首次软件候选 Commit66a51aabbe749a2b40efa39ad467362f2a347c58，Validate45432517564四环境各486项，共1944项次、1862通过/82跳过、0失败错误；CodeQL45432517594为0、依赖审计45432517551高0中1低56、Gitleaks45432517601扫描153提交0发现、镜像45432517742 4/4。旧真实GKI基线45375493788整体55分29秒，五主步骤1018/989/1035/1754/1019秒（含获取、集成、构建，不是纯编译时间）。隔离Linux等价算法微基准（非WSL/完整构建）：Image 36293120字节，五次中位34.52→25.51ms，Python追踪峰值36297658→267345字节（不是RSS）；16×1MiB模拟树读取32→16MiB、27.64→13.71ms，摘要一致。一次Git file:// 20提交对照89→55ms、对象270889→262443字节，未采纳生产。不可将这些比值作为真实内核加速。
+
+### 13.3 R5、T01–T06 合并验收与证据计数
+
+附件 r5-delivery-summary-20261127.md、r5-completion-checkpoint-20261127.json、r5-delivery-verification-20261127.json、r5-package-execution-20261127.log：
+R5 最终候选 Commit 100f327120023b70f20f6a6707e2cf5a8daa66e2 / Tree a193f2223bfed0db639fad8d9d93908f9b410eba，正式本地分支干净，未推送。37正式步骤退出0，原始日志摘要重核；八组Pyright零错误/警告，Python3.11仅静态。R4历史544方法保留，两平台新增相同10个。Windows Python3.12 554方法，502完成且无跳过、53跳过记录涉及52方法（51整方法、2子测试），391.029秒；WSL 554方法546通过/8跳过、66.426秒；两平台0失败错误。R5软件核心通过但补充检查有未验项，Bandit/pip-audit/CodeQL当时未运行。12技能发现、102内置插件active、两MCP只读调用有报告，桌面设置UI未视觉验收。Stage7.5只读预检阻塞；主页仅独立中文草稿未更新正式文件。交付ZIP KernelForge-Stage7.4-O-R5-20261127.zip，112182844字节、555成员（554载荷+SHA256SUMS.json），SHA256 f48490e73798e554f5fff4019b22348244d6d5fccc3d7788fd7e9c313a67bda9，CRC/成员SHA/实际解压均通过；原证据保留，临时汇总目录限定清理。交付扫描原始exit1、2项公开上游文档示例经审核裁定，不改写原命中为0。历史C盘限定清理9807文件、276000568逻辑字节（原有授权仅该次），不构成再次清理授权。
+
+历史会话检索（2026-11-27 00:25:15 UTC 助手交付总结）：T01–T06合并 PARTIAL_PASS；同一554项矩阵统计与R5报告一致，不作为另一次独立回归计数。Python3.11两环境运行BLOCKED，源锁、35项HEAD/clean及1226份证据、232组日志获历史确认；Gitleaks原始exit1的6项公开Git/合成缓存标识经裁定（与R5交付ZIP两项扫描是不同范围，不合并）。无代码修改、提交、推送或真实内核构建属于该T01–T06总结范围，不覆盖R5历史候选修改。仍未取得T01、T02、T03、T04、T05、T06逐项原始任务名称和独立验收合同，不能由R5的core/workspace/review/extensions/stage75/homepage/delivery字段反推编号。
+
+### 13.4 T07 原始专项报告恢复：本地候选代码安全交付
+
+附件 T07_CANDIDATE_EXPORT.md（原报告标题与全文已读）：T07 PASS，仅Git对象导出、差异证据、安全检查。候选100f327120023b70f20f6a6707e2cf5a8daa66e2 / a193f2223bfed0db639fad8d9d93908f9b410eba；远端参考 ccc8f1184d13a78a6d6a35ccae7c6d94cc51380f / 39a1d9173ff4fc885173667dfdc56da9527c9d0d。候选 kernelforge_local_candidate_100f327.zip，256 tracked文件、620698字节，SHA256 4ebc9a8bd2ee1cf87384166dd560cea00b922915bf1d7ac00508f033877dfa29；直接Git blob导出，逐文件SHA1/SHA256/大小、ZIP CRC、路径、Unix mode验证；Archive export-ignore/subst/模式差异0，256项100644、0符号链接。远端227→本地256文件，109差异（80修改29新增、3578新增行554删除行，无二进制差异/既有模式变化）；完整full-index/binary diff，不启用rename/textconv/外部驱动；本地164、远端156独有提交，merge-base exit1无共同祖先证据，未整合。四份锁字节SHA256一致为22cde7f2…e79a7，未重新核验35源码。Gitleaks8.30.1候选扫描exit0零发现；配置环境变量占位符经复核非字面Token，保留裁定，不导出凭据/完整.git/官方源码/缓存。交付包 kernelforge_stage7_4_t07_candidate_export.zip 及相邻delivery.json/sha256；证据 local_vs_remote.patch、两侧tree manifest、git_history_reconciliation.json、source_lock_identity.json、security_review.json、commands.jsonl、evidence_sha256.txt；只读verify_export.py。T07 不等于109文件逐行审计、版本整合或完整新回归。
+
+### 13.5 T08 原始专项报告恢复：KF-SEC-001 Git 所有权保护整改复验
+
+附件 T08_GIT_OWNERSHIP_VALIDATION.md、final-verification.json：T08 PARTIAL_PASS；原候选100f327…/a193f222…，补丁 KernelForge_KF-SEC-001_candidate.patch 3556字节，SHA256 4add75dc6dbca7c1bcc28164ae0413b35206b7f7337e3d5cea46b0d051e2db0b；两平台隔离detached worktree，apply --check后原样应用，仅 git_policy.py/test_git_policy_final.py，working diff SHA256 59db928a07dfec85af2376a3212efe28f8022b15a1c036eaf84864906a9e20e2，测试后字节不变。未提交，原HEAD/Tree不包含修复，不能将其当新Tree。每平台8个定向模块：git_policy_final14、security_hardening31、review_boundaries3、build18、patch_manager3、kernelsu24、stage7_4_fast_build_gate22、exact_gki_validation17；各132执行，Windows129PASS/3跳过、WSL126PASS/6跳过，0失败错误，所有模块exit0，发现集合一致。未重跑554全量。
+- 正常/裸/linked worktree/真实子模块/separate gitdir/嵌套/连续-C各平台7项布局探针通过。发现身份不匹配拒绝（模拟返回另一个隔离仓库，不是假称OS重定向）。
+- WSL真实异主隔离ext4与NTFS：uid1001读取uid0仓库，原生Git exit128 dubious ownership；固定git-dir/work-tree的旧路径可绕过原生检查（隔离只读复现），修复后在业务命令前抛GitPolicyError。Windows无第二登录令牌，真实异主BLOCKED，模拟覆盖不能替代；没有新增用户、修改ACL/所有权、safe.directory例外或全局配置。
+- 首次WSL命令被重启中断，保留INTERRUPTED；恢复脚本只修显示解码，未改补丁；保留全部夹具。最终只读复验300稳定文件、67命令记录、18 ownership探针通过/1阻塞；report SHA256 a192b9ad8e8e6751728aee1818459644d20d5dc364418d0b0d8ef852b499748d。状态 T08_COMPLETE_STOPPED_AWAITING_CHATGPT_REVIEW。正式候选整合需另行全量验收；KF-SEC-001 后续保留真实Windows异主验证缺口，不能宣称全部解决。
+
+### 13.6 T09 本地至云端候选的演化
+
+历史会话检索：2026-11-27 05:22:39 UTC 本地T09 df8ce3a0cc16e08c2ea38d5118571508563a6be1、Tree前缀65d3e00；Python3.12双平台562方法，Windows509PASS/53跳过、WSL554PASS/8跳过、0失败；Python3.11、安全扫描及真实构建待验，PARTIAL_PASS。05:23:24独立复核：原本地差异111文件（81改30增）；源锁混合行尾根因明确。05:39:32云端流程exit2，后续定位Git配置门禁，不等于562单测失败。随后11月27云端最终候选451fb613…扩为113文件（81改32增），四环境568项/2160非跳过通过、112跳过及9/9Job，见§3.1。109→111→113是不同候选的差异规模，不得相互替换；本地562与云端568同理。独立完整语义审计仍未全完。
+
+### 13.7 Stage9 已存在参数的源码核实（不是完整历史合同）
+
+实际读取 T09 交付分支 [build.yml](https://github.com/20592504720/KernelForge/blob/delivery/stage7-4-t09/.github/workflows/build.yml) 和 [release.yml](https://github.com/20592504720/KernelForge/blob/delivery/stage7-4-t09/.github/workflows/release.yml)，可确定现有占位 workflow_dispatch 的精确输入如下：
+
+| 当前字段 | 类型 | 必填 | 选项/默认 |
+| --- | --- | --- | --- |
+| kernel_version | choice | 是 | 5.10/5.15/6.1/6.6/6.12；未显式写default |
+| build_mode | choice | 是 | gki/vendor；未显式写default |
+| source_repository | string | 否 | 无显式默认 |
+| source_ref | string | 否 | 无显式默认 |
+| device | string | 否 | 无显式默认 |
+| build_timestamp | string | 否 | 空字符串，描述为current UTC；示例2026-11-24T17:30:00+08:00 |
+| artifact_path（独立release.yml） | string | 是 | 无显式默认 |
+
+build.yml当前contents:read、10分钟预检、Python3.12、解析时间并校验后明确停止；名称/描述存在早期占位文字，不能据此断言实际build engine不存在。release.yml contents:read、唯一workflow_dispatch、不可满足条件 github.event_name == 'kernelforge_release_disabled'，保持禁用。以上是已存在代码事实；并非最终Stage9参数契约，不能据此省略Root/功能/缓存/签名/安全门禁。完整历史用户批准字段表仍未找到；未来Stage9第一轮须从历史高层需求、Stage8实测范围、现有Schema及安全合同推导候选并明确与原批准项的区别。中文选项UI、参数格式/组合、默认值、签名及发布行为均不虚构为已批准。
+
+### 13.8 本轮仍未恢复与更新边界
+
+已补齐T07/T08实际报告、T01–T06合并历史结论、R1/R5、O第一批机器证据、T09候选演化、现有Actions七字段、早期起点及分支复用/中文首页历史例外。T01–T06逐项原始指令、Stage9最终完整参数合同、早期用户逐字聊天全文仍OPEN。仓库可读与附件检索权限不意味着可以绕过工具对历史全文/索引的限制。当前Stage7.5最新已恢复阻塞仍按§12.1；本轮没有新实时执行结果。用户要求继续增量维护总账，本次不创建新分支、不改变原代码分支、main、PR、源码锁或构建设置。
