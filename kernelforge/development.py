@@ -6,9 +6,9 @@ import os
 import shutil
 from pathlib import Path
 
-from .source import checkout
-from .versions import resolve, freeze, timestamp
 from . import susfs
+from .source import checkout
+from .versions import freeze, resolve, timestamp
 
 
 def prepare(config, workspace: Path, output: Path):
@@ -37,7 +37,7 @@ def prepare(config, workspace: Path, output: Path):
                 raise ValueError(f'{name} checkout differs from locked Commit')
             lock['source_path'] = str(destination)
             if name == 'kernelsu' and provider.get('method') == 'builtin-kbuild-v2':
-                from .providers import OfficialModern, BakaModern
+                from .providers import BakaModern, OfficialModern
                 adapter = OfficialModern() if provider['provider'] == 'official' else BakaModern()
                 lock['layout'] = adapter.validate(destination / 'kernel')
                 lock['layout_sha256'] = {file: susfs.digest(destination / 'kernel' / file) for file in ('Kconfig', 'Kbuild', 'Makefile')}

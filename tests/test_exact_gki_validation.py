@@ -9,10 +9,19 @@ from pathlib import Path
 
 import yaml
 
-from scripts.stage5_exact_request import EXPECTED, MARKER, REF, validate_request, reject_duplicate_fields
+from scripts.stage5_exact_request import (
+    EXPECTED,
+    MARKER,
+    REF,
+    reject_duplicate_fields,
+    validate_request,
+)
 from scripts.validate_upstreams import (
-    BASELINE, choose_pinned_provider_commit, parse_exact_bakasu_commit,
+    BASELINE,
+    choose_pinned_provider_commit,
+    parse_exact_bakasu_commit,
     review_pinned_request,
+    select_compile_patch,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +29,24 @@ CANDIDATE = '2734e0bc155759955880f5fb99be640fc5b92156'
 
 
 class ExactGkiValidationTests(unittest.TestCase):
+    def test_compile_patch_explicit_upstream_or_reviewed_adapter(self):
+        workspace = Path('fixture-workspace')
+        self.assertEqual(select_compile_patch({'compatibility_patch': None}, workspace),
+                         workspace / 'upstreams/susfs/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch')
+        catalog = ROOT / 'patches/compat/susfs'
+        reviewed = json.loads((catalog / 'manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(select_compile_patch({'compatibility_patch': reviewed}, workspace),
+                         catalog / reviewed['file'])
+
+    def test_compile_patch_rejects_malformed_or_unreviewed_selection(self):
+        for record in (None, [], {}, {'compatibility_patch': False},
+                       {'compatibility_patch': {}}, {'compatibility_patch': {'file': ''}},
+                       {'compatibility_patch': {'file': '../outside.patch'}},
+                       {'compatibility_patch': {'file': 'C:\\outside.patch'}},
+                       {'compatibility_patch': {'file': 'unreviewed.patch'}}):
+            with self.subTest(record=record), self.assertRaises(ValueError):
+                select_compile_patch(record, Path('fixture-workspace'))
+
     def test_existing_fixed_profiles_are_unchanged(self):
         for provider in ('official', 'bakasu'):
             self.assertEqual(
@@ -49,9 +76,8 @@ class ExactGkiValidationTests(unittest.TestCase):
             ('official', True, True), ('bakasu', False, True),
             ('bakasu', True, False), ('official', False, False),
         ):
-            with self.subTest(provider=provider, susfs=susfs, pinned=pinned):
-                with self.assertRaisesRegex(ValueError, 'requires'):
-                    choose_pinned_provider_commit(provider, susfs, pinned, CANDIDATE)
+            with self.subTest(provider=provider, susfs=susfs, pinned=pinned), self.assertRaisesRegex(ValueError, 'requires'):
+                choose_pinned_provider_commit(provider, susfs, pinned, CANDIDATE)
 
     def test_rejects_invalid_sha_at_selection_boundary(self):
         with self.assertRaisesRegex(ValueError, 'invalid'):
@@ -63,7 +89,7 @@ class ExactGkiValidationTests(unittest.TestCase):
             cmd = [sys.executable, str(ROOT / 'scripts/validate_upstreams.py'),
                    '--provider', 'official', '--susfs', '--pinned-baseline',
                    '--bakasu-commit', CANDIDATE, '--workspace', str(folder)]
-            result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20)
+            result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20, check=False)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('requires --provider bakasu', result.stderr)
             self.assertFalse(folder.exists())
@@ -75,7 +101,7 @@ class ExactGkiValidationTests(unittest.TestCase):
                 cmd = [sys.executable, str(ROOT / 'scripts/validate_upstreams.py'),
                        '--provider', 'bakasu', '--susfs', '--pinned-baseline',
                        '--bakasu-commit', bad, '--workspace', str(folder)]
-                result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20)
+                result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20, check=False)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn('40-hex', result.stderr)
                 self.assertFalse(folder.exists())
@@ -112,7 +138,7 @@ class ExactGkiValidationTests(unittest.TestCase):
             cmd = [sys.executable, str(ROOT / 'scripts/validate_upstreams.py'),
                    '--provider', 'bakasu', '--susfs', '--pinned-baseline',
                    '--bakasu-commit', unknown_sha, '--workspace', str(folder)]
-            result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20)
+            result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20, check=False)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('not reviewed', result.stderr)
             self.assertFalse(folder.exists())

@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from kernelforge.build_timestamp import resolve_build_timestamp
-from scripts.stage7_4_fast_build_gate import ROOT, LOCK, PROFILE, AdmissionBlocked
+from scripts.stage7_4_fast_build_gate import LOCK, PROFILE, ROOT, AdmissionBlocked
 from scripts.stage7_5_artifact_evidence import inspect_bundle, main
 
 
@@ -47,16 +47,15 @@ class Stage75ArtifactEvidenceTests(unittest.TestCase):
         return Path(temp.name)
 
     def inspect(self, **changes):
-        args = dict(repo_root=self.root, expected_lock_sha=self.digest,
-                    source=self.source, host_disk=None, bundle=self.bundle,
-                    target="//msm-kernel:sun_perf_dist", declared_exit_code=0)
+        args = {'repo_root': self.root, 'expected_lock_sha': self.digest,
+                'source': self.source, 'host_disk': None, 'bundle': self.bundle,
+                'target': "//msm-kernel:sun_perf_dist", 'declared_exit_code': 0}
         args.update(changes)
-        evidence = dict(all_project_heads_match=True, tracked_worktrees_clean=True,
-                        capacity={"host": {"reserve_gib": 50}, "source": {"reserve_gib": 20}})
-        with patch("scripts.stage7_5_artifact_evidence.inspect_source", return_value=evidence):
-            with patch("scripts.stage7_5_artifact_evidence.CLANG_SHA256",
-                       self.compiler_digest):
-                return inspect_bundle(**args)
+        evidence = {'all_project_heads_match': True, 'tracked_worktrees_clean': True,
+                    'capacity': {"host": {"reserve_gib": 50}, "source": {"reserve_gib": 20}}}
+        with (patch("scripts.stage7_5_artifact_evidence.inspect_source", return_value=evidence),
+              patch("scripts.stage7_5_artifact_evidence.CLANG_SHA256", self.compiler_digest)):
+            return inspect_bundle(**args)
 
     def test_synthetic_artifacts_only_prove_file_integrity(self):
         report = self.inspect()
@@ -154,10 +153,9 @@ class Stage75ArtifactEvidenceTests(unittest.TestCase):
 
     def test_wsl_host_guard_cannot_be_bypassed(self):
         with patch("scripts.stage7_5_artifact_evidence.inspect_source",
-                   side_effect=AdmissionBlocked("WSL_PHYSICAL_HOST_DISK_REQUIRED")):
-            with self.assertRaisesRegex(AdmissionBlocked, "WSL_PHYSICAL_HOST_DISK_REQUIRED"):
-                inspect_bundle(self.root, self.digest, self.source, None, self.bundle,
-                               "//msm-kernel:sun_perf_dist", 0)
+                   side_effect=AdmissionBlocked("WSL_PHYSICAL_HOST_DISK_REQUIRED")), self.assertRaisesRegex(AdmissionBlocked, "WSL_PHYSICAL_HOST_DISK_REQUIRED"):
+            inspect_bundle(self.root, self.digest, self.source, None, self.bundle,
+                           "//msm-kernel:sun_perf_dist", 0)
 
     def test_cli_no_report_if_invalid_input(self):
         outside = self.directory()

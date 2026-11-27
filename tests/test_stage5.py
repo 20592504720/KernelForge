@@ -1,16 +1,24 @@
 import hashlib
 import json
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch as mock_patch
+from pathlib import Path
 
 from kernelforge.capabilities import inspect
-from kernelforge.patch_manager import lock_series, apply_series, apply_reviewed_operations, verify_lock
-from kernelforge.source_provider import load_profile, audit_manifest, manifest_source_lock, require_flashable
-
+from kernelforge.patch_manager import (
+    apply_reviewed_operations,
+    apply_series,
+    lock_series,
+    verify_lock,
+)
+from kernelforge.source_provider import (
+    audit_manifest,
+    load_profile,
+    manifest_source_lock,
+    require_flashable,
+)
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 

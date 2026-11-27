@@ -4,10 +4,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from kernelforge.versions import resolve, freeze
-from kernelforge import susfs, development
-from kernelforge.source import _run_git, SourceError
+from kernelforge import development, susfs
 from kernelforge.providers import OfficialModern
+from kernelforge.source import SourceError, _run_git
+from kernelforge.versions import freeze, resolve
 
 
 class VersionTests(unittest.TestCase):
@@ -43,7 +43,7 @@ class VersionTests(unittest.TestCase):
               {'id':3,'tag_name':'draft','draft':True,'prerelease':False,'published_at':'2026-03-01'}]
         for policy,tag in [('latest_release','stable'),('latest_prerelease','dev')]:
             result=resolve(self.spec(version_policy=policy),release_query=lambda _:rows,
-                           git=lambda args,**_k:'a'*40+'\trefs/tags/'+tag)
+                           git=lambda args,tag=tag,**_k:'a'*40+'\trefs/tags/'+tag)
             self.assertEqual(result['requested_ref'],tag)
 
     def test_release_api_failure_is_fatal(self):
@@ -64,9 +64,8 @@ class VersionTests(unittest.TestCase):
     def test_lock_written_on_discovery_failure(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)
-            with patch('kernelforge.development.resolve',side_effect=OSError('offline')):
-                with self.assertRaises(OSError):
-                    development.prepare({'kernelsu':{'enabled':True}},root/'work',root/'out')
+            with patch('kernelforge.development.resolve',side_effect=OSError('offline')), self.assertRaises(OSError):
+                development.prepare({'kernelsu':{'enabled':True}},root/'work',root/'out')
             self.assertEqual(json.loads((root/'out/versions.lock.json').read_text())['status'],'failure')
 
 
@@ -85,7 +84,7 @@ class SusfsTests(unittest.TestCase):
         (self.up/'kernel_patches/include/linux/susfs_def.h').write_text('/* fixture */\n')
         (self.up/'kernel_patches/50_add_susfs_in_gki-android14-6.1.patch').write_text('diff --git a/target.c b/target.c\n--- a/target.c\n+++ b/target.c\n@@ -1 +1 @@\n-old\n+new\n')
         (self.up/'kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch').write_text('diff --git a/kernel/Kconfig b/kernel/Kconfig\n--- a/kernel/Kconfig\n+++ b/kernel/Kconfig\n@@ -1 +1,2 @@\n config KSU\n+config KSU_SUSFS\n')
-        self.spec={'android_gki':'android14-6.1'}
+        self.spec: dict[str, object]={'android_gki':'android14-6.1'}
         self.inventory=susfs.inventory(self.up,'android14-6.1')
 
     def run_patch(self,provider='official'):
@@ -121,9 +120,8 @@ class SusfsTests(unittest.TestCase):
             if '--check' not in args and args[-1].endswith('android14-6.1.patch'):
                 raise SourceError('interrupted apply')
             return _run_git(args,**kwargs)
-        with patch('kernelforge.susfs._run_git',side_effect=git):
-            with self.assertRaisesRegex(SourceError,'interrupted'):
-                self.run_patch()
+        with patch('kernelforge.susfs._run_git',side_effect=git), self.assertRaisesRegex(SourceError,'interrupted'):
+            self.run_patch()
         self.assertEqual((self.provider/'kernel/Kconfig').read_text(),'config KSU\n')
         self.assertEqual((self.kernel/'target.c').read_text(),'old\n')
 

@@ -8,6 +8,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from kernelforge.git_policy import git_command, git_environment
+
 MARKER = ".github/stage5-exact-gki-request.json"
 REF = "refs/heads/stage1/initial-foundation"
 EXPECTED = {
@@ -40,7 +43,8 @@ def main() -> int:
     sha = os.environ.get("GITHUB_SHA", "")
     if not re.fullmatch(r"[0-9a-fA-F]{40}", sha):
         raise ValueError("GITHUB_SHA must be an exact commit")
-    output = subprocess.run(["git", "show", "--format=", "--name-only", sha],
+    env = git_environment()
+    output = subprocess.run(git_command(["show", "--format=", "--name-only", sha], env=env), env=env,
                             capture_output=True, text=True, encoding="utf-8",
                             timeout=15, check=True)
     payload = json.loads(Path(MARKER).read_text(encoding="utf-8"),

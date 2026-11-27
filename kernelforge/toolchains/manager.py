@@ -8,22 +8,23 @@ import os
 import platform
 import re
 import shutil
-import subprocess
 import stat
+import subprocess
 import tempfile
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
-from ..toolchain import _version_tuple
 from ..filesystem import atomic_replace
+from ..path_policy import require_external_paths
 from ..security import redact_diagnostic
+from ..toolchain import _version_tuple
 from .archive import ArchiveError, extract
 from .download import DownloadError, download
-from .release_mirror import ReviewedGithubReleaseAdapter, ReleaseMirrorError
 from .locking import FileLock, LockTimeout, _linked
+from .release_mirror import ReleaseMirrorError, ReviewedGithubReleaseAdapter
 
 LOG = logging.getLogger(__name__)
 SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
@@ -219,7 +220,7 @@ class ToolchainManager:
         payload = json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
         return hashlib.sha256(payload).hexdigest()
 
-    def prepare(self, spec: dict, *, lease: bool = False) -> dict:
+    def prepare(self, spec: object, *, lease: bool = False) -> dict:
         if not isinstance(spec, dict):
             raise ToolchainManagerError("toolchain profile must be an object", phase="requirements", audit={
                 "failure_phase": "requirements", "failure_reason": "toolchain profile must be an object"
@@ -233,6 +234,9 @@ class ToolchainManager:
                  "version": None, "version_check": "not-run", "install_path": None, "environment": {}, "failure_phase": None, "failure_reason": None}
         try:
             self._validate(spec, audit)
+            # Bound future published/staging paths before cache hashing or any
+            # source adapter/network work. Check members again on extraction.
+            require_external_paths(self.cache_dir, reserve=100)
             self._check_cache_layout()
             key = self._key(spec)
             lock_path = self.cache_dir / "locks" / f"{key}.lock"
@@ -268,8 +272,9 @@ class ToolchainManager:
         if spec.get("source_type") and spec["source_type"] not in self.source_adapters and not (spec.get("local_path") or spec.get("local_root")):
             raise ToolchainManagerError(f"no source adapter registered for {spec['source_type']}", phase="requirements")
         source_adapter = self.source_adapters.get(spec.get("source_type", "custom"))
-        if callable(getattr(source_adapter, "validate", None)):
-            source_adapter.validate(spec)
+        validate_source = getattr(source_adapter, 'validate', None)
+        if callable(validate_source):
+            validate_source(spec)
         for field in ("version", "minimum_version", "maximum_version"):
             if spec.get(field):
                 _version_key(spec[field])
@@ -323,6 +328,7 @@ class ToolchainManager:
         result = {}
         for role, relative in spec["executables"].items():
             path = (layout / relative).resolve()
+            require_external_paths(path)
             if layout.resolve() not in path.parents or not path.is_file():
                 raise ToolchainManagerError(f"toolchain executable missing or outside layout: {relative}", phase="layout")
             if os.name != "nt" and not os.access(path, os.X_OK):
@@ -332,7 +338,7 @@ class ToolchainManager:
 
     def _verify_tools(self, root: Path, spec: dict) -> tuple[dict, dict]:
         paths = self._tool_paths(root, spec)
-        version_role = spec.get("version_executable", "CC" if spec["kind"] == "gcc" else "CC")
+        version_role = spec.get("version_executable", "CC")
         executable = paths.get(version_role) or next(iter(paths.values()))
         detected_host = _binary_architecture(executable)
         expected_host = normalize_arch(spec.get("host_arch") or host_arch())
@@ -417,7 +423,10 @@ class ToolchainManager:
             raise ToolchainManagerError(f"local toolchain path does not exist: {root}", phase="local")
         details, env = self._verify_tools(root, local_spec)
         audit.update({"install_path": str(root), "local_toolchain": True, "version": details["version"], "version_check": "passed", "binary_host_arch": details["binary_host_arch"], "host_arch_check": details["host_arch_check"], "detected_target_arch": details["detected_target_arch"], "target_arch_check": details["target_arch_check"], "trust_source": spec.get("trust_source", "user-configured-local-path"), "sha256_verified": False})
-        audit["environment_summary"] = {"keys": sorted(env), "bin_directories": [str(Path(env.get("CC", next(iter(details["executables"].values())))).parent)]}
+        compiler = env.get('CC') or next(iter(details['executables'].values()))
+        if not isinstance(compiler, str) or not compiler:
+            raise ToolchainManagerError('verified compiler path is missing', phase='local')
+        audit["environment_summary"] = {"keys": sorted(env), "bin_directories": [str(Path(compiler).parent)]}
         return {"root": str(root), "version": details["version"], "executables": details["executables"], "environment": env, "audit": audit}
 
     def _lease_result(self, result: dict, key: str) -> dict:
@@ -505,7 +514,10 @@ class ToolchainManager:
             LOG.warning("Quarantined invalid toolchain cache %s: %s", key, redact_diagnostic(str(exc)))
             return None
         audit.update({"actual_sha256": actual, "sha256_verified": True, "verification_object": "cached-download-archive", "verification_source": "configured-sha256", "verified_at": metadata.get("verified_at"), "cache_used": True, "install_path": str(install), "version": details["version"], "version_check": "passed", "binary_host_arch": details["binary_host_arch"], "host_arch_check": details["host_arch_check"], "detected_target_arch": details["detected_target_arch"], "target_arch_check": details["target_arch_check"], "verification_seconds": duration, "trust_source": "verified-cache", "independent_archive_tree_verified": True})
-        audit["environment_summary"] = {"keys": sorted(env), "bin_directories": [str(Path(env.get("CC", next(iter(details["executables"].values())))).parent)]}
+        compiler = env.get('CC') or next(iter(details['executables'].values()))
+        if not isinstance(compiler, str) or not compiler:
+            raise ToolchainManagerError('verified compiler path is missing', phase='cache-proof')
+        audit["environment_summary"] = {"keys": sorted(env), "bin_directories": [str(Path(compiler).parent)]}
         return {"root": str(install), "version": details["version"], "executables": details["executables"], "environment": env, "audit": audit}
 
     def _quarantine(self, key: str, *paths: Path) -> None:
@@ -553,7 +565,7 @@ class ToolchainManager:
             verify_start = time.monotonic()
             actual = _digest(staged_archive); verification_seconds = round(time.monotonic() - verify_start, 3)
             expected = spec["sha256"].lower()
-            audit.update({"actual_sha256": actual, "verification_seconds": verification_seconds, "verification_object": "downloaded-archive", "verification_source": "configured-sha256", "verified_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")})
+            audit.update({"actual_sha256": actual, "verification_seconds": verification_seconds, "verification_object": "downloaded-archive", "verification_source": "configured-sha256", "verified_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")})
             if actual.lower() != expected:
                 audit["sha256_verified"] = False
                 raise ToolchainManagerError(f"SHA256 verification failed: expected {expected}, computed {actual}", phase="sha256", audit=audit)
@@ -588,7 +600,7 @@ class ToolchainManager:
                 metadata = {"schema_version": self.METADATA_VERSION, "key": key, "kind": spec["kind"], "name": spec["name"], "version": details["version"],
                             "host_arch": audit["host_arch"], "target_arch": spec["target_arch"], "source_type": audit["source_type"], "source": _safe_source(source_url),
                             "expected_sha256": expected, "actual_sha256": actual, "verified_at": audit["verified_at"], "archive_format": _archive_format, "adapter_version": spec.get("adapter_version", "1"),
-                            "installed_tree_sha256": installed_digest, "executables": final_paths, "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+                            "installed_tree_sha256": installed_digest, "executables": final_paths, "installed_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
                             "source_route": audit.get("source_route"), "mirror_provenance": audit.get("mirror_provenance"),
                             "mirror_fallback": audit.get("mirror_fallback", False)}
                 temp_meta = metadata_path.with_name(f".{key[:16]}.{uuid.uuid4().hex[:12]}.tmp")
@@ -718,4 +730,3 @@ def _tree_size(root: Path) -> int:
         except OSError:
             continue
     return total
-

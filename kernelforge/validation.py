@@ -6,8 +6,7 @@ import json
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from jsonschema import Draft202012Validator
-from jsonschema import FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker
 
 
 def _read_json(path: Path) -> tuple[Any | None, list[str]]:
@@ -49,7 +48,7 @@ def validate_configs(root: Path) -> list[str]:
     if (root / "configs/kernelsu").exists():
         build_schema, errors = _read_json(build_schema_path)
         problems.extend(errors)
-        if not errors:
+        if not errors and isinstance(build_schema, dict):
             for path in sorted((root / "configs/kernelsu").glob("*.json")):
                 data, errors = _read_json(path)
                 problems.extend(errors)
@@ -67,6 +66,9 @@ def validate_configs(root: Path) -> list[str]:
             issues = _schema_errors(data, schema, path.relative_to(root))
             problems.extend(issues)
             if issues:
+                continue
+            if not isinstance(data, dict):
+                problems.append(f'{path.relative_to(root)}: expected a configuration object')
                 continue
             manifest = root / data["features"]["patch_manifest"]
             if not manifest.is_file():
@@ -99,6 +101,9 @@ def validate_manifests(root: Path) -> list[str]:
         problems.extend(issues)
         if issues:
             continue  # never interpret paths from invalid data
+        if not isinstance(data, dict):
+            problems.append(f'{path.relative_to(root)}: expected a manifest object')
+            continue
         identifiers = {item.get("id") for item in data.get("patches", [])}
         if len(identifiers) != len(data.get("patches", [])):
             problems.append(f"{path.relative_to(root)}: duplicate patch identifiers")

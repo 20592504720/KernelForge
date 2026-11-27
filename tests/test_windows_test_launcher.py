@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import io
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from scripts.windows_test_launcher import run_suite
 

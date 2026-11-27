@@ -2,18 +2,19 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import platform
 import sys
 from pathlib import Path
 
-from .validation import validate_configs, validate_manifests
 from .build import BuildError, run_build
 from .toolchains import ToolchainManager, ToolchainManagerError
+from .validation import validate_configs, validate_manifests
 from .workspace import Workspace, default_path
-import json
 
 ROOT = Path(__file__).resolve().parents[1]
+LOG = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -52,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == 'workspace':
         selected = Workspace.configured()
         if selected is None:
-            logging.error('KERNELFORGE_HOME is not set')
+            LOG.error('KERNELFORGE_HOME is not set')
             return 2
         if args.init:
             selected.initialize()
@@ -64,18 +65,18 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(inspect(args.source, args.config), indent=2, sort_keys=True))
             return 0
         except (OSError, ValueError) as exc:
-            logging.error('feature inspection failed: %s', exc)
+            LOG.error('feature inspection failed: %s', exc)
             return 1
     if args.command == "doctor":
-        logging.info("Python %s on %s", platform.python_version(), platform.platform())
+        LOG.info("Python %s on %s", platform.python_version(), platform.platform())
         try:
             import jsonschema  # noqa: F401
             import yaml  # noqa: F401
         except ImportError as exc:
-            logging.error("Missing validation dependency: %s", exc)
+            LOG.error("Missing validation dependency: %s", exc)
             return 1
-        logging.info("JSON Schema and YAML validation dependencies are available")
-        logging.info("Kernel build toolchains are not inspected by this stage-one doctor")
+        LOG.info("JSON Schema and YAML validation dependencies are available")
+        LOG.info("Kernel build toolchains are not inspected by this stage-one doctor")
         return 0
     if args.command == "toolchain":
         try:
@@ -87,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"removed": removed}, indent=2))
             return 0
         except ToolchainManagerError as exc:
-            logging.error("Toolchain cache operation failed: %s", exc)
+            LOG.error("Toolchain cache operation failed: %s", exc)
             return 1
     if args.command == "build":
         try:
@@ -97,13 +98,13 @@ def main(argv: list[str] | None = None) -> int:
             errors = list(Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(config))
             if errors:
                 for issue in errors:
-                    logging.error("build config: %s", issue.message)
+                    LOG.error("build config: %s", issue.message)
                 return 2
             report = run_build(config, args.workspace, args.output)
-            logging.info("Build succeeded; %d real artifact(s) recorded", len(report["artifacts"]))
+            LOG.info("Build succeeded; %d real artifact(s) recorded", len(report["artifacts"]))
             return 0
         except (OSError, json.JSONDecodeError, KeyError, BuildError) as exc:
-            logging.error("Build failed: %s", exc)
+            LOG.error("Build failed: %s", exc)
             return 1
     checks = []
     if args.command in ("validate", "validate-config"):
@@ -112,9 +113,9 @@ def main(argv: list[str] | None = None) -> int:
         checks.extend(validate_manifests(ROOT))
     if checks:
         for issue in checks:
-            logging.error("%s", issue)
+            LOG.error("%s", issue)
         return 1
-    logging.info("%s passed", args.command)
+    LOG.info("%s passed", args.command)
     return 0
 
 

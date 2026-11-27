@@ -13,7 +13,9 @@ permissions:
 
 jobs:
   release-gate:
-    if: ${{ false }}
+    # The only declared event is workflow_dispatch. This read-only context
+    # cannot equal this reserved non-event; inputs cannot enable the job.
+    if: ${{ github.event_name == 'kernelforge_release_disabled' }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Release is unavailable until real build and artifact validation exist."

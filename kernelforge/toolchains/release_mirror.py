@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import json
 import re
-import socket
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request
-from ..http_safety import open_metadata, require_https_host, MetadataURLerror
+
+from ..http_safety import MetadataURLerror, open_metadata, require_https_host
 
 
 def urlopen(request, timeout):
@@ -75,9 +75,8 @@ def verify_release_spec(spec: dict) -> dict:
     if source_type != "reviewed-github-release":
         _require(source_type == f"{kind}-release", "Release alias/toolchain family mismatch")
     lock = spec.get("release_lock")
-    _require(type(lock) is dict and set(lock).issuperset(_RELEASE_FIELDS)
-             and not set(lock).difference(_RELEASE_FIELDS | {"fallback", "require_immutable"}),
-             "incomplete or unexpected reviewed Release lock fields")
+    if not isinstance(lock, dict) or not set(lock).issuperset(_RELEASE_FIELDS) or set(lock).difference(_RELEASE_FIELDS | {'fallback', 'require_immutable'}):
+        raise ReleaseMirrorError('incomplete or unexpected reviewed Release lock fields')
     repo, tag, name = lock["repository"], lock["tag"], lock["asset_name"]
     _require(isinstance(repo, str) and bool(_REPO.fullmatch(repo)), "invalid GitHub Release repository")
     _require(isinstance(tag, str) and bool(_TAG.fullmatch(tag)) and ".." not in tag,
@@ -105,8 +104,8 @@ def verify_release_spec(spec: dict) -> dict:
              "unsupported reviewed Release archive format")
     if "fallback" in lock:
         fb = lock["fallback"]
-        _require(type(fb) is dict and set(fb) == _FALLBACK_FIELDS,
-                 "pinned fallback identity incomplete or contains extra fields")
+        if not isinstance(fb, dict) or set(fb) != _FALLBACK_FIELDS:
+            raise ReleaseMirrorError('pinned fallback identity incomplete or contains extra fields')
         _require(_safe_https(fb["url"]) and fb["url"] != expected,
                  "fallback source must be an independent credential-free HTTPS URL")
         _require(fb["sha256"] == lock["sha256"],
@@ -142,7 +141,7 @@ def github_api_json(url: str) -> dict:
         if exc.code == 429 or 500 <= exc.code <= 599:
             raise MirrorUnavailable("GitHub Release metadata temporarily unavailable") from exc
         raise ReleaseMirrorError("GitHub Release identity cannot be verified via API") from exc
-    except (URLError, TimeoutError, socket.timeout, OSError) as exc:
+    except (URLError, TimeoutError, OSError) as exc:
         raise MirrorUnavailable("GitHub Release metadata network unavailable") from exc
     _require(len(raw) <= 2 * 1024 * 1024, "oversized GitHub Release metadata rejected")
     try:

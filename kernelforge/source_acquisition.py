@@ -7,10 +7,10 @@ Only the existing Git checkout is eligible for source patch operations.
 from __future__ import annotations
 
 import hashlib
-import secrets
 import ipaddress
 import json
 import os
+import secrets
 import shutil
 import stat
 import tarfile
@@ -20,10 +20,19 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
+from .path_policy import require_external_paths
 from .source_archive import (
-    ArchivePreflightError, _safe_member, _SHA256, locked_projects,
-    preflight_archive, MAX_MEMBERS, MAX_UNPACKED_BYTES,
+    _SHA256,
+    MAX_MEMBERS,
+    MAX_UNPACKED_BYTES,
+    ArchivePreflightError,
+    _safe_member,
+    locked_projects,
+    preflight_archive,
 )
+
+__all__ = ['ArchivePreflightError', 'SourceAcquisitionError', 'acquire_archive',
+           'acquire_locked_git', 'acquire_locked_source']
 from .toolchains.locking import FileLock
 
 
@@ -35,7 +44,7 @@ DEFAULT_MAX_DOWNLOAD = 4 * 1024**3
 COPY_CHUNK = 1024 * 1024
 
 
-def _checked_url(url: str, hosts: frozenset[str]) -> str:
+def _checked_url(url: object, hosts: frozenset[str]) -> str:
     if not isinstance(url, str) or not url or any(ord(c) < 33 or ord(c) == 127 for c in url):
         raise SourceAcquisitionError("invalid archive URL")
     try:
@@ -80,6 +89,7 @@ def _stream_download(url: str, output: Path, digest: str, hosts: frozenset[str],
     with opener(req, timeout=timeout) as response:
         _checked_url(response.geturl(), hosts)
         declared = response.headers.get("Content-Length")
+        length = None
         if declared is not None:
             try:
                 length = int(declared)
@@ -273,6 +283,10 @@ def acquire_archive(lock: dict, candidate: dict, destination: Path, cache_dir: P
     _checked_url(candidate.get("archive_url"), hosts)
     destination = Path(destination).absolute()
     cache_dir = Path(cache_dir).absolute()
+    try:
+        require_external_paths(destination, cache_dir, reserve=100)
+    except ValueError as exc:
+        raise SourceAcquisitionError(str(exc)) from exc
     if destination.exists() or destination.is_symlink():
         raise SourceAcquisitionError("destination already exists; refusing overwrite")
     if destination == cache_dir or cache_dir in destination.parents or destination in cache_dir.parents:
@@ -314,6 +328,8 @@ def acquire_archive(lock: dict, candidate: dict, destination: Path, cache_dir: P
             os.rename(staging, destination)
             promoted = True
             if report_temp is not None:
+                if report_path is None:
+                    raise SourceAcquisitionError('staged report has no publication path')
                 os.replace(report_temp, report_path)
             return report
         except BaseException:

@@ -14,7 +14,7 @@ class OfficialModern:
         if 'obj-$(CONFIG_KSU)' not in build or 'core/init.o' not in build or 'KBUILD_ARGS' not in wrapper:
             raise ValueError('official modern Kbuild/module wrapper layout is unsupported')
         kconfig = (kernel / 'Kconfig').read_text(encoding='utf-8')
-        if not re.search(r'^config KSU$', kconfig, re.M):
+        if not re.search(r'^config KSU$', kconfig, re.MULTILINE):
             raise ValueError('official modern KSU Kconfig missing')
         return {'adapter': self.name, 'build_file': 'kernel/Kbuild',
                 'module_wrapper': 'kernel/Makefile', 'upstream_recommended_mode': 'LKM',

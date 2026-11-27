@@ -10,6 +10,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import threading
+from io import BufferedReader
 
 MAX_RAW_LOG = 128 * 1024**2
 DISK_RESERVE = 64 * 1024**2
@@ -28,9 +29,11 @@ def run_bounded_capture(argv, *, cwd, env, timeout, spool, disk_path, evidence,
 
     def reader():
         try:
+            if process.stdout is None:
+                raise OSError('child stdout pipe is unavailable')
             with process.stdout as source:
                 while True:
-                    chunk = source.read1(64 * 1024)
+                    chunk = source.read1(64 * 1024) if isinstance(source, BufferedReader) else source.read(64 * 1024)
                     if not chunk:
                         break
                     with mutex:

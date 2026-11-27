@@ -2,26 +2,25 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import shutil
-import hashlib
-from datetime import datetime, timezone
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from kernelforge import development
-from kernelforge import __version__
+from kernelforge import __version__, development
 from kernelforge.kernelsu import integrate
-from kernelforge.source import checkout, _run_git
-from kernelforge.versions import resolve
-from kernelforge.objects import inspect_object, archive_members
+from kernelforge.objects import archive_members, inspect_object
 from kernelforge.performance import PhaseTimer, file_sha256
+from kernelforge.source import _run_git
+from kernelforge.versions import resolve
 
 BASELINE={'official':'2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4',
           'bakasu':'7b65bde0710b5e7c6f755545cb15a4abd417f3a8',
@@ -54,7 +53,11 @@ def review_pinned_request(provider: str, susfs: bool, pinned_baseline: bool, pro
     if not pinned_baseline or not susfs:
         return {"status": "NOT_ADMITTED_MOVING_OR_NO_SUSFS", "release_eligible": False}
     from kernelforge.compatibility_gate import (
-        evaluate_reviewed, OFFICIAL_REPO, BAKA_REPO, SUSFS_REPO, KERNEL_REPO,
+        BAKA_REPO,
+        KERNEL_REPO,
+        OFFICIAL_REPO,
+        SUSFS_REPO,
+        evaluate_reviewed,
     )
     def declared(sha, repository):
         return {"repository": repository, "commit_sha": sha, "policy": "pinned",
@@ -66,6 +69,30 @@ def review_pinned_request(provider: str, susfs: bool, pinned_baseline: bool, pro
         "susfs": declared(BASELINE["susfs"], SUSFS_REPO),
     }, provider=provider, catalog=ROOT / "patches/compat/susfs/manifest.json")
     return admission
+
+
+def select_compile_patch(record: object, workspace: Path) -> Path:
+    """Require an explicit selection record; None alone selects upstream."""
+    if not isinstance(record, dict) or 'compatibility_patch' not in record:
+        raise ValueError('SUSFS compatibility patch selection is missing or malformed')
+    selected = record['compatibility_patch']
+    if selected is None:
+        return workspace / 'upstreams/susfs/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch'
+    if not isinstance(selected, dict):
+        raise ValueError('SUSFS compatibility patch selection is malformed')  # noqa: TRY004
+    name = selected.get('file')
+    if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9._-]+\.patch', name):
+        raise ValueError('SUSFS compatibility patch filename is malformed')
+    catalog = ROOT / 'patches/compat/susfs'
+    reviewed = json.loads((catalog / 'manifest.json').read_text(encoding='utf-8'))
+    if selected != reviewed:
+        raise ValueError('SUSFS compatibility patch selection differs from reviewed manifest')
+    candidate = catalog / name
+    if candidate.is_symlink() or candidate.resolve().parent != catalog.resolve() or not candidate.is_file():
+        raise ValueError('unsafe or missing SUSFS compatibility patch')
+    if file_sha256(candidate) != reviewed['sha256']:
+        raise ValueError('SUSFS compatibility patch SHA256 mismatch')
+    return candidate
 
 
 def main():
@@ -98,7 +125,7 @@ def main():
                   version_policy='pinned' if args.pinned_baseline else 'latest_branch',objects=[],
                   requested_bakasu_commit=args.bakasu_commit,
                   compatibility_admission=compatibility_admission)
-    started=datetime.now(timezone.utc)
+    started=datetime.now(UTC)
     result.update(kernelforge_version=__version__,started_at=started.isoformat(),toolchain={})
     phases = PhaseTimer(clock=time.monotonic_ns)
     step='version resolution'
@@ -190,9 +217,8 @@ def main():
         phases.start(step)
         targets=['drivers/kernelsu/']; objects=[]
         if args.susfs:
-            selected=result['susfs'].get('compatibility_patch')
-            patch=(ROOT/'patches/compat/susfs'/selected['file']) if selected else work/'upstreams/susfs/kernel_patches/50_add_susfs_in_gki-android14-6.1.patch'
-            changed=re.findall(r'^\+\+\+ b/(.+\.c)$',patch.read_text(encoding='utf-8'),re.M)
+            patch = select_compile_patch(result.get('susfs'), work)
+            changed=re.findall(r'^\+\+\+ b/(.+\.c)$',patch.read_text(encoding='utf-8'),re.MULTILINE)
             targets+=sorted({str(Path(name).with_suffix('.o')) for name in changed}|{'fs/susfs.o'})
             objects+=targets[1:]
         run(command+['-j2']+targets,timeout=1200)
@@ -250,13 +276,13 @@ def main():
             result['kernel_compile_reason']='Image and vmlinux linked successfully; copied Image SHA256 verified'
             result['acceptance']['full_vmlinux']='TESTED'
         result['status']='success'
-    except Exception as exc:
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
         result['failure_step']=step
         result['failure_reason']=str(exc)
         print(str(exc),file=sys.stderr)
     finally:
         result['performance'] = phases.finish(success=result['status']=='success')
-        ended=datetime.now(timezone.utc)
+        ended=datetime.now(UTC)
         result.update(ended_at=ended.isoformat(),duration_seconds=(ended-started).total_seconds())
         (output/'real-source-report.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     return 0 if result['status']=='success' else 1

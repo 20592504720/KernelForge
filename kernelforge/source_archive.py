@@ -57,8 +57,9 @@ def _safe_project_path(path: str) -> str:
     return path
 
 
-def _safe_repo(url: str) -> None:
-    _require(isinstance(url, str), "repository URL missing")
+def _safe_repo(url: object) -> None:
+    if not isinstance(url, str):
+        raise ArchivePreflightError('repository URL missing')
     parts = urlsplit(url)
     _require(parts.scheme == "https" and bool(parts.hostname) and not parts.username
              and not parts.password and not parts.query and not parts.fragment
@@ -72,9 +73,11 @@ def locked_projects(lock: dict) -> dict[str, dict]:
     _require(bool(_SHA40.fullmatch(str(lock.get("manifest_commit", "")))), "unlocked manifest commit")
     _safe_repo(lock.get("manifest_repository"))
     source = lock.get("source_lock")
-    _require(isinstance(source, dict), "missing source lock")
+    if not isinstance(source, dict):
+        raise ArchivePreflightError('missing source lock')
     projects = source.get("projects")
-    _require(isinstance(projects, list) and bool(projects), "missing locked projects")
+    if not isinstance(projects, list) or not projects:
+        raise ArchivePreflightError('missing locked projects')
     _require(len(projects) == source.get("project_count") and source.get("all_refs_locked") is True,
              "project count or lock state mismatch")
     by_name, paths = {}, set()
@@ -161,15 +164,20 @@ def preflight_archive(lock: dict, candidate: dict, archive: Path) -> dict:
     """
     projects = locked_projects(lock)
     _require(isinstance(candidate, dict), "missing archive candidate")
-    project = projects.get(candidate.get("project"))
-    _require(project is not None, "archive project not in source lock")
+    name = candidate.get('project')
+    if not isinstance(name, str):
+        raise ArchivePreflightError('archive project not in source lock')
+    project = projects.get(name)
+    if project is None:
+        raise ArchivePreflightError('archive project not in source lock')
     for field, expected in (("repository", project["repository"]),
                             ("path", project["path"]), ("commit_sha", project["commit_sha"])):
         _require(candidate.get(field) == expected, f"archive {field} disagrees with locked Git project")
     digest = candidate.get("sha256")
     _require(isinstance(digest, str) and bool(_SHA256.fullmatch(digest)), "trusted archive SHA256 required")
     fmt = candidate.get("archive_format")
-    _require(fmt in _FORMATS, "unsupported archive format")
+    if not isinstance(fmt, str) or fmt not in _FORMATS:
+        raise ArchivePreflightError('unsupported archive format')
     archive = Path(archive)
     _require(archive.is_file() and not archive.is_symlink(), "archive not a regular file")
     actual = _sha256_file(archive)

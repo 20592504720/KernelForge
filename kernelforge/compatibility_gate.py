@@ -61,11 +61,12 @@ def _read_catalog(catalog: Path) -> dict:
     return value
 
 
-def _pinned(lock: dict, name: str, expected_repo: str) -> str:
-    _require(type(lock) is dict, f"{name} lock missing")
+def _pinned(lock: object, name: str, expected_repo: str) -> str:
+    if not isinstance(lock, dict):
+        raise CompatibilityGateError(f"{name} lock missing")
     sha = lock.get("commit_sha")
-    _require(isinstance(sha, str) and _SHA.fullmatch(sha) is not None,
-             f"{name} requires an exact lowercase 40-hex Commit")
+    if not isinstance(sha, str) or _SHA.fullmatch(sha) is None:
+        raise CompatibilityGateError(f"{name} requires an exact lowercase 40-hex Commit")
     _require(lock.get("repository") == expected_repo, f"{name} repository identity mismatch")
     _require(lock.get("policy") == "pinned", f"{name} must be pinned before discovery")
     _require(lock.get("ref_type") == "commit" and lock.get("requested_ref") == sha,
@@ -96,14 +97,16 @@ def evaluate_reviewed(lock: dict, *, provider: str, catalog: Path) -> dict:
     _require(manifest.get("susfs_commit") == susfs, "SUSFS Commit differs from compatibility catalog")
     commits = manifest.get("provider_commits")
     reviewed = REVIEWED_PROVIDERS["official"] | REVIEWED_PROVIDERS["bakasu"]
-    _require(type(commits) is list and len(commits) == len(reviewed)
+    if not isinstance(commits, list):
+        raise CompatibilityGateError('catalog provider matrix must be a list')
+    _require(len(commits) == len(reviewed)
              and len(set(map(str, commits))) == len(commits)
              and set(commits) == reviewed, "catalog provider matrix has an unreviewed addition/removal")
     _require(ksu in commits, "provider Commit absent from compatibility catalog")
 
     filename, digest = manifest.get("file"), manifest.get("sha256")
-    _require(isinstance(filename, str) and filename not in ("", ".", "..")
-             and "/" not in filename and "\\" not in filename, "unsafe adapter filename")
+    if not isinstance(filename, str) or filename in ('', '.', '..') or '/' in filename or '\\' in filename:
+        raise CompatibilityGateError('unsafe adapter filename')
     _require(isinstance(digest, str) and _SHA256.fullmatch(digest) is not None,
              "invalid adapter SHA256 in catalog")
     adapter = Path(catalog).parent / filename

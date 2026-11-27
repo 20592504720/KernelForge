@@ -9,8 +9,10 @@ from pathlib import Path
 from urllib.request import Request
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from kernelforge.http_safety import open_metadata, read_bounded
 from urllib.error import HTTPError
+
+from kernelforge.git_policy import git_command, git_environment
+from kernelforge.http_safety import open_metadata, read_bounded
 
 UNICODE_COMMIT = '70c394f16d82b0f85a4f07617630d82dde6d203c'
 BBG_COMMIT = '028ff7fd509e2104596da7cc1ef8e6ce2a0c9082'
@@ -41,8 +43,9 @@ def audit(output: Path) -> dict:
             target.write_bytes(source)
             patch_path = root / 'candidate.patch'
             patch_path.write_bytes(patch)
-            check = subprocess.run(['git', 'apply', '--check', '--', str(patch_path)],
-                                   cwd=root, capture_output=True, text=True, timeout=30, check=False)
+            env = git_environment()
+            check = subprocess.run(git_command(['apply', '--check', '--', str(patch_path)], cwd=root, env=env),
+                                   cwd=root, env=env, capture_output=True, text=True, timeout=30, check=False)
         unicode['baselines'][name] = {'kernel_commit': commit,
                                      'source_sha256': hashlib.sha256(source).hexdigest(),
                                      'git_apply_check_exit': check.returncode,

@@ -1,7 +1,6 @@
 """Read-only Repo workspace audit fixtures; no network or vendor sync."""
 from __future__ import annotations
 
-import copy
 import os
 import shutil
 import subprocess
@@ -9,9 +8,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from test_stage6_source_archive import fixture_lock
+
 from kernelforge.repo_workspace_audit import audit_locked_workspace
 from kernelforge.source_equivalence import SourceEquivalenceError
-from test_stage6_source_archive import fixture_lock
 
 
 def git(root, *args):

@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import os
+import socket
 import subprocess
 import sys
 import tarfile
@@ -18,57 +19,75 @@ from pathlib import Path
 from unittest.mock import patch
 
 from kernelforge.build import BuildError, run_build
+from kernelforge.toolchain import _version_tuple
 from kernelforge.toolchains import ToolchainManager, ToolchainManagerError
 from kernelforge.toolchains.archive import ArchiveError, extract
 from kernelforge.toolchains.download import DownloadError, download
 from kernelforge.toolchains.locking import FileLock, LockTimeout
-from kernelforge.toolchains.manager import ArchiveSourceAdapter, _binary_architecture, _satisfies, host_arch, normalize_arch
-from kernelforge.toolchain import _version_tuple
+from kernelforge.toolchains.manager import (
+    ArchiveSourceAdapter,
+    _binary_architecture,
+    _satisfies,
+    host_arch,
+    normalize_arch,
+)
 
 
 class FixtureServer:
     def __init__(self, payload: bytes):
         self.payload = payload
         self.requests = 0
+        self.request_started = threading.Event()
+        fixture = self
 
         class Handler(BaseHTTPRequestHandler):
-            def do_GET(inner):
-                self.requests += 1
-                if inner.path == "/delay":
+            timeout = 0.5
+
+            def setup(self):
+                super().setup()
+                fixture.request_started.set()
+
+            def do_GET(self):
+                fixture.requests += 1
+                if self.path == "/delay":
                     time.sleep(0.15)
-                body = self.payload
-                if inner.path == "/drop":
-                    inner.send_response(200)
-                    inner.send_header("Content-Length", str(len(body) + 10))
-                    inner.end_headers()
-                    inner.wfile.write(body[:5])
-                    inner.wfile.flush()
-                    inner.close_connection = True
+                body = fixture.payload
+                if self.path == "/drop":
+                    self.send_response(200)
+                    self.send_header("Content-Length", str(len(body) + 10))
+                    self.end_headers()
+                    self.wfile.write(body[:5])
+                    self.wfile.flush()
+                    self.close_connection = True
                     return
-                inner.send_response(200)
-                inner.send_header("Content-Length", str(len(body)))
-                inner.end_headers()
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
                 try:
-                    inner.wfile.write(body)
+                    self.wfile.write(body)
                 except (ConnectionAbortedError, BrokenPipeError, ConnectionResetError):
                     pass
 
-            def log_message(self, *_args):
+            def log_message(self, format, *args):
                 pass
 
         self.server = HTTPServer(("127.0.0.1", 0), Handler)
-        self.thread = threading.Thread(target=self.server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True)
-        self.thread.start()
+        self.server.timeout = 0.05
+        self.stopping = threading.Event()
         self.base = f"http://127.0.0.1:{self.server.server_port}"
+        self.thread = threading.Thread(target=self._serve, daemon=True)
+        self.thread.start()
+
+    def _serve(self):
+        try:
+            while not self.stopping.is_set():
+                self.server.handle_request()
+        finally:
+            self.server.server_close()
 
     def close(self):
-        if self.thread.is_alive():
-            # BaseServer.shutdown() can wait forever if an interrupted test has
-            # already stopped its serve_forever loop. Set the same flag and
-            # join with a bound so fixture teardown remains safe on Windows.
-            self.server._BaseServer__shutdown_request = True
-            self.thread.join(timeout=2)
-        self.server.server_close()
+        self.stopping.set()
+        self.thread.join(timeout=2)
         if self.thread.is_alive():
             raise RuntimeError("fixture HTTP server thread did not stop")
 
@@ -98,6 +117,19 @@ MANAGER_HTTP_SERVER = FixtureServer(make_zip())
 
 def tearDownModule():
     MANAGER_HTTP_SERVER.close()
+
+
+class FixtureServerTests(unittest.TestCase):
+    def test_close_with_incomplete_request(self):
+        fixture = FixtureServer(b'fixture')
+        self.addCleanup(fixture.close)
+        with socket.create_connection(('127.0.0.1', fixture.server.server_port), timeout=1) as connection:
+            connection.sendall(b'GET / HTTP/1.1\r\n')
+            # Wait for actual acceptance, not merely a queued TCP connection.
+            self.assertTrue(fixture.request_started.wait(timeout=1))
+            # Leave headers incomplete while the server is closing.
+            fixture.close()
+        self.assertFalse(fixture.thread.is_alive())
 
 
 class ToolchainVersionTests(unittest.TestCase):
@@ -206,9 +238,8 @@ class DownloadTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), b"keep me")
 
     def test_invalid_url_rejected(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with self.assertRaisesRegex(DownloadError, "HTTP or HTTPS"):
-                download("file:///tmp/evil", Path(tmp) / "x")
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaisesRegex(DownloadError, "HTTP or HTTPS"):
+            download("file:///tmp/evil", Path(tmp) / "x")
 
 
 class ArchiveTests(unittest.TestCase):
@@ -301,9 +332,9 @@ class ManagerInstallTests(ManagerFixture):
 
     def test_sha_mismatch_blocks_extraction_install_and_cache(self):
         spec = self.spec(sha256="0" * 64)
-        with patch.object(self.manager, "extractor", side_effect=AssertionError("extract should not run")):
-            with self.assertRaisesRegex(ToolchainManagerError, "SHA256 verification failed") as caught:
-                self.manager.prepare(spec)
+        with (patch.object(self.manager, "extractor", side_effect=AssertionError("extract should not run")),
+              self.assertRaisesRegex(ToolchainManagerError, "SHA256 verification failed") as caught):
+            self.manager.prepare(spec)
         self.assertEqual(caught.exception.audit["failure_phase"], "sha256")
         self.assertFalse(list((self.root / "cache" / "install").glob("*")))
         self.assertFalse(list((self.root / "cache" / "downloads").glob("*")))
@@ -320,9 +351,9 @@ class ManagerInstallTests(ManagerFixture):
         self.assertEqual(self.server.requests, 0)
 
     def test_version_failure_does_not_publish_cache(self):
-        with patch("kernelforge.toolchains.manager.subprocess.run", return_value=subprocess.CompletedProcess(["clang"], 1, "", "broken")):
-            with self.assertRaisesRegex(ToolchainManagerError, "version query failed"):
-                self.manager.prepare(self.spec())
+        with (patch("kernelforge.toolchains.manager.subprocess.run", return_value=subprocess.CompletedProcess(["clang"], 1, "", "broken")),
+              self.assertRaisesRegex(ToolchainManagerError, "version query failed")):
+            self.manager.prepare(self.spec())
         self.assertEqual(self.manager.list_cache(), [])
 
     def test_gcc_toolchain_uses_cross_compile_prefix(self):
@@ -342,9 +373,9 @@ class ManagerInstallTests(ManagerFixture):
         spec = {"kind": "gcc", "name": "wrong-target", "version": "13.2.1", "host_arch": host_arch(), "target_arch": "aarch64",
                 "source_type": "custom", "url": server.base + "/gcc", "sha256": hashlib.sha256(payload).hexdigest(), "archive_format": "tar.gz",
                 "layout_root": "pkg", "executables": {"CC": "bin/aarch64-linux-gnu-gcc"}, "version_args": ["--version"]}
-        with patch("kernelforge.toolchains.manager.subprocess.run", side_effect=[subprocess.CompletedProcess(["gcc"], 0, "gcc 13.2.1", ""), subprocess.CompletedProcess(["gcc"], 0, "arm-linux-gnueabi", "")]):
-            with self.assertRaisesRegex(ToolchainManagerError, "target mismatch"):
-                self.manager.prepare(spec)
+        with (patch("kernelforge.toolchains.manager.subprocess.run", side_effect=[subprocess.CompletedProcess(["gcc"], 0, "gcc 13.2.1", ""), subprocess.CompletedProcess(["gcc"], 0, "arm-linux-gnueabi", "")]),
+              self.assertRaisesRegex(ToolchainManagerError, "target mismatch")):
+            self.manager.prepare(spec)
 
     def test_riscv_target_mismatch_is_detected(self):
         payload = make_tar(); self.server.payload = payload
@@ -352,9 +383,9 @@ class ManagerInstallTests(ManagerFixture):
         spec = {"kind": "gcc", "name": "wrong-riscv-target", "version": "13.2.1", "host_arch": host_arch(), "target_arch": "riscv64-linux-gnu",
                 "source_type": "custom", "url": server.base + "/gcc", "sha256": hashlib.sha256(payload).hexdigest(), "archive_format": "tar.gz",
                 "layout_root": "pkg", "executables": {"CC": "bin/aarch64-linux-gnu-gcc"}, "version_args": ["--version"]}
-        with patch("kernelforge.toolchains.manager.subprocess.run", side_effect=[subprocess.CompletedProcess(["gcc"], 0, "gcc 13.2.1", ""), subprocess.CompletedProcess(["gcc"], 0, "aarch64-linux-gnu", "")]):
-            with self.assertRaisesRegex(ToolchainManagerError, "target mismatch"):
-                self.manager.prepare(spec)
+        with (patch("kernelforge.toolchains.manager.subprocess.run", side_effect=[subprocess.CompletedProcess(["gcc"], 0, "gcc 13.2.1", ""), subprocess.CompletedProcess(["gcc"], 0, "aarch64-linux-gnu", "")]),
+              self.assertRaisesRegex(ToolchainManagerError, "target mismatch")):
+            self.manager.prepare(spec)
 
     def test_clang_minimum_rejected(self):
         with self.assertRaisesRegex(ToolchainManagerError, "minimum_version"):
@@ -538,19 +569,16 @@ class LockTests(unittest.TestCase):
     def test_exclusive_lock_blocks_second_owner_then_releases(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "test.lock"
-            with FileLock(path):
-                with self.assertRaises(LockTimeout):
-                    with FileLock(path, timeout=0.05, poll=0.01):
-                        pass
+            with FileLock(path), self.assertRaises(LockTimeout), FileLock(path, timeout=0.05, poll=0.01):
+                pass
             with FileLock(path, timeout=0.1):
                 self.assertTrue(path.exists())
 
     def test_exception_exit_releases_lock(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "test.lock"
-            with self.assertRaises(ValueError):
-                with FileLock(path):
-                    raise ValueError("fixture")
+            with self.assertRaises(ValueError), FileLock(path):
+                raise ValueError("fixture")
             self.assertFalse(path.exists())
 
     def test_abandoned_old_dead_owner_lock_is_recovered(self):
@@ -648,9 +676,8 @@ class BuildToolchainIntegrationTests(unittest.TestCase):
     def test_toolchain_failure_prevents_build_and_writes_failure_report(self):
         cfg = self.config("vendor"); cfg["build"]["vendor"]["toolchain_profile"].pop("local_path")
         out = self.root / "failed"
-        with patch("kernelforge.build.checkout", side_effect=self.fake_checkout):
-            with self.assertRaisesRegex(BuildError, "toolchain preparation failed"):
-                run_build(cfg, self.root / "fail-work", out)
+        with patch("kernelforge.build.checkout", side_effect=self.fake_checkout), self.assertRaisesRegex(BuildError, "toolchain preparation failed"):
+            run_build(cfg, self.root / "fail-work", out)
         report = json.loads((out / "build-report.json").read_text())
         self.assertEqual(report["build"]["status"], "failure")
         self.assertIn("failure_phase", report["toolchain"]["managed"])

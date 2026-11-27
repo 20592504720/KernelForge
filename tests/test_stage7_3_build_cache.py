@@ -1,14 +1,16 @@
 """Stage 7.3 ccache identity and namespace safety tests, no ccache binary."""
-import copy
 import json
 import tempfile
 import unittest
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from kernelforge.build_cache import (
-    BuildCacheError, BuildCacheNamespaces, cache_key, canonical_digest,
-    digest_file, verify_identity,
+    BuildCacheError,
+    BuildCacheNamespaces,
+    cache_key,
+    digest_file,
+    verify_identity,
 )
 
 
@@ -71,16 +73,16 @@ class IdentityTests(unittest.TestCase):
     def test_unknown_missing_unpinned_or_moving_values_are_rejected(self):
         source = pinned()
         cases = [
-            dict(source, **{"config_sha256": "0"}),
-            dict(source, **{"source_commit": "main"}),
-            dict(source, **{"compiler_sha256": "A" * 64}),
-            dict(source, **{"root_commit": "latest_branch"}),
-            dict(source, **{"susfs_commit": None}),
-            dict(source, **{"source_repository": "https://token@host/kernel"}),
-            dict(source, **{"schema_version": True}),
-            dict(source, **{"susfs_enabled": "true"}),
-            dict(source, **{"root_provider": "none"}),
-            dict(source, **{"extra_field": "untrusted"}),
+            dict(source, config_sha256="0"),
+            dict(source, source_commit="main"),
+            dict(source, compiler_sha256="A" * 64),
+            dict(source, root_commit="latest_branch"),
+            dict(source, susfs_commit=None),
+            dict(source, source_repository="https://token@host/kernel"),
+            dict(source, schema_version=True),
+            dict(source, susfs_enabled="true"),
+            dict(source, root_provider="none"),
+            dict(source, extra_field="untrusted"),
         ]
         for index, c in enumerate(cases):
             with self.subTest(case=index), self.assertRaises(BuildCacheError):
@@ -251,7 +253,7 @@ class NamespaceTests(unittest.TestCase):
         self.assertEqual(status["compiler_cache_used"], "UNTESTED")
 
     def test_corrupt_root_marker_prevents_changes(self):
-        with self.manager.open(pinned()) as lease:
+        with self.manager.open(pinned()):
             pass
         marker = self.manager.root / ".kernelforge-ccache-root.json"
         marker.write_text("not-json")

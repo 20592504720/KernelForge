@@ -13,6 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from kernelforge.git_policy import git_command, git_environment
 
 MARKER = ".github/stage6-full-acceptance-request.json"
 BRANCH = "refs/heads/stage1/initial-foundation"
@@ -66,11 +68,12 @@ def main() -> int:
     sha = os.environ.get("GITHUB_SHA", "")
     if re.fullmatch(r"[0-9a-fA-F]{40}", sha) is None:
         raise ValueError("invalid GITHUB_SHA")
+    env = git_environment()
     changed = subprocess.check_output(
-        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", sha],
-        text=True, timeout=20).splitlines()
+        git_command(["diff-tree", "--no-commit-id", "--name-only", "-r", sha], env=env),
+        text=True, timeout=20, env=env).splitlines()
     parent = subprocess.check_output(
-        ["git", "rev-parse", f"{sha}^"], text=True, timeout=20).strip()
+        git_command(["rev-parse", f"{sha}^"], env=env), text=True, timeout=20, env=env).strip()
     payload = json.loads(Path(MARKER).read_text(encoding="utf-8"),
                          object_pairs_hook=_pairs_unique)
     validate(payload, ref=os.environ.get("GITHUB_REF", ""),

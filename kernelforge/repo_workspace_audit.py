@@ -8,11 +8,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 from pathlib import Path
 
 from .source_archive import locked_projects
-from .source_equivalence import SourceEquivalenceError, _git, _valid_path, workspace_plan
+from .source_equivalence import (
+    SourceEquivalenceError,
+    _git,
+    _valid_path,
+    workspace_plan,
+)
 
 
 def _inside(path: Path, root: Path) -> bool:

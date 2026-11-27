@@ -1,7 +1,14 @@
 """Stage 1–6 request safety tests; no GitHub API requests or builds."""
 import json
 import unittest
-from scripts.stage6_full_request import validate, _pairs_unique, EXPECTED, MARKER, BRANCH
+
+from scripts.stage6_full_request import (
+    BRANCH,
+    EXPECTED,
+    MARKER,
+    _pairs_unique,
+    validate,
+)
 
 
 class Stage65RequestTests(unittest.TestCase):
@@ -39,6 +46,7 @@ class Stage65RequestTests(unittest.TestCase):
 
     def test_full_workflow_one_shot_and_five_real_image_matrix(self):
         from pathlib import Path
+
         import yaml
         path = Path(__file__).resolve().parents[1] / '.github/workflows/stage1-6-full-acceptance.yml'
         flow = yaml.load(path.read_text(encoding='utf-8'), Loader=yaml.BaseLoader)
@@ -52,7 +60,7 @@ class Stage65RequestTests(unittest.TestCase):
         self.assertEqual(set(suite['python-version']), {'3.11', '3.12'})
         combos = jobs['pinned-gki']['strategy']['matrix']['include']
         self.assertEqual(len(combos), 5)
-        self.assertEqual(set(c['name'] for c in combos), set(EXPECTED['gki_combinations']))
+        self.assertEqual({c['name'] for c in combos}, set(EXPECTED['gki_combinations']))
         self.assertEqual(jobs['pinned-gki']['needs'], ['preflight', 'evidence', 'software'])
         first_checkout = jobs['preflight']['steps'][0]
         self.assertEqual(first_checkout['with']['fetch-depth'], '2')
@@ -62,10 +70,10 @@ class Stage65RequestTests(unittest.TestCase):
         self.assertEqual(jobs['finalize']['if'], 'always()')
 
     def test_image_timeout_cli_rejects_invalid_before_workspace(self):
-        from pathlib import Path
         import subprocess
         import sys
         import tempfile
+        from pathlib import Path
         root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as td:
             dest = Path(td) / 'must-not-create'
@@ -73,7 +81,7 @@ class Stage65RequestTests(unittest.TestCase):
                                   '--provider', 'official', '--pinned-baseline',
                                   '--full-kernel', '--image-timeout-seconds', '999999',
                                   '--workspace', str(dest)],
-                                 cwd=root, capture_output=True, text=True, timeout=20)
+                                 cwd=root, capture_output=True, text=True, timeout=20, check=False)
             self.assertNotEqual(run.returncode, 0)
             self.assertIn('must be 300..14400', run.stderr)
             self.assertFalse(dest.exists())

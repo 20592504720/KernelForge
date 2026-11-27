@@ -13,7 +13,9 @@ import sys
 from pathlib import Path
 
 from kernelforge.build_timestamp import (
-    BuildTimestampError, kernel_build_environment, resolve_build_timestamp,
+    BuildTimestampError,
+    kernel_build_environment,
+    resolve_build_timestamp,
 )
 
 

@@ -14,9 +14,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from jsonschema import Draft202012Validator
+
 from kernelforge.build import BuildError, _artifacts, run_build
-from kernelforge.security import redact_diagnostic, redact_tree, publish_redacted_log
-from kernelforge.source import SourceError, _run_git
+from kernelforge.git_policy import GitPolicyError, git_command
+from kernelforge.security import publish_redacted_log, redact_diagnostic, redact_tree
+from kernelforge.source import SourceError, _run_git, git_environment
 from kernelforge.toolchains.archive import ArchiveError, extract
 from kernelforge.toolchains.download import DownloadError, download
 from kernelforge.validation import validate_manifests
@@ -163,10 +165,10 @@ class DownloadSafetyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             dest = Path(td) / "download"
             response = self.Response(b"1")
-            with patch("kernelforge.toolchains.download.shutil.disk_usage", return_value=shutil._ntuple_diskusage(100, 100, 0)):
-                with self.assertRaisesRegex(DownloadError, "disk reserve"):
-                    download("https://example.invalid/file", dest,
-                             opener=lambda *a, **k: response, retries=0)
+            with (patch("kernelforge.toolchains.download.shutil.disk_usage", return_value=shutil._ntuple_diskusage(100, 100, 0)),
+                  self.assertRaisesRegex(DownloadError, "disk reserve")):
+                download("https://example.invalid/file", dest,
+                         opener=lambda *a, **k: response, retries=0)
             self.assertFalse(dest.exists())
 
 
@@ -235,13 +237,79 @@ class ArchiveSafetyTests(unittest.TestCase):
 
     def test_archive_disk_reserve(self):
         self.zip([("a", b"1")])
-        with patch("kernelforge.toolchains.archive.shutil.disk_usage", return_value=shutil._ntuple_diskusage(100, 100, 0)):
-            with self.assertRaisesRegex(ArchiveError, "disk reserve"):
-                extract(self.archive, self.output, "zip")
+        with (patch("kernelforge.toolchains.archive.shutil.disk_usage", return_value=shutil._ntuple_diskusage(100, 100, 0)),
+              self.assertRaisesRegex(ArchiveError, "disk reserve")):
+            extract(self.archive, self.output, "zip")
         self.assertFalse(self.output.exists())
 
 
 class RedactionTests(unittest.TestCase):
+    def test_git_environment_rejects_ambient_repository_and_helper_controls(self):
+        with patch.dict("os.environ", {
+            "GIT_DIR": "C:/untrusted/.git",
+            "GIT_WORK_TREE": "C:/untrusted",
+            "GIT_CONFIG_VALUE_0": "secret",
+            "GIT_SSH_COMMAND": "untrusted-helper",
+            "GIT_TRACE": "1",
+        }, clear=False):
+            environment = git_environment()
+        self.assertEqual(environment["GIT_CONFIG_NOSYSTEM"], "1")
+        self.assertEqual(environment["GIT_NO_REPLACE_OBJECTS"], "1")
+        self.assertEqual(environment["GIT_TERMINAL_PROMPT"], "0")
+        for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_TRACE"):
+            self.assertFalse(key in environment, key)
+        self.assertFalse(environment.get("GIT_CONFIG_VALUE_0") == "secret")
+        self.assertFalse(environment.get("GIT_SSH_COMMAND") == "untrusted-helper")
+
+    def test_repository_local_git_helper_and_include_config_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td) / "repo"
+            env = git_environment()
+            subprocess.run(["git", "init", "-q", str(repo)], env=env, check=True)
+            config = repo / ".git/config"
+            subprocess.run(["git", "config", "--file", str(config), "core.sshCommand", "untrusted"],
+                           env=env, check=True)
+            with self.assertRaisesRegex(GitPolicyError, "requires review"):
+                git_command(["-C", str(repo), "status"], cwd=repo, env=env)
+
+    def test_normal_repository_config_worktree_and_nested_submodule_remain_usable(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            env = git_environment()
+            outer, nested = base / "outer", base / "nested"
+            subprocess.run(["git", "init", "-q", str(outer)], env=env, check=True)
+            subprocess.run(["git", "-C", str(outer), "config", "user.name", "Fixture"], env=env, check=True)
+            subprocess.run(["git", "-C", str(outer), "config", "user.email", "fixture@example.invalid"], env=env, check=True)
+            (outer / "README").write_text("fixture\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(outer), "add", "README"], env=env, check=True)
+            subprocess.run(["git", "-C", str(outer), "commit", "-qm", "fixture"], env=env, check=True)
+            worktree = base / "worktree"
+            subprocess.run(["git", "-C", str(outer), "worktree", "add", "-qb", "fixture-worktree", str(worktree)],
+                           env=env, check=True)
+            self.assertEqual(subprocess.check_output(git_command(["-C", str(worktree), "status", "--porcelain"],
+                                                                 cwd=base, env=env), cwd=base, env=env), b"")
+            subprocess.run(["git", "init", "-q", str(nested)], env=env, check=True)
+            subprocess.run(["git", "-C", str(nested), "config", "user.name", "Fixture"], env=env, check=True)
+            subprocess.run(["git", "-C", str(nested), "config", "user.email", "fixture@example.invalid"], env=env, check=True)
+            (nested / "README").write_text("nested\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(nested), "add", "README"], env=env, check=True)
+            subprocess.run(["git", "-C", str(nested), "commit", "-qm", "nested"], env=env, check=True)
+            subprocess.run(["git", "-C", str(outer), "-c", "protocol.file.allow=always",
+                            "submodule", "add", "-q", str(nested), "vendor/nested"], env=env, check=True)
+            self.assertEqual(subprocess.check_output(git_command(["-C", str(outer / "vendor/nested"), "status", "--porcelain"],
+                                                                 cwd=base, env=env), cwd=base, env=env), b"")
+
+    def test_transport_config_accepts_reviewed_proxy_but_rejects_helpers(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "transport.gitconfig"
+            path.write_text("[http]\n\tproxy = http://proxy.invalid:8080\n", encoding="utf-8")
+            with patch.dict(os.environ, {"KERNELFORGE_GIT_TRANSPORT_CONFIG": str(path)}):
+                env = git_environment()
+            self.assertIn("http.proxy", [env[f"GIT_CONFIG_KEY_{i}"] for i in range(int(env["GIT_CONFIG_COUNT"]))])
+            path.write_text("[credential]\n\thelper = !untrusted\n", encoding="utf-8")
+            with patch.dict(os.environ, {"KERNELFORGE_GIT_TRANSPORT_CONFIG": str(path)}), self.assertRaisesRegex(GitPolicyError, "unapproved"):
+                git_environment()
+
     def test_url_header_and_token_removed(self):
         sample = ("https://user:fake-pass@example.invalid/file?token=fake-secret "
                   "Authorization: Bearer fake-bearer ghp_" + "A"*36)
@@ -253,9 +321,8 @@ class RedactionTests(unittest.TestCase):
     def test_git_error_redaction(self):
         failure = subprocess.CompletedProcess(["git"], 1, "",
                                                "fatal: https://user:fake-pass@example.invalid")
-        with patch("kernelforge.source.subprocess.run", return_value=failure):
-            with self.assertRaises(SourceError) as caught:
-                _run_git(["fetch", "origin"])
+        with patch("kernelforge.source.subprocess.run", return_value=failure), self.assertRaises(SourceError) as caught:
+            _run_git(["fetch", "origin"])
         self.assertNotIn("fake-pass", str(caught.exception))
 
     def test_raw_log_redaction_and_overlong_line(self):

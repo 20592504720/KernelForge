@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from jsonschema import Draft202012Validator
+
 from .source import _run_git
 from .susfs import digest
 

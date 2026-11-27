@@ -14,9 +14,15 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 from kernelforge.build_timestamp import resolve_build_timestamp
+from kernelforge.git_policy import git_command
+from kernelforge.source import git_environment
 from scripts.verify_sm8750_sync import (
-    ROOT_PROJECT, ROOT_REPOSITORY, git_value, inspect_projects,
-    project_path, verify_manifest_selection,
+    ROOT_PROJECT,
+    ROOT_REPOSITORY,
+    git_value,
+    inspect_projects,
+    project_path,
+    verify_manifest_selection,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -103,8 +109,9 @@ def sample_capacity(path, reserve_gib):
             "DISK_RESERVE_EXHAUSTED")
     result = {"path": str(path), "free_bytes": capacity.free,
               "total_bytes": capacity.total, "reserve_gib": reserve_gib}
-    if hasattr(os, "statvfs"):
-        stats = os.statvfs(path)
+    statvfs = getattr(os, "statvfs", None)
+    if statvfs is not None:
+        stats = statvfs(path)
         result["free_inodes"] = stats.f_favail
         require(stats.f_favail >= 100000, "INODE_RESERVE_EXHAUSTED")
     return result
@@ -134,10 +141,11 @@ def inspect_source(lock, source, host_disk=None):
     for entry in projects:
         try:
             status = subprocess.check_output(
-                ["git", "--no-optional-locks", "-C",
+                git_command(["--no-optional-locks", "-C",
                  str(project_path(source, entry)), "status", "--porcelain",
-                 "--untracked-files=no"],
-                text=True, stderr=subprocess.PIPE, timeout=30).strip()
+                 "--untracked-files=no"], cwd=source, env=git_environment()),
+                text=True, stderr=subprocess.PIPE, timeout=30,
+                env=git_environment()).strip()
         except (OSError, subprocess.SubprocessError, ValueError) as exc:
             raise AdmissionBlocked("SOURCE_WORKTREE_CHECK_FAILED") from exc
         require(not status, "SOURCE_TRACKED_WORKTREE_DIRTY:" + entry["name"])

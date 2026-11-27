@@ -6,14 +6,20 @@ import json
 import tempfile
 import unittest
 import zipfile
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
-from kernelforge.toolchains.manager import ToolchainManager, ToolchainManagerError, host_arch
 from kernelforge.toolchains.download import DownloadError
+from kernelforge.toolchains.manager import (
+    ToolchainManager,
+    ToolchainManagerError,
+    host_arch,
+)
 from kernelforge.toolchains.release_mirror import (
-    ReviewedGithubReleaseAdapter, ReleaseMirrorError, MirrorUnavailable,
-    verify_release_spec, _safe_https,
+    MirrorUnavailable,
+    ReleaseMirrorError,
+    ReviewedGithubReleaseAdapter,
+    verify_release_spec,
 )
 
 REPO = "ReviewedBuilder/Toolchains"

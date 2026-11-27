@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import hashlib
-from .patch_manager import apply_reviewed_operations
 import re
+from collections.abc import Callable
 from pathlib import Path
 
+from .patch_manager import apply_reviewed_operations
 from .source import _run_git
 
 REPOSITORY = 'https://gitlab.com/simonpunk/susfs4ksu.git'
@@ -49,7 +50,7 @@ def inventory(root, android_gki):
             raise ValueError(f'SUSFS upstream layout missing or unsafe: {relative}')
         rows.append({'file': relative, 'sha256': digest(path)})
     header = (root / paths[3]).read_text(encoding='utf-8')
-    version = re.search(r'^#define SUSFS_VERSION\s+"([^"]+)"', header, re.M)
+    version = re.search(r'^#define SUSFS_VERSION\s+"([^"]+)"', header, re.MULTILINE)
     if not version:
         raise ValueError('cannot identify SUSFS source version')
     return {'version': version.group(1), 'patches': rows}
@@ -98,7 +99,10 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
     """
     android = spec['android_gki']
     version = (root / 'Makefile').read_text(encoding='utf-8')
-    family = '.'.join(re.search(rf'^{key}\s*=\s*(\d+)', version, re.M).group(1) for key in ('VERSION', 'PATCHLEVEL'))
+    parts = [re.search(rf'^{key}\s*=\s*(\d+)', version, re.MULTILINE) for key in ('VERSION', 'PATCHLEVEL')]
+    if any(part is None for part in parts):
+        raise ValueError('kernel Makefile must declare VERSION and PATCHLEVEL')
+    family = '.'.join(part.group(1) for part in parts if part is not None)
     if android.split('-', 1)[1] != family:
         raise ValueError('SUSFS Android GKI identity disagrees with actual kernel Makefile')
     current = inventory(upstream, android)
@@ -113,7 +117,7 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
     kernel_patch,compatibility=select(root,provider,upstream,kernel_patch)
     if on_selection:
         on_selection(compatibility)
-    has_ksu = bool(re.search(r'^config KSU_SUSFS$', kconfig, re.M))
+    has_ksu = bool(re.search(r'^config KSU_SUSFS$', kconfig, re.MULTILINE))
     if baka and (not has_ksu or not (provider / 'kernel/tools/susfs_compat.mk').is_file()):
         raise ValueError('INCOMPATIBLE: BakaSU SUSFS code/compatibility hooks missing')
     patches = [(root, kernel_patch)]
@@ -124,7 +128,7 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
     # Static symbol agreement is necessary, but is not a compiler/linker proof.
     if baka:
         code = '\n'.join(p.read_text(encoding='utf-8', errors='replace') for p in (provider / 'kernel').rglob('*.c'))
-        required = set(re.findall(r'^\+extern[^;]*?\b(ksu_\w+)\s*\(', kernel_patch.read_text(encoding='utf-8'), re.M))
+        required = set(re.findall(r'^\+extern[^;]*?\b(ksu_\w+)\s*\(', kernel_patch.read_text(encoding='utf-8'), re.MULTILINE))
         missing = sorted(name for name in required if not re.search(r'\b' + name + r'\s*\(', code))
         if missing:
             raise ValueError(f'INCOMPATIBLE: BakaSU lacks SUSFS hook symbols {missing}')
@@ -154,7 +158,7 @@ def integrate(root: Path, provider: Path, upstream: Path, spec: dict, provider_n
         if dest.parent.is_symlink() or root.resolve() not in dest.resolve().parents:
             raise ValueError('unsafe SUSFS copy destination')
         targets.append(dest)
-    operations = [lambda tree=tree, patch=patch: _apply(tree, patch) for tree, patch in patches]
+    operations: list[Callable[[], object]] = [lambda tree=tree, patch=patch: _apply(tree, patch) for tree, patch in patches]
     operations.extend(lambda src=src, dest=dest: dest.write_bytes(src.read_bytes()) for src, dest in copies)
     apply_reviewed_operations(targets, operations,
                               lambda: all(_check(tree, patch, True) for tree, patch in patches)

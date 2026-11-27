@@ -1,9 +1,9 @@
 import hashlib
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 from kernelforge.patch_manager import apply_series, order
 

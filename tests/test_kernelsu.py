@@ -1,21 +1,83 @@
 """Real local Git fixtures and source-tree integration; no kernel compile claims."""
+import ctypes
 import hashlib
 import json
-import sys
+import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from jsonschema import Draft202012Validator
-
-from kernelforge.kernelsu import integrate, IntegrationError, ROOT
-from kernelforge.build import run_build, BuildError
 from test_build import git
+
+from kernelforge.build import BuildError, run_build
 from kernelforge.filesystem import retry_windows
+from kernelforge.kernelsu import ROOT, IntegrationError, _link, integrate
 
 
 class KernelSUIntegrationTests(unittest.TestCase):
+    def test_windows_junction_uses_native_api_and_accepts_shell_metacharacters(self):
+        target = Path("C:/work/KernelSU \u4e2d\u6587&()%!^")
+        link = Path("C:/work/driver \u4e2d\u6587&()%!^")
+        with patch("kernelforge.kernelsu.os.name", "nt"), \
+                patch("kernelforge.kernelsu.create_junction") as create, \
+                patch("subprocess.run") as run:
+            _link(target, link)
+        create.assert_called_once_with(target, link)
+        run.assert_not_called()
+
+    @unittest.skipUnless(os.name == "nt", "native NTFS junction API is Windows-only")
+    def test_native_junction_round_trip_with_unicode_spaces_and_cmd_metacharacters(self):
+        target = self.base / "\u76ee\u6807 & (source) % ! ^"
+        link = self.base / "\u94fe\u63a5 & (junction) % ! ^"
+        target.mkdir()
+        _link(target, link)
+        self.addCleanup(lambda: link.exists() and os.rmdir(link))
+        self.assertTrue(link.is_dir())
+        self.assertEqual(link.resolve(), target.resolve())
+
+    @unittest.skipUnless(os.name == 'nt', 'native NTFS junction API is Windows-only')
+    def test_junction_reparse_parent_rejected_and_external_tree_preserved(self):
+        from kernelforge.windows_junction import create_junction
+        target = self.base / 'target'
+        outside = self.base / 'outside'
+        target.mkdir()
+        outside.mkdir()
+        parent = self.base / 'parent-link'
+        create_junction(outside, parent)
+        self.addCleanup(lambda: os.rmdir(parent))
+        with self.assertRaisesRegex(OSError, 'reparse'):
+            create_junction(target, parent / 'child')
+        self.assertEqual(list(outside.iterdir()), [])
+
+    @unittest.skipUnless(os.name == 'nt', 'native NTFS junction API is Windows-only')
+    def test_junction_native_failure_removes_only_opened_destination(self):
+        if os.name != 'nt':
+            self.skipTest('native NTFS junction API is Windows-only')
+        from kernelforge.windows_junction import create_junction
+        target = self.base / 'target'
+        target.mkdir()
+        link = self.base / 'failed-link'
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+        ntdll = ctypes.WinDLL('ntdll')
+        with patch('kernelforge.windows_junction.ctypes.WinDLL', side_effect=lambda name, **kw: ntdll if name == 'ntdll' else kernel32), \
+                patch.object(kernel32, 'DeviceIoControl', return_value=0), self.assertRaises(OSError):
+            create_junction(target, link)
+        self.assertFalse(os.path.lexists(link))
+        self.assertTrue(target.is_dir())
+
+    @unittest.skipUnless(os.name == 'nt', 'native NTFS junction API is Windows-only')
+    def test_junction_long_target_round_trip(self):
+        from kernelforge.windows_junction import _extended, create_junction
+        target = Path(_extended(self.base.joinpath(*(['long-path-1234567890'] * 15))))
+        target.mkdir(parents=True)
+        self.addCleanup(lambda: __import__('shutil').rmtree(_extended(self.base / 'long-path-1234567890')))
+        link = self.base / 'long-link'
+        create_junction(target, link)
+        self.addCleanup(lambda: os.rmdir(link))
+        self.assertEqual(link.resolve(), target.resolve())
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(lambda: retry_windows(self.tmp.cleanup))

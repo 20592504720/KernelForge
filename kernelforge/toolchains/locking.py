@@ -6,7 +6,6 @@ a verifiable owner fail closed. Not a distributed/network filesystem lock.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
 import errno
 import json
 import os
@@ -14,6 +13,7 @@ import socket
 import stat
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -66,9 +66,11 @@ def _guard(path, deadline, poll):
         try:
             if locked:
                 if os.name == "nt":
+                    import msvcrt
                     os.lseek(fd, 0, os.SEEK_SET)
                     msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
                 else:
+                    import fcntl
                     fcntl.flock(fd, fcntl.LOCK_UN)
         finally:
             os.close(fd)
@@ -118,14 +120,10 @@ class FileLock:
                         continue
                 else:
                     owner_path = self.path / "owner.json"
-                    try:
-                        with owner_path.open("x", encoding="utf-8") as stream:
-                            json.dump({"pid": os.getpid(), "host": socket.gethostname(),
-                                       "created": time.time(), "token": self.token}, stream)
-                    except BaseException:
-                        # The new directory is ours; leave ambiguous state intact
-                        # if ownership cannot be recorded successfully.
-                        raise
+                    # Retain ambiguous ownership state if recording fails.
+                    with owner_path.open("x", encoding="utf-8") as stream:
+                        json.dump({"pid": os.getpid(), "host": socket.gethostname(),
+                                   "created": time.time(), "token": self.token}, stream)
                     self.acquired = True
                     return self
             if time.monotonic() >= deadline:

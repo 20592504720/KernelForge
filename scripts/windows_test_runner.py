@@ -8,17 +8,18 @@ and then exits with the test result without waiting on stale interpreter state.
 from __future__ import annotations
 
 import os
+import signal
 import sys
 import threading
-import unittest
-import signal
 import time
+import unittest
 from pathlib import Path
-
+from typing import TYPE_CHECKING, Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from kernelforge.workspace import Workspace
+
 workspace=Workspace.configured()
 if workspace:
     os.environ.update(workspace.temporary_environment())
@@ -41,7 +42,13 @@ def _diagnose_sigint(signum, frame):
 
 signal.signal(signal.SIGINT, _diagnose_sigint)
 
-class DiagnosticResult(unittest.TextTestResult):
+if TYPE_CHECKING:
+    _TextTestResult = unittest.TextTestResult[Any]
+else:
+    _TextTestResult = unittest.TextTestResult
+
+
+class DiagnosticResult(_TextTestResult):
     def startTest(self, test):
         _current_test["name"] = test.id()
         return super().startTest(test)

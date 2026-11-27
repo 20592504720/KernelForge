@@ -1,24 +1,24 @@
 """Offline build timestamp policy and mocked build-engine propagation."""
 import json
 import os
-import subprocess
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
 from jsonschema import Draft202012Validator
 
-from kernelforge.build_timestamp import (
-    BuildTimestampError, kernel_build_environment, resolve_build_timestamp,
-)
 from kernelforge.build import run_build
+from kernelforge.build_timestamp import (
+    BuildTimestampError,
+    kernel_build_environment,
+    resolve_build_timestamp,
+)
 from scripts.resolve_build_timestamp import main as resolve_cli
 
-
-NOW = datetime(2026, 11, 24, 9, 15, 23, tzinfo=timezone.utc)
+NOW = datetime(2026, 11, 24, 9, 15, 23, tzinfo=UTC)
 
 
 class TimestampPolicyTests(unittest.TestCase):

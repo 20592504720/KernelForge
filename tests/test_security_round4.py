@@ -14,9 +14,9 @@ from unittest.mock import patch
 
 from kernelforge.bounded_process import run_bounded_capture
 from kernelforge.build import BuildError, run_build
+from kernelforge.build_cache import BuildCacheError, BuildCacheNamespaces
 from kernelforge.toolchains.locking import FileLock, LockTimeout, _pid_alive
 from kernelforge.toolchains.manager import ToolchainManager
-from kernelforge.build_cache import BuildCacheNamespaces, BuildCacheError
 
 
 class RecoveryTests(unittest.TestCase):
@@ -46,9 +46,8 @@ class RecoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "lock"
             lock = FileLock(path)
-            with self.assertRaisesRegex(LockTimeout, "ownership changed"):
-                with lock:
-                    (path / "owner.json").write_text('{"token":"different"}')
+            with self.assertRaisesRegex(LockTimeout, "ownership changed"), lock:
+                (path / "owner.json").write_text('{"token":"different"}')
             self.assertTrue((path / "owner.json").is_file())
 
     def test_malformed_stale_owner_retained(self):
@@ -58,9 +57,8 @@ class RecoveryTests(unittest.TestCase):
             (path / "owner.json").write_text("{}")
             old = time.time() - 1000
             os.utime(path, (old, old))
-            with self.assertRaises(LockTimeout):
-                with FileLock(path, timeout=.02, stale_after=.01, poll=.005):
-                    self.fail("unexpected ownership")
+            with self.assertRaises(LockTimeout), FileLock(path, timeout=.02, stale_after=.01, poll=.005):
+                self.fail("unexpected ownership")
             self.assertTrue(path.exists())
 
     def test_current_process_is_alive(self):
@@ -75,16 +73,16 @@ class RecoveryTests(unittest.TestCase):
                 entered.set()
                 self.assertTrue(release.wait(5))
                 return {}
-            with patch("kernelforge.build._run_build", side_effect=fake_build):
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    first = pool.submit(run_build, {}, root/"a", root/"out")
-                    try:
-                        self.assertTrue(entered.wait(5))
-                        with self.assertRaisesRegex(BuildError, "lock exists"):
-                            run_build({}, root/"b", root/"out")
-                    finally:
-                        release.set()
-                    self.assertEqual(first.result(timeout=5), {})
+            with (patch("kernelforge.build._run_build", side_effect=fake_build),
+                  concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool):
+                first = pool.submit(run_build, {}, root/"a", root/"out")
+                try:
+                    self.assertTrue(entered.wait(5))
+                    with self.assertRaisesRegex(BuildError, "lock exists"):
+                        run_build({}, root/"b", root/"out")
+                finally:
+                    release.set()
+                self.assertEqual(first.result(timeout=5), {})
 
     def test_abandoned_toolchain_lease_blocks_cleanup(self):
         with tempfile.TemporaryDirectory() as td:
@@ -109,7 +107,7 @@ class RecoveryTests(unittest.TestCase):
 
 
 class CaptureTests(unittest.TestCase):
-    def capture(self, code, *, limit=1024, timeout=10):
+    def capture(self, code, *, limit=1024, timeout: float = 10):
         with tempfile.TemporaryDirectory() as td:
             evidence = {}
             with tempfile.TemporaryFile(mode="w+b", dir=td) as spool:
@@ -139,13 +137,13 @@ class CaptureTests(unittest.TestCase):
             self.capture("import time; time.sleep(10)", timeout=.2)
 
     def test_disk_reserve_refuses_before_spawn(self):
-        with tempfile.TemporaryDirectory() as td, tempfile.TemporaryFile(mode="w+b") as spool:
-            with patch("kernelforge.bounded_process.shutil.disk_usage", return_value=type("Disk", (), {"free": 0})()), \
-                    patch("kernelforge.bounded_process.subprocess.Popen") as spawn:
-                with self.assertRaisesRegex(OSError, "reserve"):
-                    run_bounded_capture(["unused"], cwd=td, env={}, timeout=1,
-                                        spool=spool, disk_path=td, evidence={})
-                spawn.assert_not_called()
+        with (tempfile.TemporaryDirectory() as td, tempfile.TemporaryFile(mode="w+b") as spool,
+              patch("kernelforge.bounded_process.shutil.disk_usage", return_value=type("Disk", (), {"free": 0})()),
+              patch("kernelforge.bounded_process.subprocess.Popen") as spawn):
+            with self.assertRaisesRegex(OSError, "reserve"):
+                run_bounded_capture(["unused"], cwd=td, env={}, timeout=1,
+                                    spool=spool, disk_path=td, evidence={})
+            spawn.assert_not_called()
 
 
 if __name__ == "__main__":

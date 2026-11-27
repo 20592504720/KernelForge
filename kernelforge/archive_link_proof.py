@@ -6,13 +6,18 @@ Passing does not make an archive safe to extract, patch, build or publish.
 from __future__ import annotations
 
 import hashlib
-import os
 import stat
 import tarfile
 import zipfile
 from pathlib import Path
+from typing import NoReturn
 
-from .source_archive import locked_projects, _safe_member, _SHA256, ArchivePreflightError
+from .source_archive import (
+    _SHA256,
+    ArchivePreflightError,
+    _safe_member,
+    locked_projects,
+)
 from .source_equivalence import SourceEquivalenceError, _git, _valid_path
 
 MAX_MEMBERS = 250_000
@@ -20,7 +25,7 @@ MAX_BYTES = 64 * 1024**3
 CHUNK = 1024 * 1024
 
 
-def _reject(message: str) -> None:
+def _reject(message: str) -> NoReturn:
     raise SourceEquivalenceError(message)
 
 

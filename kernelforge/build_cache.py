@@ -15,9 +15,13 @@ import socket
 import time
 import uuid
 from pathlib import Path
+from typing import Self
 from urllib.parse import urlsplit
 
 from .toolchains.locking import FileLock, LockTimeout, _linked
+
+__all__ = ['BuildCacheError', 'BuildCacheNamespaces', 'CacheLease', 'LockTimeout',
+           'cache_key', 'canonical_digest', 'digest_file', 'verify_identity']
 
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -149,7 +153,7 @@ def _strict_json(path: Path) -> dict:
 
 class CacheLease:
     """Owns one active-use marker; no data deletion when the lease is released."""
-    def __init__(self, controller: "BuildCacheNamespaces", key: str, marker: Path):
+    def __init__(self, controller: BuildCacheNamespaces, key: str, marker: Path):
         self.controller, self.key, self.marker = controller, key, marker
         self.closed = False
 
@@ -194,7 +198,7 @@ class CacheLease:
         self.marker.unlink(missing_ok=True)
         self.closed = True
 
-    def __enter__(self) -> "CacheLease":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *_exc):
@@ -293,7 +297,10 @@ class BuildCacheNamespaces:
         _no_symlink_ancestors(dest)
         path = dest / _META
         data = _strict_json(path)
-        _require(data.get("key") == key and cache_key(data.get("identity")) == key,
+        identity = data.get('identity')
+        if not isinstance(identity, dict):
+            raise BuildCacheError('cache namespace identity must be an object')
+        _require(data.get("key") == key and cache_key(identity) == key,
                  "cache namespace metadata digest mismatch")
         use = self.root / "uses"
         _no_symlink_ancestors(use)

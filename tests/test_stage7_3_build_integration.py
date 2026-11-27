@@ -9,9 +9,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from kernelforge.build import run_build, BuildError
-from kernelforge.build_cache import BuildCacheNamespaces, BuildCacheError
-
+from kernelforge.build import BuildError, run_build
+from kernelforge.build_cache import BuildCacheError, BuildCacheNamespaces
 
 COMMIT = "a" * 40
 
@@ -33,7 +32,7 @@ class Stage73BuildIntegration(unittest.TestCase):
             "import os; from pathlib import Path; "
             "Path('Image').write_text("
             "os.getenv('CCACHE_DIR','NO_CACHE')+'|'+"
-            "os.getenv('CCACHE_REMOTE_STORAGE','NO_REMOTE'))"
+            "os.getenv('CCACHE_REMOTE_STORAGE','NO_REMOTE'), encoding='utf-8')"
         )
         profile = {
             "kind": "llvm", "name": "test-compiler",
@@ -72,7 +71,7 @@ class Stage73BuildIntegration(unittest.TestCase):
         result = self.execute(self.config(enabled=False))
         self.assertEqual(result["build"]["status"], "success")
         self.assertNotIn("build_cache", result)
-        self.assertEqual((self.base/"output/Image").read_text().split("|")[0], "NO_CACHE")
+        self.assertEqual((self.base/"output/Image").read_text(encoding="utf-8").split("|")[0], "NO_CACHE")
         self.assertFalse((self.base/"workspace/.kernelforge-build-cache").exists())
 
     def test_opt_in_provisions_exact_namespace_and_safe_env(self):
@@ -90,7 +89,7 @@ class Stage73BuildIntegration(unittest.TestCase):
         self.assertEqual(cache["cache_hit_rate"], "UNTESTED")
         self.assertFalse(cache["ccache_binary_executed"])
         self.assertTrue(Path(cache["path"]).is_dir())
-        contents = (self.base/"output/Image").read_text()
+        contents = (self.base/"output/Image").read_text(encoding="utf-8")
         self.assertTrue(contents.startswith(cache["path"]))
         self.assertTrue(contents.endswith("|NO_REMOTE"))
         ctl = BuildCacheNamespaces(self.base/"workspace/.kernelforge-build-cache/ccache", max_size_mib=256)
@@ -186,14 +185,24 @@ class Stage73BuildIntegration(unittest.TestCase):
 
     def test_failed_invalidation_retains_lease(self):
         from kernelforge.build_cache import CacheLease
-        with patch.object(CacheLease, "invalidate", side_effect=OSError("fixture failure")):
-            with self.assertRaisesRegex(BuildError, "exit code 3"):
-                self.execute(self.config(script="raise SystemExit(3)"))
+        with patch.object(CacheLease, "invalidate", side_effect=OSError("fixture failure")), self.assertRaisesRegex(BuildError, "exit code 3"):
+            self.execute(self.config(script="raise SystemExit(3)"))
         report = json.loads((self.base/"output/build-report.json").read_text())
         self.assertTrue(report["build_cache"]["lease_retained_for_manual_reconciliation"])
         ctl = BuildCacheNamespaces(self.base/"workspace/.kernelforge-build-cache/ccache")
         with self.assertRaisesRegex(BuildCacheError, "lease blocks cleanup"):
             ctl.prune(report["build_cache"]["key"], dry_run=False)
+
+    def test_interruption_survives_failed_quarantine_and_retains_lease(self):
+        from kernelforge.build_cache import CacheLease
+        with (patch('kernelforge.build._artifacts', side_effect=KeyboardInterrupt('fixture interruption')),
+              patch.object(CacheLease, 'invalidate', side_effect=OSError('fixture quarantine failure')),
+              self.assertRaisesRegex(KeyboardInterrupt, 'fixture interruption') as caught):
+            self.execute(self.config())
+        self.assertIsInstance(caught.exception.__cause__, OSError)
+        self.assertIn('lease retained', ' '.join(caught.exception.__notes__))
+        ctl = BuildCacheNamespaces(self.base/'workspace/.kernelforge-build-cache/ccache')
+        self.assertEqual(len(list((ctl.root / 'uses').glob('*.use'))), 1)
 
     def test_build_schema_cache_policy_is_disabled_by_default_and_strict(self):
         from jsonschema import Draft202012Validator

@@ -4,10 +4,10 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from .xml_safety import parse_manifest_xml
 
 from jsonschema import Draft202012Validator
 
+from .xml_safety import parse_manifest_xml
 
 PROFILE_IDS = {'oneplus13-pjz110', 'oneplus-ace6-plq110'}
 OFFICIAL_PROJECTS = {
@@ -85,7 +85,7 @@ def manifest_source_lock(xml: str, resolved_branches: dict[str, str]) -> dict:
             raise ValueError(f'unsafe or duplicate manifest project path: {path}')
         paths.add(path)
         base = remotes[remote]
-        if not base.startswith('https://') or not re.fullmatch(r'[A-Za-z0-9_.\-/]+', name):
+        if not isinstance(base, str) or not base.startswith('https://') or not re.fullmatch(r'[A-Za-z0-9_.\-/]+', name):
             raise ValueError(f'unsafe manifest remote or project: {name}')
         commit = revision if re.fullmatch(r'[0-9a-f]{40}', revision) else resolved_branches.get(name)
         if commit is not None and not re.fullmatch(r'[0-9a-f]{40}', commit):

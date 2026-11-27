@@ -7,7 +7,7 @@ Never infer a timezone from the runner or the user's locale.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 _FORMAT = re.compile(
     r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(Z|[+-]\d{2}:\d{2})$"
@@ -27,7 +27,7 @@ def resolve_build_timestamp(requested: str | None = None,
       otherwise: strict ISO8601 seconds with Z or explicit +HH:MM/-HH:MM
     """
     if requested is None or requested == "":
-        instant = datetime.now(timezone.utc) if now is None else now
+        instant = datetime.now(UTC) if now is None else now
         if instant.tzinfo is None or instant.utcoffset() is None:
             raise BuildTimestampError("current clock must be timezone-aware")
         mode = "current_utc"
@@ -44,11 +44,11 @@ def resolve_build_timestamp(requested: str | None = None,
             if hh > 14 or mm > 59 or (hh == 14 and mm != 0):
                 raise BuildTimestampError("custom timezone offset must be within 14 hours")
         try:
-            instant = datetime.fromisoformat(requested.replace("Z", "+00:00"))
+            instant = datetime.fromisoformat(requested)
         except ValueError as exc:
             raise BuildTimestampError("invalid calendar date or time") from exc
         mode = "custom"
-    utc = instant.astimezone(timezone.utc).replace(microsecond=0)
+    utc = instant.astimezone(UTC).replace(microsecond=0)
     if not 2000 <= utc.year <= 2100:
         raise BuildTimestampError("kernel build timestamp must be within 2000–2100 UTC")
     return {

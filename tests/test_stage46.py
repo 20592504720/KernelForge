@@ -1,42 +1,45 @@
 import hashlib
 import json
 import os
-import struct
-import tempfile
 import shutil
+import struct
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from kernelforge import compatibility
-from kernelforge.objects import inspect_object, archive_members
-from kernelforge.workspace import Workspace, default_path
-from kernelforge.source import _run_git, SourceError
 from kernelforge.filesystem import retry_windows
+from kernelforge.objects import archive_members, inspect_object
+from kernelforge.source import SourceError, _run_git
+from kernelforge.workspace import Workspace, default_path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class WindowsSharingError(PermissionError):
+    winerror = 32
+
+
 class WindowsSharingTests(unittest.TestCase):
     def error(self):
-        error=PermissionError('sharing violation'); error.winerror=32
-        return error
+        return WindowsSharingError('sharing violation')
 
     def test_transient_sharing_violation_retries(self):
         with patch('kernelforge.filesystem.time.sleep'):
-            operation=unittest.mock.Mock(side_effect=[self.error(),'done'])
+            operation=Mock(side_effect=[self.error(),'done'])
             self.assertEqual(retry_windows(operation),'done')
             self.assertEqual(operation.call_count,2)
 
     def test_permanent_failure_is_bounded(self):
         with patch('kernelforge.filesystem.time.sleep'):
-            operation=unittest.mock.Mock(side_effect=self.error())
+            operation=Mock(side_effect=self.error())
             with self.assertRaises(PermissionError): retry_windows(operation,attempts=3)
             self.assertEqual(operation.call_count,3)
 
     def test_non_windows_permission_error_is_not_retried(self):
-        operation=unittest.mock.Mock(side_effect=PermissionError('denied'))
+        operation=Mock(side_effect=PermissionError('denied'))
         with self.assertRaises(PermissionError): retry_windows(operation)
         self.assertEqual(operation.call_count,1)
 
@@ -72,8 +75,8 @@ class WorkspaceTests(unittest.TestCase):
             workspace.initialize()
 
     def test_temporary_paths_and_cli_overrides(self):
-        from kernelforge.cli import build_parser
         from kernelforge.build import _safe_environment
+        from kernelforge.cli import build_parser
         with patch.dict(os.environ,{'KERNELFORGE_HOME':str(self.home)}):
             self.assertEqual(_safe_environment({})['TMP'],str(self.home.resolve()/'temp'))
             default=build_parser().parse_args(['build','--config','config.json'])
@@ -123,10 +126,10 @@ class ObjectTests(unittest.TestCase):
         self.elf(); archive=self.root/'built-in.a'; archive.write_bytes(b'!<thin>\n')
         with patch('kernelforge.objects.subprocess.check_output',return_value='test.o\n'):
             self.assertEqual(archive_members(archive,self.root),[self.path.resolve()])
-        with patch('kernelforge.objects.subprocess.check_output',return_value='../outside.o\n'):
-            with self.assertRaises(ValueError): archive_members(archive,self.root)
-        with patch('kernelforge.objects.subprocess.check_output',return_value=''):
-            with self.assertRaises(ValueError): archive_members(archive,self.root)
+        with patch('kernelforge.objects.subprocess.check_output',return_value='../outside.o\n'), self.assertRaises(ValueError):
+            archive_members(archive,self.root)
+        with patch('kernelforge.objects.subprocess.check_output',return_value=''), self.assertRaises(ValueError):
+            archive_members(archive,self.root)
 
 
 class CompatibilityTests(unittest.TestCase):
@@ -150,6 +153,8 @@ class CompatibilityTests(unittest.TestCase):
 
     def test_exact_baseline_selection(self):
         selected,meta=self.select()
+        if selected is None or meta is None:
+            self.fail("reviewed baseline selection unexpectedly failed")
         self.assertEqual(selected,self.adapted.resolve()); self.assertEqual(meta['kernel_commit'],self.identities[0])
 
     def test_new_upstream_or_provider_never_receives_old_adapter(self):
@@ -165,6 +170,8 @@ class CompatibilityTests(unittest.TestCase):
         original_provider = self.identities[1]
         self.identities[1] = newer
         selected, selected_meta = self.select()
+        if selected is None or selected_meta is None:
+            self.fail("reviewed BakaSU candidate selection unexpectedly failed")
         self.assertEqual(selected, self.adapted.resolve())
         self.assertIn(newer, selected_meta['provider_commits'])
         for index in (0, 2):
@@ -201,7 +208,8 @@ class CompatibilityTests(unittest.TestCase):
 
     def test_outside_patch_rejected(self):
         self.meta['file']='../outside.patch'; self.save()
-        with self.assertRaises(Exception): self.select()
+        with self.assertRaisesRegex(ValueError, 'unsafe or missing SUSFS compatibility patch'):
+            self.select()
 
     def test_repository_patch_digest(self):
         meta=json.loads((ROOT/'patches/compat/susfs/manifest.json').read_text())

@@ -1,13 +1,12 @@
 """Transactional application of reviewed text patches to build-owned sources."""
-from contextlib import contextmanager
 import hashlib
 import heapq
 import json
 import os
-from pathlib import Path
 import re
-import shutil
 import stat
+from contextlib import contextmanager
+from pathlib import Path
 
 from .source import _run_git, checkout
 from .versions import resolve, timestamp
@@ -70,7 +69,7 @@ def lock_series(entries, local_root, workspace, output):
     A failed lookup or checksum aborts before the kernel source is modified.
     The lock is written even on failure for diagnosis. It is build scoped.
     """
-    local_root, workspace, output = map(lambda p: Path(p).resolve(), (local_root, workspace, output))
+    local_root, workspace, output = (Path(p).resolve() for p in (local_root, workspace, output))
     output.mkdir(parents=True, exist_ok=True)
     destination = output / 'patches.lock.json'
     stage = workspace / 'patch-lock'
@@ -181,7 +180,7 @@ def apply_series(root, entries, patch_root, *, kernel_commit, target=None):
             config = root / '.config'
             if not config.is_file():
                 raise ValueError(f'{key}: final Kconfig unavailable for required symbols')
-            enabled = set(re.findall(r'^CONFIG_([A-Z0-9_]+)=[ym]$', config.read_text(encoding='utf-8'), re.M))
+            enabled = set(re.findall(r'^CONFIG_([A-Z0-9_]+)=[ym]$', config.read_text(encoding='utf-8'), re.MULTILINE))
             missing = set(entry['required_configs']) - enabled
             if missing:
                 raise ValueError(f'{key}: required Kconfig symbols disabled: {sorted(missing)}')
@@ -200,7 +199,7 @@ def apply_series(root, entries, patch_root, *, kernel_commit, target=None):
             if not match:
                 raise ValueError(f"{key}: unsupported patch operation: {line}")
             operations[match[2]] = match[1]
-        if re.search(rb"^(old mode|new mode|rename |copy |GIT binary patch)", data, re.M):
+        if re.search(rb"^(old mode|new mode|rename |copy |GIT binary patch)", data, re.MULTILINE):
             raise ValueError(f"{key}: unsupported patch operation")
         # numstat reports the actual paths Git will use, including rename records.
         stats = _run_git(["apply", "--numstat", "--", str(patch)], cwd=root)

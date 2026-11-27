@@ -3,16 +3,16 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 from urllib.request import Request
-from .http_safety import open_metadata, read_bounded, require_https_host
 
+from .http_safety import open_metadata, read_bounded, require_https_host
 from .source import _run_git, validate_repository
 
 
 def timestamp():
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def releases(repository):
@@ -62,7 +62,7 @@ def resolve(spec, *, git=_run_git, release_query=releases):
         branch = ref if ref_type == 'branch' else None
         namespace = 'heads' if ref_type == 'branch' else 'tags'
         output = git(['ls-remote', repository, f'refs/{namespace}/{ref}', f'refs/{namespace}/{ref}^{{}}'], timeout=60)
-        refs = dict((line.split()[1], line.split()[0]) for line in output.splitlines() if len(line.split()) == 2)
+        refs = {line.split()[1]: line.split()[0] for line in output.splitlines() if len(line.split()) == 2}
         sha = refs.get(f'refs/{namespace}/{ref}^{{}}') or refs.get(f'refs/{namespace}/{ref}')
     if not isinstance(sha, str) or not re.fullmatch('[0-9a-fA-F]{40}', sha):
         raise ValueError('upstream reference did not resolve to a full Commit SHA')

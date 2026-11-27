@@ -8,8 +8,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.stage7_4_fast_build_gate import (
-    ROOT, LOCK, PROFILE, AdmissionBlocked,
-    evaluate, inspect_policy, inspect_source, main,
+    LOCK,
+    PROFILE,
+    ROOT,
+    AdmissionBlocked,
+    evaluate,
+    inspect_policy,
+    inspect_source,
+    main,
 )
 
 
@@ -115,19 +121,14 @@ class Stage74AdmissionTests(unittest.TestCase):
         lock, _, _ = inspect_policy(self.root, self.sha())
         matches = [{"name": p["name"], "matches_lock": True}
                    for p in lock["source_lock"]["projects"]]
-        with patch("scripts.stage7_4_fast_build_gate.sample_capacity", return_value={}):
-            with patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection"):
-                with patch("scripts.stage7_4_fast_build_gate.git_value",
-                           return_value=lock["manifest_commit"]):
-                    with patch("scripts.stage7_4_fast_build_gate.inspect_projects",
-                               return_value=matches):
-                        with patch("scripts.stage7_4_fast_build_gate.project_path",
-                                   return_value=source):
-                            with patch("scripts.stage7_4_fast_build_gate.subprocess.check_output",
-                                       return_value=" M fs/unsafe.c"):
-                                with self.assertRaisesRegex(AdmissionBlocked,
-                                                            "SOURCE_TRACKED_WORKTREE_DIRTY"):
-                                    inspect_source(lock, source, host_disk=self.host_disk_fixture())
+        with (patch("scripts.stage7_4_fast_build_gate.sample_capacity", return_value={}),
+              patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection"),
+              patch("scripts.stage7_4_fast_build_gate.git_value", return_value=lock["manifest_commit"]),
+              patch("scripts.stage7_4_fast_build_gate.inspect_projects", return_value=matches),
+              patch("scripts.stage7_4_fast_build_gate.project_path", return_value=source),
+              patch("scripts.stage7_4_fast_build_gate.subprocess.check_output", return_value=" M fs/unsafe.c"),
+              self.assertRaisesRegex(AdmissionBlocked, "SOURCE_TRACKED_WORKTREE_DIRTY")):
+            inspect_source(lock, source, host_disk=self.host_disk_fixture())
 
     def test_missing_source_fails_closed(self):
         with self.assertRaisesRegex(AdmissionBlocked, "EXISTING_REPO_SOURCE_REQUIRED"):
@@ -138,33 +139,29 @@ class Stage74AdmissionTests(unittest.TestCase):
         (source / ".repo/manifests").mkdir(parents=True)
         lock, _, _ = inspect_policy(self.root, self.sha())
         with patch("scripts.stage7_4_fast_build_gate.platform.release",
-                   return_value="6.18.1-microsoft-WSL2"):
-            with self.assertRaisesRegex(AdmissionBlocked, "WSL_PHYSICAL_HOST_DISK_REQUIRED"):
-                inspect_source(lock, source)
+                   return_value="6.18.1-microsoft-WSL2"), self.assertRaisesRegex(AdmissionBlocked, "WSL_PHYSICAL_HOST_DISK_REQUIRED"):
+            inspect_source(lock, source)
 
     def test_disk_reserve_stops_before_source_git_checks(self):
         source = self.root / "source"
         (source / ".repo/manifests").mkdir(parents=True)
         lock, _, _ = inspect_policy(self.root, self.sha())
-        with patch("scripts.stage7_4_fast_build_gate.sample_capacity",
-                   side_effect=AdmissionBlocked("DISK_RESERVE_EXHAUSTED")):
-            with patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection") as f:
-                with self.assertRaisesRegex(AdmissionBlocked, "DISK_RESERVE_EXHAUSTED"):
-                    inspect_source(lock, source, host_disk=self.host_disk_fixture())
-                f.assert_not_called()
+        with (patch("scripts.stage7_4_fast_build_gate.sample_capacity", side_effect=AdmissionBlocked("DISK_RESERVE_EXHAUSTED")),
+              patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection") as f):
+            with self.assertRaisesRegex(AdmissionBlocked, "DISK_RESERVE_EXHAUSTED"):
+                inspect_source(lock, source, host_disk=self.host_disk_fixture())
+            f.assert_not_called()
 
     def test_project_mismatch_is_not_overridden_by_manifest_match(self):
         source = self.root / "source"
         (source / ".repo/manifests").mkdir(parents=True)
         lock, _, _ = inspect_policy(self.root, self.sha())
-        with patch("scripts.stage7_4_fast_build_gate.sample_capacity", return_value={}):
-            with patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection"):
-                with patch("scripts.stage7_4_fast_build_gate.git_value",
-                           return_value=lock["manifest_commit"]):
-                    with patch("scripts.stage7_4_fast_build_gate.inspect_projects",
-                               return_value=[{"name":"mismatch","matches_lock":False}]):
-                        with self.assertRaisesRegex(AdmissionBlocked, "PROJECT_HEAD_MISMATCH"):
-                            inspect_source(lock, source, host_disk=self.host_disk_fixture())
+        with (patch("scripts.stage7_4_fast_build_gate.sample_capacity", return_value={}),
+              patch("scripts.stage7_4_fast_build_gate.verify_manifest_selection"),
+              patch("scripts.stage7_4_fast_build_gate.git_value", return_value=lock["manifest_commit"]),
+              patch("scripts.stage7_4_fast_build_gate.inspect_projects", return_value=[{"name":"mismatch","matches_lock":False}]),
+              self.assertRaisesRegex(AdmissionBlocked, "PROJECT_HEAD_MISMATCH")):
+            inspect_source(lock, source, host_disk=self.host_disk_fixture())
 
     def test_cli_failed_admission_does_not_emit_trusted_report(self):
         report = self.root / "report.json"

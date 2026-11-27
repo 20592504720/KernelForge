@@ -1,12 +1,13 @@
 """Fast subprocess and report checks; no kernel source or network required."""
 
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
+
 import yaml
 
 from scripts import verify_sm8750_sync as sync
@@ -51,11 +52,10 @@ class MonitoredSyncTests(unittest.TestCase):
             processes.append(process)
             return process
         with mock.patch.object(sync, 'disk_sample', return_value={'free_bytes': 1,
-                                                                   'free_inodes': 2}):
-            with self.assertRaisesRegex(RuntimeError, 'RUNNER_DISK_CAPACITY_INSUFFICIENT'):
-                sync.run_monitored([sys.executable, '-c', 'import time; time.sleep(5)'],
-                                   self.work, self.log, 2, 10, self.samples.append,
-                                   interval=0.05, popen=capture)
+                                                                   'free_inodes': 2}), self.assertRaisesRegex(RuntimeError, 'RUNNER_DISK_CAPACITY_INSUFFICIENT'):
+            sync.run_monitored([sys.executable, '-c', 'import time; time.sleep(5)'],
+                               self.work, self.log, 2, 10, self.samples.append,
+                               interval=0.05, popen=capture)
         self.assertIsNotNone(processes[0].poll())
         self.assertTrue(self.samples)
 
@@ -67,12 +67,11 @@ class MonitoredSyncTests(unittest.TestCase):
             return process
         def sample(path, stage):
             return {'stage': stage, 'free_bytes': 1 if stage.endswith(':host') else 100}
-        with mock.patch.object(sync, 'disk_sample', side_effect=sample):
-            with self.assertRaisesRegex(RuntimeError, 'HOST_DISK_CAPACITY_INSUFFICIENT'):
-                sync.run_monitored([sys.executable, '-c', 'import time; time.sleep(5)'],
-                                   self.work, self.log, 2, 10, self.samples.append,
-                                   interval=0.05, popen=capture,
-                                   host_disk_path=self.work, host_reserve_bytes=50)
+        with mock.patch.object(sync, 'disk_sample', side_effect=sample), self.assertRaisesRegex(RuntimeError, 'HOST_DISK_CAPACITY_INSUFFICIENT'):
+            sync.run_monitored([sys.executable, '-c', 'import time; time.sleep(5)'],
+                               self.work, self.log, 2, 10, self.samples.append,
+                               interval=0.05, popen=capture,
+                               host_disk_path=self.work, host_reserve_bytes=50)
         self.assertIsNotNone(processes[0].poll())
         self.assertTrue(any(x['stage'].endswith(':host') for x in self.samples))
 
@@ -95,14 +94,23 @@ class MonitoredSyncTests(unittest.TestCase):
         sync.write_report(report, {'stage': 'sample', 'minimum_free_bytes': 123})
         self.assertEqual(json.loads(report.read_text())['minimum_free_bytes'], 123)
         lock = self.work / 'lock.json'
-        lock.write_text('{}', encoding='utf-8')
-        result = sync.main(['--lock', str(lock), '--workspace', str(self.work / 'source'),
-                            '--report', str(report)])
-        self.assertEqual(result, 1)
-        data = json.loads(report.read_text())
-        self.assertEqual(data['source_sync'], 'UNTESTED')
-        self.assertEqual(data['failure_stage'], 'preflight')
-        self.assertTrue(data['resource_samples'])
+        invalid_locks = ['{}', 'null', '[]', '{',
+                         '{"device_profile":"oneplus13-pjz110","source_lock":null}',
+                         '{"device_profile":"oneplus13-pjz110","source_lock":{"all_refs_locked":true,"projects":null}}',
+                         None]
+        for content in invalid_locks:
+            with self.subTest(content=content):
+                if content is None:
+                    lock.unlink()
+                else:
+                    lock.write_text(content, encoding='utf-8')
+                result = sync.main(['--lock', str(lock), '--workspace', str(self.work / 'source'),
+                                    '--report', str(report)])
+                self.assertEqual(result, 1)
+                data = json.loads(report.read_text())
+                self.assertEqual(data['source_sync'], 'UNTESTED')
+                self.assertEqual(data['failure_stage'], 'preflight')
+                self.assertTrue(data['resource_samples'])
 
     def test_cleanup_is_scoped_and_sync_requires_explicit_event(self):
         workflow = yaml.safe_load((Path(__file__).resolve().parents[1] /
@@ -194,14 +202,18 @@ class MonitoredSyncTests(unittest.TestCase):
     def test_generated_manifest_is_verified_without_symlink_assumption(self):
         manifest_dir = self.work / '.repo/manifests'
         manifest_dir.mkdir(parents=True)
-        subprocess.run(['git', 'init', '-q', str(manifest_dir)], check=True)
+        git_env = sync.git_environment()
+        subprocess.run(['git', 'init', '-q', str(manifest_dir)], check=True, env=git_env)
         subprocess.run(['git', '-C', str(manifest_dir), 'config', 'user.email',
-                        'test@example.org'], check=True)
-        subprocess.run(['git', '-C', str(manifest_dir), 'config', 'user.name', 'Test'], check=True)
+                        'test@example.org'], check=True, env=git_env)
+        subprocess.run(['git', '-C', str(manifest_dir), 'config', 'user.name', 'Test'],
+                       check=True, env=git_env)
         source = manifest_dir / 'oneplus_13_b.xml'
         source.write_text('<manifest/>\n', encoding='utf-8')
-        subprocess.run(['git', '-C', str(manifest_dir), 'add', 'oneplus_13_b.xml'], check=True)
-        subprocess.run(['git', '-C', str(manifest_dir), 'commit', '-q', '-m', 'locked'], check=True)
+        subprocess.run(['git', '-C', str(manifest_dir), 'add', 'oneplus_13_b.xml'],
+                       check=True, env=git_env)
+        subprocess.run(['git', '-C', str(manifest_dir), 'commit', '-q', '-m', 'locked'],
+                       check=True, env=git_env)
         selected = self.work / '.repo/manifest.xml'
         selected.write_text('<manifest><include name="oneplus_13_b.xml"/></manifest>',
                             encoding='utf-8')

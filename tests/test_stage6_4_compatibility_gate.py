@@ -9,8 +9,13 @@ import unittest
 from pathlib import Path
 
 from kernelforge.compatibility_gate import (
-    BAKA_REPO, OFFICIAL_REPO, SUSFS_REPO, KERNEL_REPO,
-    CompatibilityGateError, evaluate_reviewed, require_release_eligible,
+    BAKA_REPO,
+    KERNEL_REPO,
+    OFFICIAL_REPO,
+    SUSFS_REPO,
+    CompatibilityGateError,
+    evaluate_reviewed,
+    require_release_eligible,
 )
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -3,23 +3,28 @@
 import argparse
 import json
 import os
-from pathlib import Path, PurePosixPath
 import shutil
 import signal
 import subprocess
 import sys
-from datetime import datetime, timezone
 import time
+from collections.abc import Callable
+from datetime import UTC, datetime
+from pathlib import Path, PurePosixPath
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from kernelforge.xml_safety import read_manifest_xml, ManifestXMLerror
+from kernelforge.git_policy import git_command
+from kernelforge.source import git_environment
+from kernelforge.xml_safety import ManifestXMLerror, read_manifest_xml
 
 
 def disk_sample(path, stage):
     usage = shutil.disk_usage(path)
-    sample = {'at': datetime.now(timezone.utc).isoformat(), 'stage': stage,
+    sample = {'at': datetime.now(UTC).isoformat(), 'stage': stage,
               'free_bytes': usage.free, 'total_bytes': usage.total}
-    if hasattr(os, 'statvfs'):
-        stats = os.statvfs(path)
+    statvfs = getattr(os, 'statvfs', None)
+    if statvfs is not None:
+        stats = statvfs(path)
         sample.update(free_inodes=stats.f_favail, total_inodes=stats.f_files)
     return sample
 
@@ -56,14 +61,17 @@ def stop_group(process, grace_seconds=15):
 
 
 def run_monitored(command, cwd, log, timeout, reserve_bytes, on_sample,
-                  interval=30, popen=subprocess.Popen, host_disk_path=None,
+                  interval: float = 30,
+                  popen: Callable[..., subprocess.Popen[str]] = subprocess.Popen,
+                  host_disk_path=None,
                   host_reserve_bytes=0):
     """Stop the whole repo process group before free space reaches the reserve."""
     with log.open('a', encoding='utf-8') as stream:
         stream.write('$ ' + ' '.join(command) + '\n')
         stream.flush()
-        process = popen(command, cwd=cwd, stdout=stream, stderr=subprocess.STDOUT,
-                        start_new_session=(os.name == 'posix'))
+        safe_command = git_command(command[1:], cwd=cwd, env=git_environment()) if command and command[0] == 'git' else command
+        process = popen(safe_command, cwd=cwd, env=git_environment(), stdout=stream,
+                        stderr=subprocess.STDOUT, start_new_session=(os.name == 'posix'))
         deadline = time.monotonic() + timeout
         try:
             while True:
@@ -126,8 +134,9 @@ def project_path(work, item):
 
 
 def git_value(path, *args):
-    return subprocess.check_output(['git', '-C', str(path), *args], text=True,
-                                   stderr=subprocess.PIPE, timeout=15).strip()
+    return subprocess.check_output(git_command(['-C', str(path), *args], cwd=path, env=git_environment()), text=True,
+                                   stderr=subprocess.PIPE, timeout=15,
+                                   env=git_environment()).strip()
 
 
 def inspect_project(work, item):
@@ -209,8 +218,9 @@ def verify_manifest_selection(work, lock):
         raise RuntimeError('manifest path escapes locked workspace')
     if not selected.is_file() or not expected.is_file():
         raise RuntimeError('locked manifest file is missing')
-    if subprocess.run(['git', '-C', str(repo_dir / 'manifests'), 'diff', '--quiet',
-                       'HEAD', '--', name], timeout=15, check=False).returncode != 0:
+    if subprocess.run(git_command(['-C', str(repo_dir / 'manifests'), 'diff', '--quiet',
+                       'HEAD', '--', name], cwd=repo_dir / 'manifests', env=git_environment()),
+                      timeout=15, check=False, env=git_environment()).returncode != 0:
         raise RuntimeError('locked manifest checkout has local modifications')
     if selected.is_symlink():
         if selected.resolve() != expected.resolve():
@@ -252,7 +262,7 @@ def main(argv=None):
         raise ValueError(f'resume requires intact .repo manifest checkout: {work}')
     work.mkdir(parents=True, exist_ok=True)
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    record = {'started_at': datetime.now(timezone.utc).isoformat(), 'stage': 'preflight',
+    record = {'started_at': datetime.now(UTC).isoformat(), 'stage': 'preflight',
               'source_sync': 'UNTESTED', 'reserve_bytes': args.reserve_gib * (1024 ** 3),
               'full_build': 'UNTESTED', 'module_abi': 'UNTESTED', 'device_boot': 'UNTESTED',
               'project_results': [], 'resource_samples': []}
@@ -276,6 +286,7 @@ def main(argv=None):
         with log.open('a', encoding='utf-8') as stream:
             stream.write(json.dumps(sample) + '\n')
 
+    lock = None
     prior_handler = None
     if os.name == 'posix':
         prior_handler = signal.getsignal(signal.SIGTERM)
@@ -290,11 +301,23 @@ def main(argv=None):
             if host_sample['free_bytes'] < record['host_reserve_bytes']:
                 raise RuntimeError('HOST_DISK_CAPACITY_INSUFFICIENT before sync')
         lock = json.loads(args.lock.read_text(encoding='utf-8'))
-        if lock['device_profile'] != 'oneplus13-pjz110' or not lock['source_lock']['all_refs_locked']:
+        if not isinstance(lock, dict):
+            raise TypeError('source lock must be a JSON object')
+        source_lock = lock.get('source_lock')
+        if lock.get('device_profile') != 'oneplus13-pjz110':
             raise ValueError('complete OnePlus 13 source lock required')
-        projects = lock['source_lock']['projects']
-        if len(projects) != 35 or lock['source_lock']['project_count'] != 35:
+        if not isinstance(source_lock, dict):
+            raise TypeError('source_lock must be a JSON object')
+        if source_lock.get('all_refs_locked') is not True:
+            raise ValueError('complete OnePlus 13 source lock required')
+        projects = source_lock.get('projects')
+        if not isinstance(projects, list):
+            raise TypeError('source_lock projects must be a list')
+        if len(projects) != 35 or source_lock.get('project_count') != 35:
             raise ValueError('expected exactly 35 locked OnePlus 13 projects')
+        for field in ('manifest_commit', 'manifest_repository', 'manifest_path'):
+            if not isinstance(lock.get(field), str) or not lock[field]:
+                raise ValueError(f'source lock is missing {field}')
         record.update(device_profile=lock['device_profile'], manifest_commit=lock['manifest_commit'],
                       project_count=35)
         if os.name != 'posix' or shutil.which('repo') is None:
@@ -311,7 +334,9 @@ def main(argv=None):
             record['resumed_workspace'] = True
             record['stage'] = 'resume_manifest_validation'
         manifest_head = subprocess.check_output(
-            ['git', '-C', str(work / '.repo/manifests'), 'rev-parse', 'HEAD'], text=True).strip()
+            git_command(['-C', str(work / '.repo/manifests'), 'rev-parse', 'HEAD'],
+                        cwd=work / '.repo/manifests', env=git_environment()),
+            text=True, env=git_environment()).strip()
         record['actual_manifest_commit'] = manifest_head
         if manifest_head != lock['manifest_commit']:
             raise RuntimeError('manifest branch moved after locking; refusing mixed source versions')
@@ -332,17 +357,22 @@ def main(argv=None):
         record['source_sync'] = 'TESTED'
         record['build_entry_present'] = (work / 'kernel_platform/build_with_bazel.py').is_file()
         record['bazel_present'] = (work / 'kernel_platform/tools/bazel').is_file()
-    except (Exception, KeyboardInterrupt) as exc:
+    except (
+        OSError, TypeError, ValueError, RuntimeError,
+        subprocess.SubprocessError, ManifestXMLerror, KeyboardInterrupt,
+    ) as exc:
         record['failure_reason'] = str(exc)
         record['failure_stage'] = record['stage']
-        if 'lock' in locals() and isinstance(lock, dict) and 'source_lock' in lock:
-            record['project_results'] = inspect_projects(work, lock['source_lock'].get('projects', []))
+        source_lock = lock.get('source_lock') if isinstance(lock, dict) else None
+        projects = source_lock.get('projects') if isinstance(source_lock, dict) else None
+        if isinstance(projects, list):
+            record['project_results'] = inspect_projects(work, projects)
     finally:
         if prior_handler is not None:
             signal.signal(signal.SIGTERM, prior_handler)
         sampled(disk_sample(work, 'final'))
         record['matched_projects'] = sum(row['matches_lock'] for row in record['project_results'])
-        record['ended_at'] = datetime.now(timezone.utc).isoformat()
+        record['ended_at'] = datetime.now(UTC).isoformat()
         write_report(args.report, record)
     return 0 if record['source_sync'] == 'TESTED' else 1
 

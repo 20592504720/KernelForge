@@ -8,8 +8,8 @@ import uuid
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
-from ..security import redact_diagnostic
 
+from ..security import redact_diagnostic
 
 MAX_DOWNLOAD_BYTES = 8 * 1024**3
 MIN_FREE_BYTES = 64 * 1024**2

@@ -1,13 +1,18 @@
 """Offline negative tests for manifest parser and HTTPS metadata boundary."""
 import io
 import unittest
+from http.client import HTTPMessage
 from unittest.mock import patch
 from urllib.request import Request
 
-from kernelforge.xml_safety import parse_manifest_xml, ManifestXMLerror
-from kernelforge.http_safety import (require_https_host, _OriginRedirect, open_metadata,
-                                      read_bounded, MetadataURLerror)
+from kernelforge.http_safety import (
+    MetadataURLerror,
+    _OriginRedirect,
+    open_metadata,
+    read_bounded,
+)
 from kernelforge.versions import releases
+from kernelforge.xml_safety import ManifestXMLerror, parse_manifest_xml
 
 
 class ManifestTests(unittest.TestCase):
@@ -18,28 +23,24 @@ class ManifestTests(unittest.TestCase):
         for value in ('<!DOCTYPE manifest><manifest/>',
                       '<!DOCTYPE manifest [<!ENTITY demo "fixture">]><manifest>&demo;</manifest>',
                       '<!doctype manifest><manifest/>'):
-            with self.subTest(value=value):
-                with self.assertRaises(ManifestXMLerror):
-                    parse_manifest_xml(value)
+            with self.subTest(value=value), self.assertRaises(ManifestXMLerror):
+                parse_manifest_xml(value)
 
     def test_utf16_rejected(self):
         with self.assertRaises(ManifestXMLerror):
             parse_manifest_xml("<manifest/>".encode("utf-16"))
 
     def test_byte_limit(self):
-        with patch("kernelforge.xml_safety.MAX_XML_BYTES", 20):
-            with self.assertRaisesRegex(ManifestXMLerror, "budget"):
-                parse_manifest_xml("<manifest>" + "x"*20 + "</manifest>")
+        with patch("kernelforge.xml_safety.MAX_XML_BYTES", 20), self.assertRaisesRegex(ManifestXMLerror, "budget"):
+            parse_manifest_xml("<manifest>" + "x"*20 + "</manifest>")
 
     def test_depth_limit(self):
-        with patch("kernelforge.xml_safety.MAX_XML_DEPTH", 3):
-            with self.assertRaisesRegex(ManifestXMLerror, "structure"):
-                parse_manifest_xml("<a><b><c><d/></c></b></a>")
+        with patch("kernelforge.xml_safety.MAX_XML_DEPTH", 3), self.assertRaisesRegex(ManifestXMLerror, "structure"):
+            parse_manifest_xml("<a><b><c><d/></c></b></a>")
 
     def test_element_limit(self):
-        with patch("kernelforge.xml_safety.MAX_XML_ELEMENTS", 3):
-            with self.assertRaisesRegex(ManifestXMLerror, "structure"):
-                parse_manifest_xml("<a><b/><c/><d/></a>")
+        with patch("kernelforge.xml_safety.MAX_XML_ELEMENTS", 3), self.assertRaisesRegex(ManifestXMLerror, "structure"):
+            parse_manifest_xml("<a><b/><c/><d/></a>")
 
 
 class NetworkTests(unittest.TestCase):
@@ -56,12 +57,16 @@ class NetworkTests(unittest.TestCase):
         request = Request("https://api.github.com/repos/example/project")
         handler = _OriginRedirect("api.github.com", False)
         with self.assertRaises(MetadataURLerror):
-            handler.redirect_request(request, None, 302, "", {}, "https://other.invalid/x")
+            handler.redirect_request(request, io.BytesIO(), 302, "", HTTPMessage(),
+                                     "https://other.invalid/x")
 
     def test_same_origin_redirect_allowed(self):
         request = Request("https://api.github.com/repos/example/project")
         handler = _OriginRedirect("api.github.com", False)
-        new = handler.redirect_request(request, None, 302, "", {}, "https://api.github.com/repos/example/new")
+        new = handler.redirect_request(request, io.BytesIO(), 302, "", HTTPMessage(),
+                                       "https://api.github.com/repos/example/new")
+        if new is None:
+            self.fail("same-origin redirect unexpectedly refused")
         self.assertEqual(new.full_url, "https://api.github.com/repos/example/new")
 
     def test_bounded_response(self):
@@ -76,9 +81,8 @@ class NetworkTests(unittest.TestCase):
             opener.assert_not_called()
 
     def test_release_response_rejects_non_object_rows(self):
-        with patch("kernelforge.versions.open_metadata", return_value=io.BytesIO(b"[1]")):
-            with self.assertRaisesRegex(ValueError, "invalid release API response"):
-                releases("https://github.com/owner/repo")
+        with patch("kernelforge.versions.open_metadata", return_value=io.BytesIO(b"[1]")), self.assertRaisesRegex(ValueError, "invalid release API response"):
+            releases("https://github.com/owner/repo")
 
 
 if __name__ == "__main__":

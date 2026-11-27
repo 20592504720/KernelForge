@@ -11,13 +11,15 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts/windows_test_runner.py"
 
 
-def run_suite(*, creationflags: int, popen=subprocess.Popen, stream=None,
+def run_suite(*, creationflags: int,
+              popen: Callable[..., subprocess.Popen[str]] = subprocess.Popen, stream=None,
               python=None, runner=None) -> int:
     """An injectable wrapper for offline verification of status propagation."""
     stream = stream if stream is not None else sys.stdout

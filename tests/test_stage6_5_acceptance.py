@@ -1,5 +1,4 @@
 """Offline negative tests for Stage 6.5 evidence reconciliation; no network."""
-import copy
 import json
 import shutil
 import tempfile
@@ -7,7 +6,14 @@ import unittest
 from pathlib import Path
 
 from scripts.stage6_acceptance import (
-    audit, Stage6AcceptanceError, LOCK, ACCEPTED, WORKTREE, DEPENDENCIES, CATALOG, ROOT,
+    ACCEPTED,
+    CATALOG,
+    DEPENDENCIES,
+    LOCK,
+    ROOT,
+    WORKTREE,
+    Stage6AcceptanceError,
+    audit,
 )
 
 

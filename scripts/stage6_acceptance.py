@@ -12,7 +12,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
-
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = "manifests/oneplus13-pjz110-sm8750-source.lock.json"
@@ -33,7 +33,7 @@ def require(value: bool, problem: str) -> None:
         raise Stage6AcceptanceError(problem)
 
 
-def load(root: Path, name: str) -> dict:
+def load(root: Path, name: str) -> dict[str, Any]:
     path = root / name
     require(path.is_file() and not path.is_symlink(), f"missing/unsafe committed evidence: {name}")
     try:
@@ -41,15 +41,25 @@ def load(root: Path, name: str) -> dict:
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise Stage6AcceptanceError(f"invalid committed evidence: {name}") from exc
     require(type(item) is dict, f"invalid evidence object: {name}")
-    return item
+    # JSON object keys are strings by definition; the exact-dict guard above
+    # establishes the boundary before the evidence-specific checks use values.
+    return cast(dict[str, Any], item)
+
+
+def dict_rows(value: object, problem: str) -> list[dict[str, Any]]:
+    """Validate a JSON array-of-objects before using its evidence fields."""
+    if type(value) is not list or any(type(row) is not dict for row in value):
+        raise Stage6AcceptanceError(problem)
+    return cast(list[dict[str, Any]], value)
 
 
 def audit(root: Path = ROOT) -> dict:
     root = Path(root)
     lock, first, second, final, compat = (load(root, path) for path in
         (LOCK, ACCEPTED, WORKTREE, DEPENDENCIES, CATALOG))
-    projects = lock.get("source_lock", {}).get("projects")
-    require(type(projects) is list and len(projects) == 35
+    projects = dict_rows(lock.get("source_lock", {}).get("projects"),
+                         "OnePlus 13 locked project count must be 35")
+    require(len(projects) == 35
             and lock["source_lock"].get("project_count") == 35,
             "OnePlus 13 locked project count must be 35")
     require(lock.get("manifest_commit") == "f8e50677874c65b6da41057d2f39be7b4ef3c08a",
@@ -69,8 +79,9 @@ def audit(root: Path = ROOT) -> dict:
             and prior.get("matched_heads") == 35
             and prior.get("project_count") == 35,
             "Stage 6.3 original 35-project WSL evidence differs")
-    rows = prior.get("project_commit_tree_records")
-    require(type(rows) is list and len(rows) == 35,
+    rows = dict_rows(prior.get("project_commit_tree_records"),
+                     "original WSL project identity inventory incomplete")
+    require(len(rows) == 35,
             "original WSL project identity inventory incomplete")
     observed = {}
     for item in rows:
@@ -100,8 +111,9 @@ def audit(root: Path = ROOT) -> dict:
             and work.get("root_child_overlap") == 0
             and work.get("clean_filtered_match") is True,
             "Stage 6.3 worktree status is inconsistent")
-    checked = work.get("projects")
-    require(type(checked) is list and len(checked) == 35,
+    checked = dict_rows(work.get("projects"),
+                        "Stage 6.3 tracked worktree project inventory incomplete")
+    require(len(checked) == 35,
             "Stage 6.3 tracked worktree project inventory incomplete")
     checked_names = set()
     for item in checked:
@@ -133,8 +145,9 @@ def audit(root: Path = ROOT) -> dict:
             and lz4.get("raw_byte_equivalence") == "BLOCKED"
             and lz4.get("source_unchanged") is True,
             "lz4 CRLF exception must retain raw/clean distinction")
-    files = lz4.get("files")
-    require(type(files) is list and len(files) == 33
+    files = dict_rows(lz4.get("files"),
+                      "lz4 normalized contents missing original 33-file details")
+    require(len(files) == 33
             and len({f["path"] for f in files}) == 33
             and all(f["git_clean_equivalent"] is True
                     and f["raw_worktree_byte_equal"] is False

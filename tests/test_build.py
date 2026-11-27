@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from kernelforge.build import BuildError, GkiAdapter, VendorAdapter, run_build
-from kernelforge.source import SourceError, checkout
+from kernelforge.source import SourceError, checkout, validate_repository
 from kernelforge.toolchain import ToolchainError, check_tools
 
 
@@ -51,6 +51,29 @@ class SourceCheckoutTests(unittest.TestCase):
                 checkout("not a remote", "main", destination)
             self.assertFalse(destination.exists())
 
+    def test_repository_credentials_rejected_before_git(self):
+        with tempfile.TemporaryDirectory() as td:
+            destination = Path(td) / "checkout"
+            for repository in ("https://user:secret@example.invalid/repo.git",
+                               "ssh://user:secret@example.invalid/repo.git"):
+                with self.subTest(repository=repository), patch("kernelforge.source.subprocess.run") as run:
+                    with self.assertRaisesRegex(SourceError, "must not contain credentials"):
+                        checkout(repository, "main", destination)
+                    run.assert_not_called()
+                    self.assertFalse(destination.exists())
+
+    def test_ssh_login_name_is_not_misclassified_as_password(self):
+        for repository in ("ssh://git@example.invalid/owner/repo.git",
+                           "git@example.invalid:owner/repo.git"):
+            with self.subTest(repository=repository):
+                validate_repository(repository)
+        for repository in ("ssh://git:secret@example.invalid/owner/repo.git",
+                           "ssh://bad%20name@example.invalid/owner/repo.git",
+                           "https://user@example.invalid/owner/repo.git?token=secret",
+                           "https://[invalid/repo.git"):
+            with self.subTest(repository=repository), self.assertRaises(SourceError):
+                validate_repository(repository)
+
     def test_option_shaped_scp_repository_rejected_before_git(self):
         with tempfile.TemporaryDirectory() as td:
             destination = Path(td) / "checkout"
@@ -84,23 +107,23 @@ class SourceCheckoutTests(unittest.TestCase):
                     Path(args[-1]).mkdir()
                     return ""
                 raise SourceError("Git operation timed out")
-            with patch("kernelforge.source._run_git", side_effect=clone_then_timeout):
-                with self.assertRaisesRegex(SourceError, "timed out"):
-                    checkout(repo.as_uri(), "main", destination)
+            with (patch("kernelforge.source._run_git", side_effect=clone_then_timeout),
+                  self.assertRaisesRegex(SourceError, "timed out")):
+                checkout(repo.as_uri(), "main", destination)
             self.assertFalse(destination.exists())
 
 
 class ToolchainTests(unittest.TestCase):
     def test_missing_tool_has_actionable_error(self):
-        with patch("kernelforge.toolchain.shutil.which", return_value=None):
-            with self.assertRaisesRegex(ToolchainError, "not found"):
-                check_tools([{"name": "clang"}])
+        with patch("kernelforge.toolchain.shutil.which", return_value=None), self.assertRaisesRegex(ToolchainError, "not found"):
+            check_tools([{"name": "clang"}])
 
     def test_minimum_version_enforced(self):
         completed = subprocess.CompletedProcess(["clang"], 0, "clang version 12.0.0\n", "")
-        with patch("kernelforge.toolchain.shutil.which", return_value=sys.executable), patch("kernelforge.toolchain.subprocess.run", return_value=completed):
-            with self.assertRaisesRegex(ToolchainError, "too old"):
-                check_tools([{"name": "clang", "minimum": "14.0"}])
+        with (patch("kernelforge.toolchain.shutil.which", return_value=sys.executable),
+              patch("kernelforge.toolchain.subprocess.run", return_value=completed),
+              self.assertRaisesRegex(ToolchainError, "too old")):
+            check_tools([{"name": "clang", "minimum": "14.0"}])
 
 
 class AdapterTests(unittest.TestCase):

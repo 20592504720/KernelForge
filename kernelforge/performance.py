@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 
 def file_sha256(path: Path) -> str:

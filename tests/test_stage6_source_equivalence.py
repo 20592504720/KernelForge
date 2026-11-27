@@ -11,10 +11,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from kernelforge.source_equivalence import (
-    SourceEquivalenceError, verify_archive_git_tree, workspace_plan,
-)
 from test_stage6_source_archive import fixture_lock
+
+from kernelforge.source_equivalence import (
+    SourceEquivalenceError,
+    verify_archive_git_tree,
+    workspace_plan,
+)
 
 
 def git(path: Path, *args: str, binary: bool = False):
@@ -205,7 +208,10 @@ class EquivalenceTests(unittest.TestCase):
                 if item.isfile():
                     path = self.stage / item.name
                     path.parent.mkdir(parents=True, exist_ok=True)
-                    path.write_bytes(z.extractfile(item).read())
+                    stream = z.extractfile(item)
+                    if stream is None:
+                        raise AssertionError("regular archive member has no content stream")
+                    path.write_bytes(stream.read())
                     path.chmod(0o755 if item.mode & 0o111 else 0o644)
         with self.assertRaisesRegex(SourceEquivalenceError, "file bytes differ"):
             self.verify()

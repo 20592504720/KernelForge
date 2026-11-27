@@ -6,9 +6,13 @@ from urllib.request import Request
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from kernelforge.source_provider import load_profile, audit_manifest, manifest_source_lock
-from kernelforge.versions import resolve, timestamp
 from kernelforge.http_safety import open_metadata, read_bounded
+from kernelforge.source_provider import (
+    audit_manifest,
+    load_profile,
+    manifest_source_lock,
+)
+from kernelforge.versions import resolve, timestamp
 from kernelforge.xml_safety import MAX_XML_BYTES
 
 

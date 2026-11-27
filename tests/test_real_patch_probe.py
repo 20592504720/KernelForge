@@ -1,8 +1,8 @@
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 from kernelforge.real_patch_probe import check_real_source
 

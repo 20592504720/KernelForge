@@ -12,9 +12,10 @@ import re
 import stat
 import subprocess
 from pathlib import Path
-from .xml_safety import parse_manifest_xml, ManifestXMLerror
 
-from .source_archive import locked_projects, _safe_member
+from .git_policy import GitPolicyError, git_command, git_environment
+from .source_archive import _safe_member, locked_projects
+from .xml_safety import ManifestXMLerror, parse_manifest_xml
 
 
 class SourceEquivalenceError(ValueError):
@@ -26,7 +27,7 @@ MAX_VERIFY_BYTES = 64 * 1024**3
 _SHA40 = re.compile(r"[0-9a-f]{40}\Z")
 
 
-def _valid_path(name: str) -> str:
+def _valid_path(name: object) -> str:
     if not isinstance(name, str):
         raise SourceEquivalenceError("invalid path type")
     try:
@@ -107,17 +108,12 @@ def workspace_plan(lock: dict, manifest_xml: str | None = None) -> dict:
 
 
 def _git(repo: Path, *args: str, binary: bool = False, timeout: int = 90):
-    env = {k: v for k, v in os.environ.items()
-           if not (k.startswith("GIT_CONFIG_") or k in (
-               "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
-               "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE"))}
-    env["GIT_NO_REPLACE_OBJECTS"] = "1"
-    env["GIT_OPTIONAL_LOCKS"] = "0"
+    env = git_environment()
     try:
-        result = subprocess.run(["git", "-C", str(repo), *args], env=env, capture_output=True,
+        result = subprocess.run(git_command(["-C", str(repo), *args], cwd=repo, env=env), env=env, capture_output=True,
                                 text=not binary, encoding=None if binary else "utf-8",
                                 timeout=timeout, check=False)
-    except (OSError, subprocess.TimeoutExpired) as exc:
+    except (OSError, subprocess.TimeoutExpired, GitPolicyError) as exc:
         raise SourceEquivalenceError("local Git object inspection unavailable") from exc
     if result.returncode:
         raise SourceEquivalenceError("local pinned Git object inspection failed")

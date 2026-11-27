@@ -6,7 +6,6 @@ from pathlib import Path
 
 from .objects import inspect_object
 
-
 NETWORK = {
     'bbr': ('TCP_CONG_BBR', 'net/ipv4/tcp_bbr.c', 'bbr'),
     'bbr2': ('TCP_CONG_BBR2', 'net/ipv4/tcp_bbr2.c', 'bbr2'),
@@ -53,7 +52,7 @@ def _symbols(paths):
     for path in paths:
         if path.is_file():
             symbols.update(re.findall(r'^config\s+([A-Z0-9_]+)\s*$',
-                                      path.read_text(encoding='utf-8', errors='replace'), re.M))
+                                      path.read_text(encoding='utf-8', errors='replace'), re.MULTILINE))
     return symbols
 
 

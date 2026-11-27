@@ -10,26 +10,31 @@ import shlex
 import subprocess
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
-from . import __version__
-from .toolchains.locking import FileLock, LockTimeout, _linked
+from . import __version__, development
 from .bounded_process import run_bounded_capture
-from .source import checkout
+from .build_cache import (
+    BuildCacheError,
+    BuildCacheNamespaces,
+    canonical_digest,
+    digest_file,
+)
+from .build_timestamp import kernel_build_environment, resolve_build_timestamp
+from .kernelsu import IntegrationError, integrate
 from .patch_manager import apply_series
+from .path_policy import require_external_paths
+from .security import publish_redacted_log, redact_diagnostic, redact_tree
+from .source import checkout
 from .toolchain import check_tools
 from .toolchains import ToolchainManager, ToolchainManagerError
-from .build_cache import BuildCacheNamespaces, BuildCacheError, canonical_digest, digest_file
-from .build_timestamp import resolve_build_timestamp, kernel_build_environment
-from .kernelsu import integrate, IntegrationError
-from . import development
+from .toolchains.locking import FileLock, LockTimeout, _linked
 from .workspace import Workspace
-from .security import redact_diagnostic, redact_tree, publish_redacted_log
 
 LOG = logging.getLogger(__name__)
-SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.I)
+SENSITIVE = re.compile(r"(token|secret|password|passwd|api[_-]?key)", re.IGNORECASE)
 
 
 class BuildError(RuntimeError):
@@ -93,7 +98,7 @@ ADAPTERS = {"gki": GkiAdapter(), "vendor": VendorAdapter()}
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _safe_argv(argv: list[str]) -> list[str]:
@@ -192,7 +197,7 @@ def _write_report(output: Path, report: dict) -> None:
 
 
 def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
-                           source_dir: Path, source_sha: str, plan: Plan,
+                           source_dir: Path, source_sha: str, plan: Plan | None,
                            prepared: dict | None, report: dict,
                            versions: dict | None, runtime_env: dict[str, str]):
     """Cache namespace admission, NOT proof of ccache binary interception."""
@@ -201,6 +206,8 @@ def _prepare_opt_in_ccache(config, workspace: Path, output_dir: Path,
         return None, None
     if config.get("device_profile"):
         raise BuildError("device-profile build cache needs Stage 7.4 verified OKI source-lock admission")
+    if plan is None:
+        raise BuildError("ccache requires a validated build plan")
     if not prepared or prepared.get("audit", {}).get("version_check") != "passed":
         raise BuildError("ccache requires actual verified managed toolchain CC binary")
     requested = config.get("source", {}).get("ref")
@@ -427,6 +434,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             config, workspace, output_dir, source_dir, source_sha, plan,
             managed_prepared, report, versions, safe_env)
         if cache_lease is not None:
+            if cache_details is None:
+                raise BuildError('compiler cache lease is missing its verified input identity')
             report["build_cache"] = cache_details[0]
             # Parent/adapter CCACHE_* settings cannot override the namespace.
             safe_env = {k: v for k, v in safe_env.items() if not k.startswith("CCACHE_")}
@@ -452,6 +461,8 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
                     report["build"]["diagnostic_log"].update(capture)
         if cache_lease is not None:
             try:
+                if cache_details is None:
+                    raise BuildCacheError('compiler cache input identity is unavailable')
                 inputs_stable = (digest_file(cache_details[1]) == cache_details[2] and
                                  digest_file(cache_details[3]) == cache_details[4])
             except (OSError, BuildCacheError):
@@ -474,16 +485,17 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
             report['patch_lock'] = json.loads((output_dir / 'patches.lock.json').read_text(encoding='utf-8'))
         if (output_dir / 'versions.lock.json').is_file():
             report['version_lock'] = json.loads((output_dir / 'versions.lock.json').read_text(encoding='utf-8'))
-        if cache_lease is not None:
-            if (report["build"].get("exit_status") != 0 or
+        if cache_lease is not None and (report["build"].get("exit_status") != 0 or
                 report.get("build_cache", {}).get("status") == "BLOCKED_CONFIG_CHANGED_DURING_BUILD"
                 or report["build"]["status"] != "success"):
-                try:
-                    cache_lease.invalidate()
-                except Exception as quarantine_exc:
-                    retain_cache_lease = True
-                    report.setdefault("build_cache", {})["quarantine_error"] = str(quarantine_exc)
-                    report["build_cache"]["lease_retained_for_manual_reconciliation"] = True
+            retain_cache_lease = True
+            try:
+                cache_lease.invalidate()
+            except (OSError, ValueError) as quarantine_exc:
+                report.setdefault("build_cache", {})["quarantine_error"] = str(quarantine_exc)
+                report["build_cache"]["lease_retained_for_manual_reconciliation"] = True
+            else:
+                retain_cache_lease = False
         report["build"]["status"] = "failure"
         report["error"] = redact_diagnostic(f"{type(exc).__name__}: {exc}")
         if not log_path.exists():
@@ -494,12 +506,15 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
         if isinstance(exc, BuildError):
             raise
         raise BuildError(redact_diagnostic(str(exc))) from exc
-    except BaseException:
+    except BaseException as interrupted:
         if cache_lease is not None:
+            retain_cache_lease = True
             try:
                 cache_lease.invalidate()
-            except BaseException:
-                retain_cache_lease = True
+            except BaseException as cleanup_error:
+                interrupted.add_note('Cache quarantine failed; lease retained for manual reconciliation')
+                raise interrupted from cleanup_error
+            retain_cache_lease = False
         raise
     finally:
         try:
@@ -511,7 +526,10 @@ def _run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     _finish_report(report, monotonic_start)
     _write_report(output_dir, report)
     LOG.info("Build succeeded; %d artifact(s)", len(report["artifacts"]))
-    return redact_tree(report)
+    redacted = redact_tree(report)
+    if not isinstance(redacted, dict):
+        raise BuildError('redacted build report must be an object')
+    return redacted
 
 
 def _finish_report(report: dict, monotonic_start: float) -> None:
@@ -523,6 +541,10 @@ def run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     """Serialize both workspace and output ownership, including different workspaces."""
     workspace = Path(workspace).absolute()
     output_dir = Path(output_dir).absolute()
+    try:
+        require_external_paths(workspace, output_dir, reserve=100)
+    except ValueError as exc:
+        raise BuildError(str(exc)) from exc
     if any(_linked(p) for path in (workspace, output_dir) for p in (path, *path.parents)):
         raise BuildError("build workspace/output cannot have symlink components")
     workspace = workspace.resolve()
@@ -531,8 +553,8 @@ def run_build(config: dict, workspace: Path, output_dir: Path) -> dict:
     key = hashlib.sha256(os.path.normcase(str(output_dir)).encode("utf-8")).hexdigest()
     output_lock = output_dir.parent / (".kf-output-" + key + ".lock")
     try:
-        with FileLock(workspace / ".kernelforge-build.lock", timeout=0, stale_after=float("inf")):
-            with FileLock(output_lock, timeout=0, stale_after=float("inf")):
-                return _run_build(config, workspace, output_dir)
+        with (FileLock(workspace / ".kernelforge-build.lock", timeout=0, stale_after=float("inf")),
+              FileLock(output_lock, timeout=0, stale_after=float("inf"))):
+            return _run_build(config, workspace, output_dir)
     except LockTimeout as exc:
         raise BuildError("workspace or output lock exists or is unsafe: " + str(exc)) from exc

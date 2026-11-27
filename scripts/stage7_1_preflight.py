@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import os
 import platform
@@ -15,7 +16,6 @@ import re
 import shutil
 import sys
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[1]
 _SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -115,8 +115,11 @@ def audit_repository(root: Path = ROOT) -> dict:
     _require("Stop after preflight" in build
              and "preflight only" in build.lower(),
              "legacy build entry no longer clearly refuses real builds")
-    _require("if: ${{ false }}" in release
-             and "contents: read" in release,
+    # Exact reviewed template: workflow_dispatch is the only trigger, and the
+    # job requires an impossible event name. Pin the whole recipe so an added
+    # event, job, permission, upload or alternate YAML spelling needs re-review.
+    _require(hashlib.sha256(release.encode('utf-8')).hexdigest()
+             == '51dbccd13ecfd1bd16f4ff08c437b46d3077a23631054eba6006b7c815c5ac5b',
              "release workflow no longer fail-closed or read-only")
     _require("[run-sm8750-once]" in audit_workflow
              and "full_sync" in audit_workflow,
@@ -183,8 +186,9 @@ def _filesystem(path: Path) -> dict:
         usage = shutil.disk_usage(path)
         result.update(total_bytes=usage.total, used_bytes=usage.used,
                       free_bytes=usage.free)
-        if hasattr(os, "statvfs"):
-            info = os.statvfs(path)
+        statvfs = getattr(os, "statvfs", None)
+        if statvfs is not None:
+            info = statvfs(path)
             result.update(available_inodes=info.f_favail, total_inodes=info.f_files)
     except OSError as exc:
         result["inspection_error"] = type(exc).__name__

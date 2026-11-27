@@ -10,7 +10,10 @@ import zipfile
 from pathlib import Path
 
 from kernelforge.source_archive import (
-    ArchivePreflightError, inspect_archive, locked_projects, preflight_archive,
+    ArchivePreflightError,
+    inspect_archive,
+    locked_projects,
+    preflight_archive,
     require_git_patch_source,
 )
 

@@ -14,11 +14,11 @@ on:
         description: 'Compile complete Image for pinned baseline'
         type: boolean
         default: false
-    exact_bakasu_commit:
-      description: 'Optional 40-hex BakaSU commit; runs only one pinned ACK6.1 + SUSFS job'
-      required: false
-      type: string
-      default: ''
+      exact_bakasu_commit:
+        description: 'Optional 40-hex BakaSU commit; runs only one pinned ACK6.1 + SUSFS job'
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: read
 jobs:

@@ -1,5 +1,4 @@
 """Stage 7.1 offline inventory and fail-closed regression coverage."""
-import copy
 import json
 import shutil
 import tempfile
@@ -7,9 +6,11 @@ import unittest
 from pathlib import Path
 
 from scripts.stage7_1_preflight import (
-    ROOT, Stage71AuditError, audit_repository, audit_local,
+    ROOT,
+    Stage71AuditError,
+    audit_local,
+    audit_repository,
 )
-
 
 INPUTS = [
     "configs/toolchains/defaults.json",
@@ -87,7 +88,7 @@ class Stage71PreflightTests(unittest.TestCase):
 
     def test_release_gate_removed_rejected(self):
         p = self.root / ".github/workflows/release.yml"
-        p.write_text(p.read_text(encoding="utf-8").replace("if: ${{ false }}", "if: true"),
+        p.write_text(p.read_text(encoding="utf-8").replace("if: ${{ github.event_name == 'kernelforge_release_disabled' }}", "if: true"),
                      encoding="utf-8")
         with self.assertRaisesRegex(Stage71AuditError, "release workflow"):
             audit_repository(self.root)

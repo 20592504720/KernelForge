@@ -9,7 +9,6 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
-import zipfile
 from pathlib import Path
 
 from kernelforge.archive_link_proof import verify_archive_link_tree
@@ -66,7 +65,12 @@ class ArchiveLinkTreeProofTests(unittest.TestCase):
         entries = []
         with tarfile.open(self.archive) as inp:
             for m in inp:
-                payload = inp.extractfile(m).read() if m.isfile() else b""
+                payload = b""
+                if m.isfile():
+                    stream = inp.extractfile(m)
+                    if stream is None:
+                        raise AssertionError("regular archive member has no content stream")
+                    payload = stream.read()
                 entries.append((m, payload))
         mutate(entries)
         with tarfile.open(target, "w") as out:

@@ -1,6 +1,6 @@
 """Bounded UTF-8 Android manifest parsing; DTDs and entities are not supported."""
-from pathlib import Path
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 MAX_XML_BYTES = 2 * 1024 * 1024
 MAX_XML_DEPTH = 32

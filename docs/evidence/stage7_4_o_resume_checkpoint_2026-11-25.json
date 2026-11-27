@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "date_local": "2026-11-25",
+  "status": "R2_LOCAL_CHECKPOINT_READY_STAGE_7_4_O_ADMISSION_BLOCKED",
+  "scope": "ISOLATED_WORKTREE_ONLY_NO_KERNEL_BUILD_NO_FULL_REGRESSION",
+  "worktree": {
+    "path": "E:\\内核构建\\worktrees\\kernelforge-stage74o-resume",
+    "branch": "codex/stage7-4-o-resume",
+    "baseline_head": "da2ed84a185b88ffd782e564c740de893bb173f8",
+    "baseline_tree": "39a1d9173ff4fc885173667dfdc56da9527c9d0d",
+    "changes_committed": true,
+    "source_lock_sha256_lf": "22cde7f21306497f47ffdd81b04da5661a24921a37cf8ae94203fd4c830e79a7",
+    "checkpoint_commit": "d91712df2daf1f63e313c5b4d68ef2446d916e78",
+    "checkpoint_tree": "3dad49a1e84f75b16c905a1188339c93bcc7caf7",
+    "status_clean_before_metadata_update": true,
+    "commit_note": "R2 isolated local checkpoint; metadata update follows in a separate documentation commit."
+  },
+  "formal_workspace": {
+    "path": "E:\\内核构建\\project",
+    "branch": "stage1/initial-foundation",
+    "head": "da2ed84a185b88ffd782e564c740de893bb173f8",
+    "tree": "39a1d9173ff4fc885173667dfdc56da9527c9d0d",
+    "git_status_clean": true,
+    "source_lock_sha256_mixed_line_endings": "7c42e764c4e55a09f4b0c6a1f17661839e1d0c12a083ff399cca16eb4f124e1e"
+  },
+  "changes": [
+    {
+      "files": [
+        "kernelforge/git_policy.py",
+        "kernelforge/source.py",
+        "kernelforge/source_equivalence.py",
+        "scripts/verify_sm8750_sync.py",
+        "scripts/stage7_4_fast_build_gate.py",
+        "scripts/check_repository_text_policy.py"
+      ],
+      "reason": "统一 Git 子进程隔离，过滤继承的 GIT_*，禁用 system/global Git config、replacement objects、optional locks 和终端提示；来源 URL 拒绝 username/password userinfo。"
+    },
+    {
+      "files": [
+        "kernelforge/kernelsu.py",
+        "kernelforge/windows_junction.py"
+      ],
+      "reason": "Windows cmd /c mklink 前拒绝命令解释器元字符路径，防止路径被解析为额外命令。"
+    },
+    {
+      "files": [
+        "tests/test_build.py",
+        "tests/test_kernelsu.py",
+        "tests/test_security_hardening.py",
+        "tests/test_sm8750_sync.py",
+        "tests/test_repository_text_policy.py",
+        ".gitattributes",
+        ".github/workflows/validate.yml"
+      ],
+      "reason": "覆盖凭据 URL 拒绝、Git 环境清理、Windows junction 元字符拒绝，并使临时 Git 夹具使用与生产相同的隔离环境。"
+    }
+  ],
+  "validation": {
+    "command": "python -B -m unittest test_build test_kernelsu test_security_hardening test_stage6_source_equivalence test_stage7_4_fast_build_gate test_sm8750_sync test_repository_text_policy -v",
+    "windows_tests_run": 137,
+    "windows_passed": 116,
+    "windows_conditional_skips": 21,
+    "wsl_tests_run": 137,
+    "wsl_passed": 136,
+    "wsl_conditional_skips": 1,
+    "failures": 0,
+    "skip_reasons": [
+      "Windows 无法证明 POSIX 文件模式",
+      "当前环境不保证符号链接权限"
+    ],
+    "windows_log": "reports/stage7_4_o_r2_20261125/windows-r2-cross-platform-tests-final.log",
+    "windows_log_sha256": "8364c535cc1650297a98fcedd11c173544d08feda8fdc5c1f16160a55be3534e",
+    "wsl_log": "reports/stage7_4_o_r2_20261125/wsl-r2-current-tests-final.log",
+    "wsl_log_sha256": "d210419235e2e88f1bc7a0aceaed3b1fdaf4ba3d97b1af0c48645e45bd24f321",
+    "wsl_source_target_files": 322,
+    "wsl_source_target_sha256_mismatches": 0,
+    "compileall": "PASS",
+    "git_diff_check": "PASS",
+    "formal_full_regression": "NOT_RUN",
+    "kernel_build": "NOT_RUN"
+  },
+  "static_review": {
+    "workflow_files_parsed": 14,
+    "pull_request_target_found": false,
+    "workflow_run_found": false,
+    "secrets_context_interpolation_found": false,
+    "permissions": "contents:read; CodeQL additionally security-events:write",
+    "third_party_actions": "commit-SHA-pinned",
+    "shell_true_or_os_system_in_kernelforge": "NO_MATCH",
+    "windows_cmd_mklink": "METACHARACTER_GUARD_ADDED",
+    "filesystem_toctou_formally_excluded": false
+  },
+  "stage_7_4_o_matrix": {
+    "O1": "PRIOR_SOFTWARE_AND_CLOUD_EVIDENCE; NOT_RERUN_THIS_SESSION",
+    "O2": "PENDING_READ_ONLY_REQUIRED_CHECKS_REVIEW",
+    "O3": "INCONCLUSIVE_SINGLE_LOCAL_COMPARISON; PRODUCTION_CHECKOUT_UNCHANGED",
+    "O4": "PRIOR_IMPLEMENTATION_EVIDENCE; NO_LARGE_TOOLCHAIN_RETEST",
+    "O5": "BLOCKED_NO_RELIABLE_CURRENT_RESOURCE_THROUGHPUT_SAMPLE; KEEP_J2",
+    "O6": "BLOCKED_NO_CCACHE_BINARY_OR_COMPILER_INTERCEPTION_EVIDENCE; DISABLED",
+    "O7": "PARTIAL_LONG_TERM_EVIDENCE_RETENTION_POLICY_PENDING",
+    "O8": "TARGETED_TESTS_ONLY; FORMAL_FULL_REGRESSION_NOT_RUN"
+  },
+  "remaining_blockers": [
+    "Formal workspace source-lock mixed line endings remain unchanged and differ from isolated LF digest.",
+    "Windows longPathsEnabled=0.",
+    "No reliable O5 throughput/resource sample.",
+    "No ccache binary/compiler interception evidence for O6.",
+    "DFR/source admission/Bazel action and output verification remain unproven.",
+    "No real OEM/GKI build, ABI/KMI, boot, Root or device verification."
+  ],
+  "boundaries_preserved": {
+    "formal_workspace_modified": false,
+    "main_modified": false,
+    "remote_modified": false,
+    "dependency_lock_modified": false,
+    "historical_evidence_overwritten": false,
+    "push_or_pr_merge": false,
+    "repo_sync_or_bazel": false,
+    "kernel_build": false,
+    "stage_7_5_or_8": false,
+    "jobs_setting": "-j2 retained",
+    "ccache": "disabled"
+  }
+}

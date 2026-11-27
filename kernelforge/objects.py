@@ -1,8 +1,8 @@
 """Verify real ARM64 relocatable objects; dry-run output is not evidence."""
 import hashlib
+import re
 import struct
 import subprocess
-import re
 from pathlib import Path
 
 

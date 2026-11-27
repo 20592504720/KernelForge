@@ -4,3 +4,30 @@
 *.yml text eol=lf
 *.md text eol=lf
 tests/fixtures/susfs-context/**/*.c text eol=lf -whitespace
+* text=auto eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+*.txt text eol=lf
+*.xml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+*.ps1 text eol=lf
+*.toml text eol=lf
+*.lock text eol=lf
+# Digest-checked inputs have deterministic UTF-8/LF bytes. Never normalize
+# before SHA256 verification; an existing mixed checkout must fail admission.
+*.lock.json text eol=lf
+manifests/oneplus13-pjz110-sm8750-source.lock.json -text
+# Signed, binary and opaque archive inputs must never pass text conversion.
+*.asc -text
+*.sig -text
+*.pem -text
+*.der -text
+*.zip -text
+*.gz -text
+*.xz -text
+*.zst -text
+*.png -text
+*.jpg -text
+*.bin -text
+*.img -text

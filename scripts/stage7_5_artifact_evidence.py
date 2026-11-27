@@ -15,10 +15,14 @@ import struct
 import sys
 from pathlib import Path
 
-from scripts.stage7_4_fast_build_gate import (
-    ROOT, AdmissionBlocked, inspect_policy, inspect_source, require,
-)
 from kernelforge.build_timestamp import resolve_build_timestamp
+from scripts.stage7_4_fast_build_gate import (
+    ROOT,
+    AdmissionBlocked,
+    inspect_policy,
+    inspect_source,
+    require,
+)
 
 CLANG_REL = "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang"
 # Stage 7.2 direct WSL2 binary audit; do not treat a different compiler as equivalent.
@@ -63,15 +67,15 @@ def _verify_timestamp(path: Path) -> dict:
     require(type(raw) is dict and raw.get("mode") in ("custom", "current_utc"),
             "BUILD_TIMESTAMP_EVIDENCE_INVALID")
     value = raw.get("utc_iso8601")
-    require(isinstance(value, str) and value.endswith("Z"),
-            "BUILD_TIMESTAMP_UTC_MISSING")
+    if not isinstance(value, str) or not value.endswith("Z"):
+        raise AdmissionBlocked("BUILD_TIMESTAMP_UTC_MISSING")
     expected = resolve_build_timestamp(value)
     for key in ("utc_iso8601", "source_date_epoch", "kbuild_build_timestamp", "timezone"):
         require(raw.get(key) == expected[key], "BUILD_TIMESTAMP_INCONSISTENT:" + key)
     requested = raw.get("requested")
     if raw["mode"] == "custom":
-        require(isinstance(requested, str) and requested,
-                "CUSTOM_TIMESTAMP_REQUEST_MISSING")
+        if not isinstance(requested, str) or not requested:
+            raise AdmissionBlocked("CUSTOM_TIMESTAMP_REQUEST_MISSING")
         check = resolve_build_timestamp(requested)
         require(check["utc_iso8601"] == expected["utc_iso8601"],
                 "CUSTOM_TIMESTAMP_DIFFERENT_INSTANT")

@@ -1,21 +1,23 @@
 """Offline Stage 6.2 acquisition/attack/rollback regression suite."""
-import copy
 import hashlib
 import io
 import json
-import stat
 import tarfile
 import tempfile
 import unittest
 import zipfile
+from http.client import HTTPMessage
 from pathlib import Path
 
+from test_stage6_source_archive import fixture_lock
+
 from kernelforge.source_acquisition import (
-    SourceAcquisitionError, _RedirectPolicy, _checked_url,
+    SourceAcquisitionError,
+    _checked_url,
+    _RedirectPolicy,
     acquire_archive,
 )
 from kernelforge.source_archive import ArchivePreflightError
-from test_stage6_source_archive import fixture_lock
 
 
 class Stream(io.BytesIO):
@@ -195,9 +197,11 @@ class AcquisitionTests(unittest.TestCase):
         from urllib.request import Request
         request = Request("https://files.example.org/src.tar")
         with self.assertRaises(SourceAcquisitionError):
-            policy.redirect_request(request, None, 302, "Moved", {}, "http://evil.org/x")
+            policy.redirect_request(request, io.BytesIO(), 302, "Moved", HTTPMessage(),
+                                    "http://evil.org/x")
         with self.assertRaises(SourceAcquisitionError):
-            policy.redirect_request(request, None, 302, "Moved", {}, "https://evil.org/x")
+            policy.redirect_request(request, io.BytesIO(), 302, "Moved", HTTPMessage(),
+                                    "https://evil.org/x")
 
     def test_fake_opener_final_url_checked(self):
         with self.assertRaises(SourceAcquisitionError):

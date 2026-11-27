@@ -7,6 +7,8 @@ import tarfile
 import zipfile
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
+from ..path_policy import require_external_paths
+
 MAX_MEMBERS = 250_000
 MAX_UNPACKED_BYTES = 32 * 1024**3
 MAX_MEMBER_BYTES = 8 * 1024**3
@@ -59,6 +61,7 @@ def extract(archive: Path, destination: Path, fmt: str, *,
         if shutil.disk_usage(destination).free < MIN_FREE_BYTES + size:
             raise ArchiveError("archive would violate free disk reserve")
         target = destination / relative
+        require_external_paths(target)
         if destination.resolve() not in target.resolve().parents:
             raise ArchiveError("archive path escapes destination")
         return target

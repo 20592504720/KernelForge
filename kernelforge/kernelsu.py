@@ -5,15 +5,15 @@ import hashlib
 import json
 import os
 import re
-import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator
 
-from .source import checkout, remove_checkout, _run_git, validate_repository
+from .providers import BakaModern, OfficialModern
+from .source import _run_git, checkout, remove_checkout, validate_repository
 from .toolchains.locking import FileLock
-from .providers import OfficialModern, BakaModern
+from .windows_junction import create_junction
 
 ROOT = Path(__file__).resolve().parents[1]
 OFFICIAL = "https://github.com/tiann/KernelSU.git"
@@ -37,9 +37,7 @@ def _inside(root, relative):
 
 def _link(target, link):
     if os.name == "nt":
-        result = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], capture_output=True, check=False)
-        if result.returncode:
-            raise OSError("cannot create KernelSU directory junction")
+        create_junction(target, link)
     else:
         link.symlink_to(os.path.relpath(target, link.parent), target_is_directory=True)
 
@@ -130,10 +128,10 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout, s
                 if re.search(rb"kernelsu|CONFIG_KSU|[Rr]e[Ss]uki|BaksSU|SukiSU", original[path]):
                     raise ValueError("existing root integration conflicts with selected KernelSU provider")
             version_text = (kernel / "Makefile").read_text(encoding="utf-8")
-            values = [re.search(rf"^{key}\s*=\s*(\d+)", version_text, re.M) for key in ("VERSION", "PATCHLEVEL", "SUBLEVEL")]
+            values = [re.search(rf"^{key}\s*=\s*(\d+)", version_text, re.MULTILINE) for key in ("VERSION", "PATCHLEVEL", "SUBLEVEL")]
             if not all(values):
                 raise ValueError("cannot identify actual kernel version from Makefile")
-            version = tuple(int(v.group(1)) for v in values)
+            version = tuple(int(v.group(1)) for v in values if v is not None)
             report["kernel_version"] = ".".join(map(str, version))
             compat = spec["compatibility"]
             if spec["architecture"] != "arm64" or not (version[0] == 5 and version[1] in (10, 15) or version[0] == 6 and version[1] in (1, 6, 12)):
@@ -149,9 +147,9 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout, s
                     raise ValueError("BakaSU adapter currently requires GKI tracepoint hooks; Vendor manual hooks are NOT_IMPLEMENTED")
                 required |= {"KALLSYMS", "KALLSYMS_ALL", "TRACEPOINTS"}
                 required.add('KSU_SUSFS' if susfs_ready else 'KSU_TRACEPOINT_HOOK')
-                if re.search(r"^CONFIG_KSU_MANUAL_HOOK=y$", actual_config, re.M) or (not susfs_ready and re.search(r'^CONFIG_KSU_SUSFS=y$', actual_config, re.M)):
+                if re.search(r"^CONFIG_KSU_MANUAL_HOOK=y$", actual_config, re.MULTILINE) or (not susfs_ready and re.search(r'^CONFIG_KSU_SUSFS=y$', actual_config, re.MULTILINE)):
                     raise ValueError("BakaSU SUSFS/manual hooks are outside this adapter")
-                if susfs_ready and re.search(r'^CONFIG_KSU_TRACEPOINT_HOOK=y$', actual_config, re.M):
+                if susfs_ready and re.search(r'^CONFIG_KSU_TRACEPOINT_HOOK=y$', actual_config, re.MULTILINE):
                     raise ValueError('BakaSU inline and tracepoint hooks cannot coexist')
             elif modern:
                 required |= {'KPROBES', 'EXT4_FS'}
@@ -160,7 +158,7 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout, s
             else:
                 required |= {"KPROBES", "HAVE_KPROBES", "KPROBE_EVENTS", "OVERLAY_FS"}
             for symbol in sorted(required):
-                if not re.search(rf"^CONFIG_{re.escape(symbol)}=y$", actual_config, re.M):
+                if not re.search(rf"^CONFIG_{re.escape(symbol)}=y$", actual_config, re.MULTILINE):
                     raise ValueError(f"required CONFIG_{symbol}=y missing from configured kernel file")
             report["compatibility"] = [{"check": "source version, mode and requested config", "status": "PASS"},
                                        {"check": "Kconfig resolution, compile, ABI and boot", "status": "UNTESTED"}]
@@ -189,7 +187,7 @@ def _integrate(spec, source: Path, output: Path, *, mode: str, fetch=checkout, s
             for name in ("Kconfig", "Makefile", "setup.sh"):
                 if not (payload / name).is_file():
                     raise ValueError(f"provider source missing kernel/{name}")
-            if not re.search(r"^config KSU$", (payload / "Kconfig").read_text(), re.M):
+            if not re.search(r"^config KSU$", (payload / "Kconfig").read_text(), re.MULTILINE):
                 raise ValueError("provider Kconfig does not declare KSU")
             build_file = payload / ("Kbuild" if baka or modern else "Makefile")
             if not build_file.is_file() or "CONFIG_KSU" not in build_file.read_text():
