@@ -26,7 +26,7 @@ if workspace:
     import tempfile
     tempfile.tempdir=None
 
-def _prepare_ci_fixture_owner():
+def _prepare_ci_fixture_owner() -> Path | None:
     """Use the current user's SID for newly created test objects only.
 
     Elevated hosted runners can default to the Administrators group as owner.
@@ -38,6 +38,7 @@ def _prepare_ci_fixture_owner():
         return
     import ctypes
     import tempfile
+    import uuid
     from ctypes import wintypes
     from kernelforge.python_environment import _owned_directory
 
@@ -79,14 +80,66 @@ def _prepare_ci_fixture_owner():
             owner = token_info(4)
             if not security.EqualSid(user_sid, ctypes.cast(owner, ctypes.POINTER(wintypes.LPVOID))[0]):
                 raise ValueError('test token owner did not match current user')
+        security.ConvertSidToStringSidW.argtypes = [wintypes.LPVOID, ctypes.POINTER(wintypes.LPWSTR)]
+        security.ConvertSidToStringSidW.restype = wintypes.BOOL
+        kernel.LocalFree.argtypes = [wintypes.LPVOID]
+        kernel.LocalFree.restype = wintypes.LPVOID
+        sid_text = wintypes.LPWSTR()
+        if not security.ConvertSidToStringSidW(user_sid, ctypes.byref(sid_text)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            sid = sid_text.value
+        finally:
+            kernel.LocalFree(sid_text)
     finally:
         kernel.CloseHandle(token)
-    with tempfile.TemporaryDirectory(prefix='kf-owner-') as folder:
-        _owned_directory(Path(folder))
-    print(f'WINDOWS_CI_FIXTURE_OWNER_VERIFIED changed={changed}', flush=True)
+
+    # The runner's default temp directory can inherit unrelated write grants.
+    # Create a NEW fixture root with an explicit protected inheritable DACL.
+    # No existing directory ACL is modified. Never print a user SID.
+    class SecurityAttributes(ctypes.Structure):
+        _fields_ = [('nLength', wintypes.DWORD),
+                    ('lpSecurityDescriptor', wintypes.LPVOID),
+                    ('bInheritHandle', wintypes.BOOL)]
+
+    security.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, ctypes.POINTER(wintypes.LPVOID),
+        ctypes.POINTER(wintypes.ULONG)]
+    security.ConvertStringSecurityDescriptorToSecurityDescriptorW.restype = wintypes.BOOL
+    kernel.CreateDirectoryW.argtypes = [wintypes.LPCWSTR, ctypes.POINTER(SecurityAttributes)]
+    kernel.CreateDirectoryW.restype = wintypes.BOOL
+    if not sid:
+        raise ValueError('test token user SID is unavailable')
+    descriptor = wintypes.LPVOID()
+    sddl = f'O:{sid}D:P(A;OICI;FA;;;{sid})(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)'
+    parent = Path(os.environ['RUNNER_TEMP']).resolve(strict=True)
+    fixture_root = parent / ('kf-' + uuid.uuid4().hex[:12])
+    if not security.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            sddl, 1, ctypes.byref(descriptor), None):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        attributes = SecurityAttributes(ctypes.sizeof(SecurityAttributes), descriptor, False)
+        if not kernel.CreateDirectoryW(str(fixture_root), ctypes.byref(attributes)):
+            raise ctypes.WinError(ctypes.get_last_error())
+    finally:
+        kernel.LocalFree(descriptor)
+
+    try:
+        # Check both the new root and a normal inherited child with the actual
+        # production gate. If either is rejected, stop before test discovery.
+        _owned_directory(fixture_root)
+        with tempfile.TemporaryDirectory(prefix='owner-', dir=fixture_root) as folder:
+            _owned_directory(Path(folder))
+    except BaseException:
+        os.rmdir(fixture_root)
+        raise
+    os.environ.update({key: str(fixture_root) for key in ('TEMP', 'TMP', 'TMPDIR')})
+    tempfile.tempdir = str(fixture_root)
+    print(f'WINDOWS_CI_FIXTURE_OWNER_VERIFIED changed={changed} private_root=True child=True', flush=True)
+    return fixture_root
 
 
-_prepare_ci_fixture_owner()
+_ci_fixture_root = _prepare_ci_fixture_owner()
 
 # Preserve the original SIGINT behavior and surface asynchronous console
 # interrupts rather than misclassifying them as assertion failures or masking
@@ -132,6 +185,15 @@ test_ok = result.wasSuccessful()
 exit_code = 0 if test_ok and not remaining else 1
 if remaining:
     print(f"unittest left worker threads running: {remaining}", file=sys.stderr, flush=True)
+if _ci_fixture_root is not None and not remaining:
+    try:
+        # Never recursively delete a path or change permissions to force cleanup.
+        os.rmdir(_ci_fixture_root)
+        print('WINDOWS_CI_FIXTURE_ROOT_CLEANED', file=sys.stderr, flush=True)
+    except OSError as exc:
+        print(f'WINDOWS_CI_FIXTURE_ROOT_RETAINED error={getattr(exc, "winerror", None)}',
+              file=sys.stderr, flush=True)
+        exit_code = 1
 print(f"WINDOWS_TEST_SUMMARY pid={os.getpid()} passed={test_ok} "
       f"ran={result.testsRun} errors={len(result.errors)} "
       f"failures={len(result.failures)} unexpected={len(result.unexpectedSuccesses)} "
