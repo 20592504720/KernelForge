@@ -2,22 +2,21 @@
 
 面向 Android Linux 内核的模块化、可审计自动化构建框架。项目旨在统一源码版本锁定、GKI/Vendor 构建适配、LLVM/GCC 工具链、KernelSU 及其衍生版本、补丁事务、设备配置、缓存隔离、构建报告与产物完整性验证。
 
-**当前状态（2026-11-24）：第一阶段至 7.4 的约定范围云端完整验收已通过，进入文档中文化与 Stage 7.5 后续准备。** 当前开发分支为 `stage1/initial-foundation`，[PR #1](https://github.com/20592504720/KernelForge/pull/1) 尚未合并。本项目仍处于开发阶段，不提供已验证的一加 13 可刷写内核。
+**当前状态（2026-11-27）：T09 第一阶段至 Stage 7.4 软件全量云端回归通过。** 验收代码为 `451fb613…`；原开发分支与 [PR #1](https://github.com/20592504720/KernelForge/pull/1) 保持不变。独立语义审计与发布权限仍有边界，Stage 7.5 真实构建尚未获准。本项目不提供已验证的一加 13 可刷写内核。
 
 ## 最新验收
 
 | 项目 | 结果 |
 | --- | --- |
-| [完整云端验收](https://github.com/20592504720/KernelForge/actions/runs/45375493788) | 12/12 Job 成功 |
-| Linux / Windows × Python 3.11 / 3.12 | 每环境 479 项；合计 1836 次非跳过通过、80 次平台跳过、0 失败 |
-| 固定 ACK 6.1 ARM64 通用 GKI | 五组完整 Image 编译成功 |
-| 产物独立校验 | 7 份 ZIP、5 份 Image SHA256 全部匹配 |
-| CodeQL / Bandit 高风险 | 0 / 0（Bandit 中风险 1、低风险 56） |
-| pip-audit / Gitleaks | 已锁定 Python 开发依赖无已知漏洞；149 个可达提交无凭据发现 |
+| [T09 云端验收](https://github.com/20592504720/KernelForge/actions/runs/45948966996) | 9/9 Job 成功（含独立安全扫描） |
+| Linux / Windows × Python 3.11 / 3.12 | 每环境 568 项；合计 2160 次非跳过通过、112 次平台跳过、0 失败、0 错误 |
+| CodeQL / Bandit 高风险 | 0 / 0（Bandit 中风险 1、低风险 53） |
+| pip-audit / Gitleaks | 锁定依赖无已知漏洞；175 个可达提交无凭据发现 |
+| 固定 ACK 6.1 ARM64 通用 GKI（历史） | 五组完整 Image 编译成功；7 份 ZIP、5 份 Image SHA256 已独立校验 |
 
-[最终安全验收报告](docs/SECURITY_FINAL_ACCEPTANCE_2026_11_24.md) · [机器可读证据](docs/evidence/security_final_acceptance_2026_11_24.json) · [完整功能状态](docs/STATUS.md)
+[T09 云端验收记录](docs/T09_CLOUD_ACCEPTANCE_2026_11_27.md) · [历史安全验收报告](docs/SECURITY_FINAL_ACCEPTANCE_2026_11_24.md) · [完整功能状态](docs/STATUS.md)
 
-上述结论只适用于审查过的代码、固定源码及测试范围。不能据此声称所有上游内核漏洞均已排除、设备可启动或可以刷机。
+上述结论仅适用于已核验的候选、固定源码和测试范围。历史真实编译不代表当前候选已重编译，不代表设备可启动或可刷机。
 
 ## 已实现功能
 
@@ -122,7 +121,7 @@ python -m kernelforge toolchain list --cache-dir .cache/toolchains
 
 ## 已知限制与安全边界
 
-本地 WSL2 源码锁摘要差异、DFR include（BLOCKED_UNDETERMINED）、真实 ccache、独立 Vendor 归档、实际 OnePlus13 完整 OKI、ABI/KMI、设备启动与 Root/SUSFS 运行、OEM 实际构建时间传递仍未解决或未验证。XML/Expat 与可信 PATH/Git/SSH 的残余风险详见安全报告；不将扫描零发现等同于零漏洞。禁止未经批准的设备编译、刷写、发布、源码锁变更或缓存删除；`build_eligible=false`、`device_release_eligible=false` 的设备门禁保持有效。
+历史源码锁摘要差异已通过混合 CRLF/LF 重建解释；正式源码准入仍须核验。DFR include（BLOCKED_UNDETERMINED）、真实 ccache、独立 Vendor 归档、实际 OnePlus13 完整 OKI、ABI/KMI、设备启动与 Root/SUSFS 运行、OEM 实际构建时间传递仍未解决或未验证。XML/Expat 与可信 PATH/Git/SSH 的残余风险详见安全报告；不将扫描零发现等同于零漏洞。禁止未经批准的设备编译、刷写、发布、源码锁变更或缓存删除；`build_eligible=false`、`device_release_eligible=false` 的设备门禁保持有效。
 
 ## 文档与维护
 
