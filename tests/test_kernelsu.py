@@ -76,7 +76,13 @@ class KernelSUIntegrationTests(unittest.TestCase):
         link = self.base / 'long-link'
         create_junction(target, link)
         self.addCleanup(lambda: os.rmdir(link))
-        self.assertEqual(link.resolve(), target.resolve())
+        self.assertGreater(len(str(target)), 260)
+        # Extended and normal DOS paths can denote the same directory. Check
+        # native file identity, and prove the junction traverses to the target.
+        marker = target / 'junction-identity.txt'
+        marker.write_bytes(b'long-target-fixture')
+        self.assertTrue(os.path.samefile(_extended(link), _extended(target)))
+        self.assertEqual((link / marker.name).read_bytes(), b'long-target-fixture')
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

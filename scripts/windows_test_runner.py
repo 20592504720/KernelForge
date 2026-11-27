@@ -26,6 +26,68 @@ if workspace:
     import tempfile
     tempfile.tempdir=None
 
+def _prepare_ci_fixture_owner():
+    """Use the current user's SID for newly created test objects only.
+
+    Elevated hosted runners can default to the Administrators group as owner.
+    Do not change existing filesystem ACLs, enable privileges, or relax the
+    production cache ownership check. This dedicated test process exits after
+    the suite; the parent runner's token and configuration are not changed.
+    """
+    if os.name != 'nt' or os.environ.get('GITHUB_ACTIONS') != 'true':
+        return
+    import ctypes
+    import tempfile
+    from ctypes import wintypes
+    from kernelforge.python_environment import _owned_directory
+
+    security = ctypes.WinDLL('advapi32', use_last_error=True)
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    security.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+    security.OpenProcessToken.restype = wintypes.BOOL
+    security.GetTokenInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)]
+    security.GetTokenInformation.restype = wintypes.BOOL
+    security.SetTokenInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD]
+    security.SetTokenInformation.restype = wintypes.BOOL
+    security.EqualSid.argtypes = [wintypes.LPVOID, wintypes.LPVOID]
+    security.EqualSid.restype = wintypes.BOOL
+    token = wintypes.HANDLE()
+    if not security.OpenProcessToken(kernel.GetCurrentProcess(), 0x88, ctypes.byref(token)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        def token_info(kind):
+            needed = wintypes.DWORD()
+            security.GetTokenInformation(token, kind, None, 0, ctypes.byref(needed))
+            if not 0 < needed.value <= 65536:
+                raise OSError('cannot inspect test token owner')
+            data = ctypes.create_string_buffer(needed.value)
+            if not security.GetTokenInformation(token, kind, data, needed.value, ctypes.byref(needed)):
+                raise ctypes.WinError(ctypes.get_last_error())
+            return data
+        user, owner = token_info(1), token_info(4)
+        user_sid = ctypes.cast(user, ctypes.POINTER(wintypes.LPVOID))[0]
+        owner_sid = ctypes.cast(owner, ctypes.POINTER(wintypes.LPVOID))[0]
+        changed = not security.EqualSid(user_sid, owner_sid)
+        if changed:
+            # TOKEN_OWNER contains one PSID; user buffer stays alive here.
+            requested = wintypes.LPVOID(user_sid)
+            if not security.SetTokenInformation(token, 4, ctypes.byref(requested), ctypes.sizeof(requested)):
+                raise ctypes.WinError(ctypes.get_last_error())
+            owner = token_info(4)
+            if not security.EqualSid(user_sid, ctypes.cast(owner, ctypes.POINTER(wintypes.LPVOID))[0]):
+                raise ValueError('test token owner did not match current user')
+    finally:
+        kernel.CloseHandle(token)
+    with tempfile.TemporaryDirectory(prefix='kf-owner-') as folder:
+        _owned_directory(Path(folder))
+    print(f'WINDOWS_CI_FIXTURE_OWNER_VERIFIED changed={changed}', flush=True)
+
+
+_prepare_ci_fixture_owner()
+
 # Preserve the original SIGINT behavior and surface asynchronous console
 # interrupts rather than misclassifying them as assertion failures or masking
 # them as a passing CI run.

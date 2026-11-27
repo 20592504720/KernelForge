@@ -613,8 +613,19 @@ class SourceAdapterTests(ManagerFixture):
             observed.append(destination)
             extract(archive, destination, fmt)
 
-        manager = ToolchainManager(self.root / ('long-root-' + 'x' * 95) / 'cache',
-                                   extractor=observe)
+        # Exercise the longest admitted cache path, not an accidental failure
+        # caused by the host's absolute temporary-directory prefix.
+        length = 95
+        if os.name == 'nt':
+            from kernelforge.path_policy import EXTERNAL_PATH_LIMIT, require_external_paths
+            prefix = self.root / 'long-root-' / 'cache'
+            length = EXTERNAL_PATH_LIMIT - 100 - len(str(prefix.absolute()).encode('utf-16-le')) // 2
+            self.assertGreater(length, 0, 'test temporary path itself exceeds external tool budget')
+        cache = self.root / ('long-root-' + 'x' * length) / 'cache'
+        if os.name == 'nt':
+            require_external_paths(cache, reserve=100)
+            self.assertEqual(len(str(cache.absolute()).encode('utf-16-le')) // 2 + 100, EXTERNAL_PATH_LIMIT)
+        manager = ToolchainManager(cache, extractor=observe)
         result = manager.prepare(self.spec())
         self.assertTrue(result['audit']['sha256_verified'])
         self.assertEqual(len(observed), 1)
