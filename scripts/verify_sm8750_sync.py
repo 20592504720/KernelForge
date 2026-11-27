@@ -333,10 +333,7 @@ def main(argv=None):
         else:
             record['resumed_workspace'] = True
             record['stage'] = 'resume_manifest_validation'
-        manifest_head = subprocess.check_output(
-            git_command(['-C', str(work / '.repo/manifests'), 'rev-parse', 'HEAD'],
-                        cwd=work / '.repo/manifests', env=git_environment()),
-            text=True, env=git_environment()).strip()
+        manifest_head = git_value(work / '.repo/manifests', 'rev-parse', 'HEAD')
         record['actual_manifest_commit'] = manifest_head
         if manifest_head != lock['manifest_commit']:
             raise RuntimeError('manifest branch moved after locking; refusing mixed source versions')

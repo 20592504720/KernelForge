@@ -10,7 +10,7 @@ def archive_members(path, root):
     path,root=Path(path).resolve(),Path(root).resolve()
     if root not in path.parents or not path.is_file() or path.read_bytes()[:8] not in (b'!<arch>\n',b'!<thin>\n'):
         raise ValueError(f'missing or invalid Kbuild archive: {path}')
-    names=subprocess.check_output(['llvm-ar','t',str(path)],cwd=root,text=True).splitlines()
+    names=subprocess.check_output(['llvm-ar','t',str(path)],cwd=root,text=True,timeout=120).splitlines()
     if not names:
         raise ValueError('Kbuild archive contains no compiled objects')
     # Thin archive member names are emitted relative to the build root.

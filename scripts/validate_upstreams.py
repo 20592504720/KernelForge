@@ -28,6 +28,11 @@ BASELINE={'official':'2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4',
           'kernel':'498f91c17b0822a09aede17d26a63bf8c6813725'}
 
 
+def tool_output(argv, *, cwd=None, timeout=120):
+    """Bound auxiliary tool queries; preserve timeout and nonzero failures."""
+    return subprocess.check_output(argv, cwd=cwd, text=True, timeout=timeout)
+
+
 def parse_exact_bakasu_commit(value: str) -> str:
     """Accept an immutable 40-hex Git Commit; never accept a moving ref."""
     if not isinstance(value, str) or not re.fullmatch(r'[0-9a-fA-F]{40}', value):
@@ -181,7 +186,7 @@ def main():
         phases.start(step)
         for tool in ('clang','ld.lld','llvm-nm','gcc-11'):
             run([tool,'--version'])
-            result['toolchain'][tool]=subprocess.check_output([tool,'--version'],text=True).splitlines()[0]
+            result['toolchain'][tool]=tool_output([tool,'--version'],timeout=30).splitlines()[0]
         step='initial Kconfig'
         phases.start(step)
         run(['clang','--target=aarch64-linux-gnu','-fsanitize=kcfi','-x','c','-c','/dev/null','-o',str(output/'compiler-kcfi-probe.o')])
@@ -237,7 +242,7 @@ def main():
         phases.start(step)
         run(['ld.lld','-r','-o','integration-check.o']+objects)
         result['relocatable_link']=inspect_object(source/'integration-check.o',source)
-        undefined=subprocess.check_output(['llvm-nm','--undefined-only','integration-check.o'],cwd=source,text=True)
+        undefined=tool_output(['llvm-nm','--undefined-only','integration-check.o'],cwd=source)
         (output/'undefined-symbols.txt').write_text(undefined,encoding='utf-8')
         unresolved=sorted(set(re.findall(r'\b(?:__)?(?:ksu|susfs)_\w+',undefined)))
         result['unresolved_root_hooks']=unresolved
