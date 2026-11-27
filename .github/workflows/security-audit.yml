@@ -1,27 +1,8 @@
 name: Python dependency security audit
 on:
   push:
-    branches: [stage1/initial-foundation]
-    paths:
-      - requirements-dev.txt
-      - requirements-dev-pins.txt
-      - "kernelforge/**"
-      - "scripts/**"
-      - "tests/**"
-      - "schemas/**"
-      - ".github/workflows/**"
-      - .github/workflows/security-audit.yml
-  pull_request:
-    paths:
-      - requirements-dev.txt
-      - requirements-dev-pins.txt
-      - "kernelforge/**"
-      - "scripts/**"
-      - "tests/**"
-      - "schemas/**"
-      - ".github/workflows/**"
-      - .github/workflows/security-audit.yml
-  workflow_dispatch:
+    branches: [audit/stage7-4-t09]
+
 permissions:
   contents: read
 jobs:
@@ -31,7 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
+          ref: 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
           persist-credentials: false
+      - name: Verify frozen T09 checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
+          test "$(git rev-parse HEAD^{tree})" = '65d3e00b4858fcfad1378558415f42d268fd2abf'
+          git diff --exit-code HEAD --
+          printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.12"
@@ -53,7 +43,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
+          ref: 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
           persist-credentials: false
+      - name: Verify frozen T09 checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
+          test "$(git rev-parse HEAD^{tree})" = '65d3e00b4858fcfad1378558415f42d268fd2abf'
+          git diff --exit-code HEAD --
+          printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.12"
@@ -88,7 +87,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
+          ref: 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
           persist-credentials: false
+      - name: Verify frozen T09 checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
+          test "$(git rev-parse HEAD^{tree})" = '65d3e00b4858fcfad1378558415f42d268fd2abf'
+          git diff --exit-code HEAD --
+          printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.12"

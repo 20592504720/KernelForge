@@ -2,9 +2,7 @@ name: Validate
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
-  workflow_dispatch:
+    branches: [audit/stage7-4-t09]
 
 permissions:
   contents: read
@@ -21,7 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          ref: 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
           persist-credentials: false
+      - name: Verify frozen T09 checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
+          test "$(git rev-parse HEAD^{tree})" = '65d3e00b4858fcfad1378558415f42d268fd2abf'
+          git diff --exit-code HEAD --
+          printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -50,7 +57,7 @@ jobs:
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         shell: bash
         run: |
-          printf 'commit=%s\\nrunner=%s\\npython=%s\\n' "$GITHUB_SHA" "$RUNNER_OS" "$(python --version)" > node24-actions-smoke.txt
+          printf 'commit=%s\\nrunner=%s\\npython=%s\\n' "$(git rev-parse HEAD)" "$RUNNER_OS" "$(python --version)" > node24-actions-smoke.txt
       - name: Upload Node 24 Actions smoke evidence
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
