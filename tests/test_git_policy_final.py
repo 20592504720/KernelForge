@@ -127,9 +127,9 @@ class GitPolicyFinalTests(unittest.TestCase):
                 return subprocess.CompletedProcess(args, 128, b'', b'dubious ownership')
             return native(args, **kwargs)
 
-        with patch('kernelforge.git_policy.subprocess.run', side_effect=refuse_discovery):
-            with self.assertRaisesRegex(GitPolicyError, 'ownership check failed'):
-                git_command(['status'], cwd=repo, env=self.env)
+        with patch('kernelforge.git_policy.subprocess.run', side_effect=refuse_discovery), \
+                self.assertRaisesRegex(GitPolicyError, 'ownership check failed'):
+            git_command(['status'], cwd=repo, env=self.env)
 
     def test_native_discovery_mismatch_precedes_explicit_repository_pin(self):
         repo = self.repository()
@@ -140,9 +140,9 @@ class GitPolicyFinalTests(unittest.TestCase):
                 return subprocess.CompletedProcess(args, 0, str(self.base).encode('utf-8') + b'\n', b'')
             return native(args, **kwargs)
 
-        with patch('kernelforge.git_policy.subprocess.run', side_effect=mismatched_discovery):
-            with self.assertRaisesRegex(GitPolicyError, 'differs from audited repository'):
-                git_command(['status'], cwd=repo, env=self.env)
+        with patch('kernelforge.git_policy.subprocess.run', side_effect=mismatched_discovery), \
+                self.assertRaisesRegex(GitPolicyError, 'differs from audited repository'):
+            git_command(['status'], cwd=repo, env=self.env)
 
     def test_only_global_C_changes_audit_target(self):
         repo = self.repository()
