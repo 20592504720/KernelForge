@@ -19,16 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
+          ref: 'a28895053d16ed6fed7c43d999dec8143b8cddf9'
           persist-credentials: false
-      - name: Verify frozen T09 checkout identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = 'df8ce3a0cc16e08c2ea38d5118571508563a6be1'
-          test "$(git rev-parse HEAD^{tree})" = '65d3e00b4858fcfad1378558415f42d268fd2abf'
-          git diff --exit-code HEAD --
-          printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -37,39 +29,16 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m compileall -q kernelforge scripts tests
       - run: python -m kernelforge validate
-      - name: Normalize reviewed checkout-only disabled settings
+      - name: Normalize reviewed checkout metadata
+        run: python scripts/normalize_ci_checkout.py
+      - name: Verify exact T09 remediation checkout identity
         shell: bash
         run: |
-          python - <<'PY'
-          import subprocess
-          from pathlib import Path
-          from kernelforge.git_policy import repository_layout, git_environment, _config, audit_repository
-          root = Path.cwd().resolve()
-          env = git_environment()
-          gitdir, common, worktree = repository_layout(root)
-          if worktree != root or gitdir != root / '.git' or common != gitdir:
-              raise SystemExit('Expected isolated normal CI checkout')
-          reviewed = {'gc.auto': '0', 'core.sparsecheckout': 'false', 'core.sparsecheckoutcone': 'false', 'index.sparse': 'false'}
-          changes = []
-          for path in sorted({common / 'config', gitdir / 'config.worktree'}):
-              if not path.exists():
-                  continue
-              for key, value in _config(path, env):
-                  if key in reviewed:
-                      if value != reviewed[key]:
-                          raise SystemExit('Unexpected reviewed checkout setting: ' + key)
-                      changes.append((path, key, value))
-          for path, key, value in sorted(set(changes)):
-              subprocess.run(['git', 'config', '--file', str(path), '--no-includes', '--fixed-value', '--unset-all', key, value], env=env, check=True, timeout=15, capture_output=True)
-              print('T09_NORMALIZED_CHECKOUT_KEY', path.name, key, flush=True)
-          audit_repository(root, env)
-          rows = subprocess.run(['git', 'ls-files', '-v', '-z'], env=env, check=True, timeout=30, capture_output=True).stdout.split(bytes(1))
-          rows = [r for r in rows if r]
-          if len(rows) != 257 or any(not r.startswith(b'H ') or not (root / r[2:].decode('utf-8')).is_file() for r in rows):
-              raise SystemExit('Expected all 257 tracked files present without sparse or assume-unchanged flags')
-          subprocess.run(['git', 'diff', '--exit-code', 'HEAD', '--'], env=env, check=True, timeout=30)
-          print('T09_DENSE_CHECKOUT_VERIFIED', len(rows), flush=True)
-          PY
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 'a28895053d16ed6fed7c43d999dec8143b8cddf9'
+          test "$(git rev-parse HEAD^{tree})" = 'cb77257d365f7258df10367c300c517972f5a069'
+          git diff --exit-code HEAD --
+          printf 'T09_CANDIDATE_COMMIT=%s\nT09_CANDIDATE_TREE=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
       - name: Check repository text and digest-lock bytes
         run: python scripts/check_repository_text_policy.py
       - run: python -c "import yaml; from pathlib import Path; [yaml.safe_load(p.read_text(encoding='utf-8')) for p in Path('.github/workflows').glob('*.yml')]"
