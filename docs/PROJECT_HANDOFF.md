@@ -81,7 +81,7 @@
 
 较早历史交接（2026-11-27，已被下述 §12.1 最新检查点取代）：LOCAL_PREPARATION_COMPLETE_REAL_BUILD_BLOCKED 后，出现 BLOCKED_WSL_RUNTIME_BEFORE_BAZEL_QUERIES；WSL 两次约90秒退出，18个审计文件零字节，五项 Bazel 查询均未启动，真实编译未执行，perf 命令只是未经授权、未经验证草案。Android repo 链接修复为候选，不自动写官方源。--make_jobs=2、Bazel --jobs=1、ccache OFF；优先 perf common base，不能代替完整 SM8750 OKI。静态宏追踪提示 core sun_perf/sun_consolidate 不选择独立 DFR external DDK，仍需真实本地 Bazel 图确认，外部 DFR include 缺失状态 BLOCKED_UNDETERMINED 不变。build_eligible=false，device_release_eligible=false。真实性能 INCONCLUSIVE/未验证。
 
-下一步：以 §12.1 为当前状态，先审查离线仓库缺失及生成条件；读取最新本地执行报告。旧 WSL 运行时故障及无损恢复记录保留，不重复已经通过的准入。不得无条件重试同一故障、运行未经审核 repo sync、下载新二进制、修改 DFR 或源码锁。取得单独授权后才执行有界 nofetch 查询，核对结果及完整安全合同后才启动真实构建。用户规定 Stage 7.5 整阶段最多两轮；内部步骤非额外执行轮次，重大风险仍须批准。
+下一步：以 §14 为当前状态。local_config_platform 的限定初始化与官方工作区链接整改已完成，先对 kernel_toolchain_info 及其传递生成仓库声明开展只读审计，形成完整初始化合同；读取最新本地执行报告。旧 WSL 运行时故障及无损恢复记录保留，不重复已经通过的准入。不得无条件重试同一故障、运行未经审核 repo sync、下载新二进制、修改 DFR 或源码锁。取得单独授权后才执行有界 nofetch 查询，核对结果及完整安全合同后才启动真实构建。用户规定 Stage 7.5 整阶段最多两轮；内部步骤非额外执行轮次，重大风险仍须批准。
 
 参考：[7.5 快速构建合同](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_FAST_IMAGE_PLAN.md)、[Antigravity 交接](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_ANTIGRAVITY_HANDOFF.md)、[DFR 静态补充](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_DFR_STATIC_REACHABILITY_ADDENDUM.md)。
 
@@ -155,8 +155,8 @@
 | 优先级 | 待办 | 状态 |
 | --- | --- | --- |
 | P0 | T09 剩余独立113文件语义审计、残余风险/权限边界及验收证据归档 | 软件回归已过；审计未全完，不能伪造通过 |
-| P0 | 审核 WSL 恢复证据与缺失离线仓库 @@local_config_platform 的安全准备条件 | BLOCKED_OFFLINE_REPOSITORY_NOT_PREPARED（§12.1）；本轮源码准入35/35通过 |
-| P0 | 7.5 五项有界 nofetch Bazel 查询、实际 action graph、资源与时间传递 | 1项执行失败（exit 37），4项未执行；0项成功；不放宽门禁 |
+| P0 | 审查 kernel_toolchain_info 及传递生成仓库的规则、输入、下载行为、主机工具和隔离边界 | BLOCKED_GENERATED_REPOSITORY_NOT_INITIALIZED_NOFETCH（§14）；local_config_platform及官方链接整改已通过 |
+| P0 | 7.5 五项有界 nofetch Bazel 查询、实际 action graph、资源与时间传递 | 最新 query-definitions exit 7、后四项未执行；累计3次尝试、0成功；不放宽门禁（§14） |
 | P0 | 7.5 一次获批准的真实 pinned Image/vmlinux、真实性能与独立产物验收 | 未执行 |
 | P0 | 最新中文交付、默认主页/仓库简介状态核验和经授权同步 | 部分已实施；持续必做 |
 | P1 | Stage8 十项设备功能与完整官方 OKI 验收 | 未实施 |
@@ -301,4 +301,33 @@ build.yml当前contents:read、10分钟预检、Python3.12、解析时间并校�
 
 ### 13.8 本轮仍未恢复与更新边界
 
-已补齐T07/T08实际报告、T01–T06合并历史结论、R1/R5、O第一批机器证据、T09候选演化、现有Actions七字段、早期起点及分支复用/中文首页历史例外。T01–T06逐项原始指令、Stage9最终完整参数合同、早期用户逐字聊天全文仍OPEN。仓库可读与附件检索权限不意味着可以绕过工具对历史全文/索引的限制。当前Stage7.5最新已恢复阻塞仍按§12.1；本轮没有新实时执行结果。用户要求继续增量维护总账，本次不创建新分支、不改变原代码分支、main、PR、源码锁或构建设置。
+已补齐T07/T08实际报告、T01–T06合并历史结论、R1/R5、O第一批机器证据、T09候选演化、现有Actions七字段、早期起点及分支复用/中文首页历史例外。T01–T06逐项原始指令、Stage9最终完整参数合同、早期用户逐字聊天全文仍OPEN。仓库可读与附件检索权限不意味着可以绕过工具对历史全文/索引的限制。本节历史恢复时的Stage7.5阻塞按§12.1记录；随后实际执行报告已更新为§14，不应再将旧阻塞当作当前状态。用户要求继续增量维护总账，本次不创建新分支、不改变原代码分支、main、PR、源码锁或构建设置。
+
+
+## 14. Stage 7.5 官方工作区初始化整改与生成仓库新阻塞（2026-11-27 10:38 UTC）
+
+来源：用户最新执行报告及六份上传附件 REPORT_ZH(1).md、checkpoint(6).json、perf_command_review_candidate(1).json、manifest(1).json、verification(1).json、evidence_sha256(5).txt。对应本地证据根 E:/内核构建/reports/stage7_5_official_workspace_initialization_20261127。报告时间 2026-11-27T10:38:26.548452+00:00；检查点更新 10:38:26.675251Z；封存回执 10:38:31.109625Z。此节取代 §12.1 的当前阻塞，但保留历史失败和后续 local_config_platform 限定初始化已消费授权的事实。不构成新阶段、新构建授权或软件全量回归。
+
+### 14.1 已接受的整改范围
+
+- 序列 NOFETCH_QUERY_FAILED_STOPPED；官方源码工作区初始化 PASS，实际新增1个经验证的非 tracked symlink：build/msm_kernel_extensions.bzl → ../msm-kernel/msm_kernel_extensions.bzl。原因是直接调用 Bazel 未执行官方 wrapper 的 setup_extensions()。原文件存在；以不覆盖方式创建并读回目标文本与设备/inode 身份，未改 tracked 内容、权限或既有对象。首次只读检查300秒超时记录保留，补充检查复用已验清单。
+- MSM Commit 6028f47faddaa27700f8dd3a1d83906ea8f27170；modules/devicetree Commit d50b305f7da9e14715a25120a4ac7b1a4b8b97c3。三个 Blob：build_with_bazel.py cf8cf4f8505d15ffd9108a8d2bc3093cbf4d58bb；msm_kernel_extensions.bzl 5a5ec8cca6219a810b4d381545e4fe0305f0c7ce；prepare_vendor.sh a1b39fb58f59937c19b08c1e0b8fb9a8bffa3431。报告记录 HEAD/index/工作区字节均匹配。
+- ABL 扩展源不存在，不建立悬空链接；已有 Device Tree vendor 链接指向 qcom/opensource/devicetree；oplus/qcom 的 platform_map.bzl 已有且经 Blob 核验，不增加无官方依据的 build/platform_map.bzl。活动 Manifest 两项 linkfile 匹配，无 copyfile，不应用未选 Manifest 的映射。
+- Windows/WSL2 保护和清理 PASS；preparation/stage7-5-20261127、原 HEAD/Tree、5个未提交路径、空暂存区不变；tracked 内容、源锁、Manifest、DFR 原链接、既有缓存保护通过。原 local_config_platform 四个文件及输出根复用、摘要一致。原报告中的 no_system_configuration_permission_or_source_changes=false 是非 tracked 链接写入范围的记录，与更精确 no_system_configuration_permission_or_tracked_source_changes=true 并不矛盾。
+- 原 Linux 守护器、Windows 提交内存1536/512 MiB门槛、独立监督器、净环境、PID/network namespace及身份绑定清理保持。没有 fetch、完整官方 wrapper、真实编译、设备操作或新增分支/提交/推送/合并；不重复已通过的专项、心跳、源码准入和T09全量回归。
+
+### 14.2 最新阻塞与准入
+
+当前 BLOCKED_GENERATED_REPOSITORY_NOT_INITIALIZED_NOFETCH；图审查 BLOCKED_NO_COMPLETE_GRAPH。首次 query-definitions 返回 Bazel exit 7、清理 PASS；query-deps、cquery-perf-files、cquery-consolidate-files、aquery-core-actions 均 NOT_RUN。该轮1条实际查询、0成功；累计原查询尝试3次、成功0次。错误：External repository @@_main~kernel_toolchain_ext~kernel_toolchain_info not found and fetching repositories is disabled. 生成仓库 canonical 路径不存在。与上一轮官方工作区 symlink 问题不同层次；不能据此判定锁定官方源码不完整或DFR可达性。
+
+对应 kernel_toolchain_ext.bzl HEAD Blob fd0357f3ac0a0f0629d178231ae60cda6ac23404；报告确认工作区字节匹配；第28–30行调用 declare_toolchain_constants.declare_repos 和 declare_host_tools.declare_repos。仅已读取声明，尚未实际执行/审计完传递规则。前次唯一限定仓库初始化授权已消费，additional_fetch_authorized=false、real_build_authorized=false。禁止把错误日志中通用 bazel fetch //... 当获准命令；禁止无条件逐个初始化缺失仓库、开启网络、伪造外部仓库、修改源码锁/DFR 或取消原安全门禁。
+
+perf 草案状态 BLOCKED_REVIEW_DRAFT_NOT_GRAPH_VERIFIED_NOT_AUTHORIZED；authorized/executed/is_final_verified_perf_command 全 false。目标候选 //common:kernel_aarch64/Image、//common:kernel_aarch64/vmlinux、//common:kernel_aarch64_config；make_jobs=2、jobs=1、local_cpu_resources=2、local_ram_resources=2048、JVM Xmx768m、ccache OFF、独立监督器、21600秒上限均只是草案约束，不证明可运行。新日志目录仅在草案中重定位、未创建。须证明实际 DFR 可达性、产物归属、配置生产者、工具链及时间戳 action 链，刷新源码/资源准入后另获真实构建授权。仍非完整一加13 OKI。
+
+### 14.3 封存及 ChatGPT 独立核验边界
+
+报告称旧696文件与三个发布文件逐项不变，新204文件（7434563字节）全部读回无差异。封存文本清单 SHA256 4c50be608eff90a61847fd61689ac3dbafbf3040d6448372d41c76221e6bf5f2；JSON清单 SHA256 9dd8d828fb0ec0905ec062909a1b39b70db89bb13313fdcde9e75cd03b6b3644。ChatGPT 实际计算上传附件原始字节摘要：两份清单均与回执一致、204唯一记录且总大小一致、文本记录与JSON逐项一致；REPORT_ZH.md 6ee84f1240d11897d7b200998c67d8853224e029031932951d2feba72ca6aa69、checkpoint.json 8cb73c8a78ac8c88f129170aa6cca75989307e70ba5e45fb39acb60cf53938e6、perf_command_review_candidate.json b7a6cae3468e197455fadfa019fbf08153870cf8f09ce2c5230663ec7950d372 三份实物与清单匹配。verification.json 实物摘要 211c61281d65513f8034c552a77217c4c8635d42c59ae2f68b3d4808e0329522。其余201封存文件及旧696实物未上传本次，不声称ChatGPT独立全量重哈希。证据路径包含 query-sequence/result.json、graph-review.json、layout-plan.json、initialization/result.json、closeout/linux/blocker-source/、closeout/linux/native-evidence.tar.gz、seal/verification.json；新增链接回退只在设备/inode身份核实后且明确需要时移除该新增链接。
+
+### 14.4 下一步（建议审查合同，尚未授权新的执行写入）
+
+继续归属Stage7.5，不另建阶段或分支。优先进行一次集中只读生成仓库闭包审计：核对锁定的 kernel_toolchain_ext.bzl、两个 declare_repos 声明的实际路径/Blob/SHA256、全部 load/调用、模块扩展与 use_repo、仓库规则实现、主机工具/环境变量/路径及所有读取写入、网络下载和 subprocess 行为。区分本地可确定生成、已锁定可离线复用、需网络或其他授权、未确定/有风险四类，建立完整最小初始化集合及依赖关系，避免每次仅修一个报错后反复试跑。先复用旧封存和收据并核对进程停止；只读阶段不 fetch、不触发 repository rule、不运行查询或完整 wrapper、不改工作区、缓存、系统或源码。提供带精确命令、作用路径、预期输出和失败停机条件的待审初始化合同；实际初始化须另行明确授权。仅在安全准备获准完成、原门禁仍有效且复审通过后续接五项原查询；真实编译继续独立授权。不能预先保证所有生成仓库可离线初始化。若需要新的依赖或系统修改，完整报告原因和范围后停止。
