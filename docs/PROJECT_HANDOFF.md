@@ -331,3 +331,109 @@ perf 草案状态 BLOCKED_REVIEW_DRAFT_NOT_GRAPH_VERIFIED_NOT_AUTHORIZED；autho
 ### 14.4 下一步（建议审查合同，尚未授权新的执行写入）
 
 继续归属Stage7.5，不另建阶段或分支。优先进行一次集中只读生成仓库闭包审计：核对锁定的 kernel_toolchain_ext.bzl、两个 declare_repos 声明的实际路径/Blob/SHA256、全部 load/调用、模块扩展与 use_repo、仓库规则实现、主机工具/环境变量/路径及所有读取写入、网络下载和 subprocess 行为。区分本地可确定生成、已锁定可离线复用、需网络或其他授权、未确定/有风险四类，建立完整最小初始化集合及依赖关系，避免每次仅修一个报错后反复试跑。先复用旧封存和收据并核对进程停止；只读阶段不 fetch、不触发 repository rule、不运行查询或完整 wrapper、不改工作区、缓存、系统或源码。提供带精确命令、作用路径、预期输出和失败停机条件的待审初始化合同；实际初始化须另行明确授权。仅在安全准备获准完成、原门禁仍有效且复审通过后续接五项原查询；真实编译继续独立授权。不能预先保证所有生成仓库可离线初始化。若需要新的依赖或系统修改，完整报告原因和范围后停止。
+
+
+## 15. 云端仓库目录与任务定位索引（2026-11-27）
+
+用户要求熟悉云端所有目录与数据以支持后续任务。本节是实际读取的分支、PR文件清单、分支差异及选定关键文件的导航索引，不是新一轮全量代码语义审计。采用T09 delivery分支作为已交付软件结构的阅读参考，不擅自改变本地Stage7.5工作分支、原开发PR或main；实际修改前仍须核对授权目标HEAD/Tree。本次只写现有docs/project-memory总账。
+
+### 15.1 云端分支与证据关系
+
+2026-11-27实际分支分页读取结果共6个，后续页为空。仓库公开，默认main；当前连接器返回读/写/管理权限，但技术权限不等于用户对任何工程操作的授权。
+
+| 分支 | 职责 | 与原开发分支 ccc8f1184d13a78a6d6a35ccae7c6d94cc51380f 的比较结果（本次快照） |
+| --- | --- | --- |
+| main | 默认首页，不等于完整开发树 | 不作为构建基线 |
+| stage1/initial-foundation | 原主开发分支、PR #1 | 参考基线 |
+| audit/stage7-4-t09 | T09审计工作流与证据 | ahead18/behind0，116差异：84修改32新增 |
+| integration/stage7-4-t09 | 本地候选整合 | ahead4/behind0，111差异：81修改30新增 |
+| delivery/stage7-4-t09 | 云端验收及交付文档 | ahead9/behind0，117差异：84修改33新增 |
+| docs/project-memory | 本总账 | 更新本节之前ahead4/behind0，仅1新增文档 |
+
+上述是比较整个分支的差异数；T09验收候选451fb613…的113项代码差异仍是历史固定证据，不能与包含后置交付文档/工作流的117项差异互换。后续不因为分支多而擅自删除或合并。入口：[分支](https://github.com/20592504720/KernelForge/branches)、[PR #1](https://github.com/20592504720/KernelForge/pull/1)、[交付分支](https://github.com/20592504720/KernelForge/tree/delivery/stage7-4-t09)。
+
+### 15.2 模块地图与未来问题定位
+
+本次实际读取关键文件（以下API名为源码索引，非新功能交付）：
+
+| 任务 | 首选代码或数据 | 对应证据/测试入口 |
+| --- | --- | --- |
+| CLI、配置 | kernelforge/cli.py 的 build_parser/main；configs/defaults.json、schemas/project.schema.json、schemas/build.schema.json | tests/test_config.py、scripts/validate.py、Validate CI |
+| GKI/Vendor 构建引擎 | kernelforge/build.py，GkiAdapter/VendorAdapter.plan、run_build、_artifacts、_write_report、_prepare_opt_in_ccache | tests/test_build.py、test_exact_gki_validation.py、test_stage7_3_build_integration.py；官方Kleaf仍需单独验收 |
+| Git锁定、源码获取 | source.py checkout/validate_repository；source_acquisition.py acquire_archive/acquire_locked_git/acquire_locked_source | tests/test_stage6_source_acquisition.py、test_stage6_source_archive.py、test_sm8750_sync.py |
+| 源码等价、repo工作区 | source_equivalence.py workspace_plan/verify_archive_git_tree；repo_workspace_audit.py audit_locked_workspace；manifests/；scripts/verify_sm8750_sync.py | Stage6原始审计、test_stage6_source_equivalence.py、test_stage6_repo_workspace_audit.py |
+| 兼容性准入 | compatibility_gate.py evaluate_reviewed/require_release_eligible | test_stage6_4_compatibility_gate.py；锁定组合而非任意版本 |
+| Root/SUSFS | kernelsu.py integrate；susfs.py requirement/inventory/integrate；configs/kernelsu/、patches/compat/susfs/ | test_kernelsu.py、test_exact_gki_validation.py、docs/KERNELSU.md、SUSFS_COMPATIBILITY.md |
+| 补丁事务 | patch_manager.py order/lock_series/verify_lock/apply_series/apply_reviewed_operations/rollback_files | test_patch_manager.py、Stage5报告、patch manifest schema |
+| 工具链 | toolchains/manager.py ToolchainManager.prepare/release/list_cache/clean_cache；ArchiveSourceAdapter；archive/download/locking/release_mirror | test_toolchains.py、test_stage7_2_release_mirror.py、Stage7.2合同 |
+| ccache | build_cache.py verify_identity/cache_key/BuildCacheNamespaces/CacheLease | test_stage7_3_build_cache.py、test_stage7_3_build_integration.py；真实ccache仍OFF，prune默认dry_run不等于自动清理获准 |
+| 构建时间 | build_timestamp.py resolve_build_timestamp/kernel_build_environment；scripts/resolve_build_timestamp.py | test_build_timestamp.py、docs/BUILD_TIMESTAMP.md；真实OEM action待验 |
+| Git安全 | git_policy.py git_environment/repository_layout/audit_repository/git_command；CI normalize_ci_checkout | test_git_policy_final.py、test_ci_checkout.py；KF-SEC-001保留Windows真实异主限制 |
+| 证据安全 | evidence.py write_json/read_json；file_safety.py/path_policy.py（已登记路径，具体实现后续按需审读） | test_review_evidence.py、test_review_boundaries.py；保留原始字节、摘要和不可覆盖发布 |
+| Python环境 | python_environment.py locked_requirements/validate_environment/initialize、SID/DACL/密封记录；scripts/environment_preflight.py | test_review_environment.py；隔离离线初始化、显式repair、原失败保留 |
+| Stage7.4 | scripts/stage7_4_fast_build_gate.py inspect_policy/sample_capacity/inspect_source/evaluate | test_stage7_4_fast_build_gate.py；软件/源码准入不授予编译权限 |
+| Stage7.5 | scripts/stage7_5_artifact_evidence.py inspect_bundle、ELF/时间/普通文件校验；Stage7.5 plan与DFR addendum | test_stage7_5_artifact_evidence.py；合成产物仅完整性证明、真实Action Graph仍待验 |
+
+已实际读取8份关键测试源码并检索方法名称：test_git_policy_final 14、test_stage7_4_fast_build_gate 22、test_stage7_5_artifact_evidence 18、test_stage7_3_build_cache 19、test_kernelsu 24、test_toolchains 62、test_review_environment 23、test_review_evidence 10（静态def test_计数，不是本次运行测试数，也不代表完整发现数量）。重点覆盖原生ownership拒绝、错误锁、预检时间、ELF架构/伪Image、缓存身份隔离、junction、工具链版本与架构、离线环境篡改、原子证据及文件竞态边界。
+
+### 15.3 配置、设备、工作流和文档的实际关系
+
+- configs/defaults.json：jobs=2、reproducible=true；KernelSU/SUSFS默认false，tcp_congestion/zram_algorithms为空；工具链defaults AUTO、require_sha256=true、下载60秒/2重试、cache .cache/toolchains、锁120秒。它们是通用配置默认值，不等于本次Stage7.5可下载授权。
+- schemas/build.schema.json 顶层要求 schema_version/source/build/toolchain/artifacts；还支持patch_series、device/device_profile、kernel_version、defconfig、environment、kernelsu、susfs、validation。$defs包含tool/toolchainProfile/adapter/kernelsu/reviewedReleaseLock/ccachePolicy。Stage9须沿实际Schema及新合同设计，不用猜测替换现有键。
+- devices/oneplus/pjz110/device.json是早期unverified档案；devices/profiles/oneplus13-pjz110.json是PJZ110/SM8750 6.6官方档案，Manifest oneplus_13_b.xml commit f8e50677874c65b6da41057d2f39be7b4ef3c08a；Ace6 PLQ110独立6.6.118档案，不能混用。一加13固件、ABI/KMI、Root、full_build、device_boot仍待验。manifests/oneplus13-pjz110-sm8750-source.lock.json精确35项目，common e1b346b6b4f4096eb342ae3684838a942fd6f6c4、msm 6028f47faddaa27700f8dd3a1d83906ea8f27170；锁JSON自带历史UNTESTED字段不否定后续有证据的本地源码准入，也不自动升级整个构建。
+- SUSFS兼容manifest固定 android14-6.1、ACK6.1.155及三方精确SHA、补丁摘要；其中早期67/67对象与relocatable link证据保留。后续五组完整Image验收另见最终安全报告，不可将6.1补丁直接用于6.6 OKI。
+- validate.yml实际是Ubuntu/Windows × Python3.11/3.12四环境；compileall、validate、精确checkout配置清理、行尾锁、YAML、Windows隔离runner及Unix unittest；push、PR、手动触发。stage7-4-fast-build.yml仅手动只读准入，job条件限定stage1/initial-foundation，不因delivery具有文件就认为delivery可dispatch。build.yml仍预检停止；release.yml仍不可达发布门禁（见§13.7）。文档更新也可能触发已有CI，不能宣称绝不触发；未主动启动Actions或重型任务。
+- README/STATUS/ROADMAP及T09报告为当前交付状态主要入口；docs/ARCHITECTURE.md、CONFIGURATION.md、DEVELOPMENT.md保留早期设计，部分文字（如Stage1补丁未实施、配置合并规划、build.yml早期占位标题）可能过时。不能用历史描述覆盖真实代码和最新证据；后续中文文档维护时按授权集中纠错。
+- docs/BUILD_TIMESTAMP.md与最新ROADMAP明确实际构建开始UTC，preflight仅预览，改变构建时间应参与缓存身份；原历史dispatch语义差异仍以最新批准合同及真实action为准，不在本次自行改策略。
+- AGENTS.md要求根因优先、跨代理继承、资源复用、限定清理、版本和SHA256校验、持久化checkpoint及简体中文报告；.opencode/skills下九项项目技能路径已登记，后续按任务读取实际SKILL.md，不把存在路径当成已加载或运行验证。
+- 当前Stage7.5本地官方35个子仓库、Bazel output/cache及完整日志在用户电脑/附件，不是KernelForge Python仓库本身；不能从该云端源码框架的目录列表推断所有OEM源码文件已可访问。继续§14生成仓库审计时须读取实际锁定官方文件和本地报告，而非修改KernelForge通用构建引擎来规避Bazel门禁。
+
+### 15.4 可检索文件路径索引
+
+来源为完整PR #1变更文件列表（227项）与开发→交付分支差异（117项）的合并去重，共260个路径、41个直接父目录分组。此索引包括已读取文件及尚未逐字审读文件；PR变更列表不保证覆盖未发生变化的根文件或所有Git对象，不称为独立完整Git Tree遍历。docs/project-memory的PROJECT_HANDOFF.md另属当前文档分支，不混入交付树。后续使用时查实际分支路径并校验HEAD/Tree。
+
+- `（根目录）`（7）：`.gitattributes`、`.gitignore`、`AGENTS.md`、`LICENSE`、`README.md`、`requirements-dev-pins.txt`、`requirements-dev.txt`
+- `.github`（2）：`stage5-exact-gki-request.json`、`stage6-full-acceptance-request.json`
+- `.github/workflows`（14）：`build.yml`、`codeql.yml`、`history-secrets.yml`、`release.yml`、`runner-disk-pilot.yml`、`security-audit.yml`、`source-audit.yml`、`stage1-6-full-acceptance.yml`、`stage7-1-preflight.yml`、`stage7-2-release-mirror.yml`、`stage7-3-ccache.yml`、`stage7-4-fast-build.yml`、`upstream-validation.yml`、`validate.yml`
+- `.opencode`（1）：`opencode.jsonc`
+- `.opencode/skills/kernelforge-build`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-documentation`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-environment`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-handoff`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-performance`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-regression`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-release`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-root-cause`（1）：`SKILL.md`
+- `.opencode/skills/kernelforge-security`（1）：`SKILL.md`
+- `configs`（1）：`defaults.json`
+- `configs/features`（1）：`defaults.json`
+- `configs/kernels/5.10`（1）：`kernel.json`
+- `configs/kernels/5.15`（1）：`kernel.json`
+- `configs/kernels/6.1`（1）：`kernel.json`
+- `configs/kernels/6.12`（1）：`kernel.json`
+- `configs/kernels/6.6`（1）：`kernel.json`
+- `configs/kernelsu`（4）：`bakasu-development.json`、`bakasu.json`、`official-development.json`、`official-legacy.json`
+- `configs/toolchains`（1）：`defaults.json`
+- `devices/oneplus/pjz110`（1）：`device.json`
+- `devices/profiles`（2）：`oneplus-ace6-plq110.json`、`oneplus13-pjz110.json`
+- `docs`（66）：`ARCHITECTURE.md`、`BUILD_TIMESTAMP.md`、`CONFIGURATION.md`、`DEVELOPMENT.md`、`DEVELOPMENT_TRACKING.md`、`EXECUTION_POLICY.md`、`KERNELSU.md`、`ROADMAP.md`、`SECURITY_FINALIZATION.md`、`SECURITY_FINAL_ACCEPTANCE_2026_11_24.md`、`SECURITY_HARDENING_2026_11_24.md`、`SECURITY_HARDENING_ROUND2.md`、`SECURITY_HARDENING_ROUND3.md`、`SECURITY_HARDENING_ROUND4.md`、`STAGE1_6_FULL_RUN_VERIFICATION.md`、`STAGE45_REPORT.md`、`STAGE5_BAKASU_SUSFS_DELTA_AUDIT.md`、`STAGE5_CLOUD_READINESS.md`、`STAGE5_EVIDENCE_RECONCILIATION.md`、`STAGE5_EXACT_GKI_LIGHT_VALIDATION.md`、`STAGE5_FINAL_ACCEPTANCE_GATE.md`、`STAGE5_HANDOFF.md`、`STAGE5_KLEAF_FEASIBILITY_AUDIT.md`、`STAGE5_LOCAL_CODEX_HANDOFF.md`、`STAGE5_PATCH_SERIES.md`、`STAGE5_REPORT.md`、`STAGE5_THIRD_ROUND.md`、`STAGE6_2_IMPLEMENTATION.md`、`STAGE6_3_BLOCKER_CLOSURE.md`、`STAGE6_3_FINAL_DEPENDENCY_AUDIT.md`、`STAGE6_3_PARTIAL_HANDOFF.md`、`STAGE6_3_WSL2_BLOCKER_DIAGNOSIS.md`、`STAGE6_3_WSL2_REPORT.md`、`STAGE6_4_COMPATIBILITY_GATE.md`、`STAGE6_FINAL_ACCEPTANCE.md`、`STAGE6_PRELIMINARY_HANDOFF.md`、`STAGE7_1_GITHUB_AUDIT.md`、`STAGE7_1_LOCAL_CODEX_HANDOFF.md`、`STAGE7_1_WSL2_ENV_AUDIT.md`、`STAGE7_2_LOCAL_CODEX_HANDOFF.md`、`STAGE7_2_LOCAL_TOOLCHAIN_REVIEW.md`、`STAGE7_2_RELEASE_MIRROR.md`、`STAGE7_3_CCACHE_POLICY.md`、`STAGE7_3_LOCAL_CODEX_HANDOFF.md`、`STAGE7_3_WSL2_CCACHE_AUDIT.md`、`STAGE7_4_FAST_BUILD_GATE.md`、`STAGE7_4_LOCAL_CODEX_AUDIT.md`、`STAGE7_4_LOCAL_CODEX_HANDOFF.md`、`STAGE7_4_O_FINAL_SECURITY.md`、`STAGE7_4_O_LOCAL_BENCHMARK.md`、`STAGE7_4_O_LOCAL_HANDOFF.md`、`STAGE7_4_O_OPTIMIZATION.md`、`STAGE7_4_O_RECONCILIATION_ADDENDUM.md`、`STAGE7_4_O_RESUME_HANDOFF_2026-11-25.md`、`STAGE7_5_ANTIGRAVITY_HANDOFF.md`、`STAGE7_5_DFR_STATIC_REACHABILITY_ADDENDUM.md`、`STAGE7_5_FAST_IMAGE_PLAN.md`、`STAGE7_5_PINNED_OEM_STATIC_AUDIT.md`、`STAGE7_KICKOFF.md`、`STAGE8_EXPANDED_FEATURE_MATRIX.md`、`STAGE8_SCOPED_ACCEPTANCE.md`、`STATUS.md`、`SUSFS_COMPATIBILITY.md`、`T09_CLOUD_ACCEPTANCE_2026_11_27.md`、`WORKSPACE_MIGRATION.md`、`stage7_4_o_review.md`
+- `docs/evidence`（20）：`security_final_acceptance_2026_11_24.json`、`stage1_6_full_run_verified.json`、`stage6_3_final_dependency_audit.json`、`stage6_3_wsl2_acceptance.json`、`stage6_3_wsl2_blocker_diagnosis.json`、`stage6_final_acceptance.json`、`stage7_1_cloud_acceptance.json`、`stage7_1_wsl2_environment.json`、`stage7_2_cloud_acceptance.json`、`stage7_2_local_toolchain_review.json`、`stage7_3_cloud_acceptance.json`、`stage7_3_wsl2_ccache_audit.json`、`stage7_4_cloud_acceptance.json`、`stage7_4_local_source_admission.json`、`stage7_4_o_first_batch.json`、`stage7_4_o_local_benchmark.json`、`stage7_4_o_reconciliation_2026-11-25.json`、`stage7_4_o_resume_checkpoint_2026-11-25.json`、`stage7_5_dfr_static_reachability.json`、`stage8_feature_requirements.json`
+- `kernelforge`（39）：`__init__.py`、`__main__.py`、`archive_link_proof.py`、`bounded_process.py`、`build.py`、`build_cache.py`、`build_timestamp.py`、`capabilities.py`、`cli.py`、`compatibility.py`、`compatibility_gate.py`、`development.py`、`evidence.py`、`file_safety.py`、`filesystem.py`、`git_policy.py`、`http_safety.py`、`kernelsu.py`、`objects.py`、`patch_manager.py`、`path_policy.py`、`performance.py`、`providers.py`、`python_environment.py`、`real_patch_probe.py`、`repo_workspace_audit.py`、`security.py`、`source.py`、`source_acquisition.py`、`source_archive.py`、`source_equivalence.py`、`source_provider.py`、`susfs.py`、`toolchain.py`、`validation.py`、`versions.py`、`windows_junction.py`、`workspace.py`、`xml_safety.py`
+- `kernelforge/toolchains`（6）：`__init__.py`、`archive.py`、`download.py`、`locking.py`、`manager.py`、`release_mirror.py`
+- `manifests`（2）：`oneplus-ace6-plq110-sm8750-source.lock.json`、`oneplus13-pjz110-sm8750-source.lock.json`
+- `patches/5.10`（1）：`manifest.json`
+- `patches/5.15`（1）：`manifest.json`
+- `patches/6.1`（1）：`manifest.json`
+- `patches/6.12`（1）：`manifest.json`
+- `patches/6.6`（1）：`manifest.json`
+- `patches/common`（1）：`manifest.json`
+- `patches/compat/susfs`（3）：`LICENSE.upstream`、`android14-6.1-498f91c-756abbf.patch`、`manifest.json`
+- `schemas`（8）：`build.schema.json`、`device-profile.schema.json`、`device.schema.json`、`kernel.schema.json`、`patch-manifest.schema.json`、`project.schema.json`、`susfs-compat.schema.json`、`toolchain.schema.json`
+- `scripts`（18）：`audit_patch_candidates.py`、`audit_sm8750.py`、`check_repository_text_policy.py`、`dependency_lock_candidate.py`、`environment_preflight.py`、`normalize_ci_checkout.py`、`resolve_build_timestamp.py`、`stage5_exact_request.py`、`stage6_acceptance.py`、`stage6_full_request.py`、`stage7_1_preflight.py`、`stage7_4_fast_build_gate.py`、`stage7_5_artifact_evidence.py`、`validate.py`、`validate_upstreams.py`、`verify_sm8750_sync.py`、`windows_test_launcher.py`、`windows_test_runner.py`
+- `tests/fixtures/susfs-context`（3）：`adapted.patch`、`metadata.json`、`original.patch`
+- `tests/fixtures/susfs-context/fs`（2）：`exec.c`、`namespace.c`
+- `tests`（39）：`test_auxiliary_timeouts.py`、`test_build.py`、`test_build_timestamp.py`、`test_ci_checkout.py`、`test_config.py`、`test_development.py`、`test_exact_gki_validation.py`、`test_final_reliability.py`、`test_git_policy_final.py`、`test_kernelsu.py`、`test_patch_manager.py`、`test_real_patch_probe.py`、`test_repository_text_policy.py`、`test_review_boundaries.py`、`test_review_environment.py`、`test_review_evidence.py`、`test_security_hardening.py`、`test_security_round3.py`、`test_security_round4.py`、`test_sm8750_sync.py`、`test_stage46.py`、`test_stage5.py`、`test_stage6_4_compatibility_gate.py`、`test_stage6_5_acceptance.py`、`test_stage6_5_full_request.py`、`test_stage6_archive_link_proof.py`、`test_stage6_repo_workspace_audit.py`、`test_stage6_source_acquisition.py`、`test_stage6_source_archive.py`、`test_stage6_source_equivalence.py`、`test_stage7_1_preflight.py`、`test_stage7_2_release_mirror.py`、`test_stage7_3_build_cache.py`、`test_stage7_3_build_integration.py`、`test_stage7_4_fast_build_gate.py`、`test_stage7_4_o_performance.py`、`test_stage7_5_artifact_evidence.py`、`test_toolchains.py`、`test_windows_test_launcher.py`
+
+### 15.5 后续使用及核验边界
+
+任务开始：先总账当前状态→目标分支README/STATUS/ROADMAP→对应阶段合同及evidence JSON→对应Schema/配置/实现和测试→原始日志/Commit/Tree。Stage7.5优先§14及当前附件；Stage8使用S01–S10及D01–D14矩阵；Stage9从真实build/release工作流、Schema、已验证设备范围和发布合同设计。文件名索引帮助快速定位，不是运行测试结果；此轮未独立逐行审计所有文件、未重新运行测试、未验证真实编译、未改变代码或阶段状态。当前最新阻塞仍按§14，后续只有新证据才更新。用户要求长期熟悉云端内容，每次工作按需读取最新版本并增量修正总账。
