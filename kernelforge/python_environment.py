@@ -14,6 +14,8 @@ import re
 import stat
 import subprocess
 import sys
+import sysconfig
+import tempfile
 import uuid
 import venv
 from pathlib import Path
@@ -378,6 +380,61 @@ def validate_environment(executable: Path, destination: Path, expected: dict[str
     return observed
 
 
+def _bootstrap_pip_only(executable: Path, destination: Path) -> None:
+    """Use the trusted base interpreter's ensurepip wheel, not setuptools or an index."""
+    import ensurepip
+
+    version = ensurepip.version()
+    if not re.fullmatch(r'[0-9]+(?:\.[0-9]+)+(?:[a-zA-Z0-9.]+)?', version):
+        raise ValueError('unreviewed bundled pip version')
+    stdlib = Path(sysconfig.get_path('stdlib')).resolve(strict=True)
+    if Path(ensurepip.__file__).resolve(strict=True).parent != stdlib / 'ensurepip':
+        raise ValueError('ensurepip does not originate from the trusted standard library')
+    name = f'pip-{version}-py3-none-any.whl'
+    roots = [stdlib / 'ensurepip' / '_bundled']
+    wheel_directory = sysconfig.get_config_var('WHEEL_PKG_DIR')
+    if wheel_directory:
+        roots.append(Path(wheel_directory))
+    candidates = [root / name for root in roots if os.path.lexists(root / name)]
+    if not candidates:
+        raise ValueError('trusted bundled pip wheel is unavailable')
+    wheels = [read_regular_bytes(path, max_bytes=32 * 1024 * 1024) for path in candidates]
+    if any(wheel != wheels[0] for wheel in wheels[1:]):
+        raise ValueError('bundled pip wheel identity is ambiguous')
+    with tempfile.TemporaryDirectory(prefix='pip-bootstrap-', dir=destination.parent) as temporary:
+        wheel = Path(temporary) / name
+        with wheel.open('xb') as stream:
+            stream.write(wheels[0])
+        # The fresh environment has already been inspected and contains no
+        # startup files. Import pip directly from the trusted, offline wheel.
+        code = ('import runpy, sys; sys.path.insert(0, sys.argv.pop(1)); '
+                'runpy.run_module("pip", run_name="__main__", alter_sys=True)')
+        subprocess.run([str(executable), '-B', '-I', '-c', code, str(wheel),
+                        '--isolated', '--disable-pip-version-check', 'install',
+                        '--no-index', '--no-deps', '--only-binary=:all:', '--no-cache-dir', str(wheel)],
+                       env=isolated_environment(), check=True, timeout=120)
+
+
+def _create_environment(destination: Path) -> Path:
+    """Create and inspect a new environment without admitting startup hooks."""
+    if os.path.lexists(destination):
+        raise ValueError('new environment destination already exists')
+    # CPython 3.11 ensurepip normally installs setuptools, whose .pth file
+    # executes on startup. Bootstrap only pip instead; keep the same strict
+    # startup-file rejection before and after installation. Python 3.12's
+    # standard venv already bootstraps pip without setuptools.
+    pip_only = sys.version_info[:2] == (3, 11)
+    venv.EnvBuilder(with_pip=not pip_only).create(destination)
+    executable = destination / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+    _owned_directory(destination)
+    _validate_interpreter_configuration(executable, destination)
+    _environment_inventory(destination)
+    if pip_only:
+        _bootstrap_pip_only(executable, destination)
+        _environment_inventory(destination)
+    return executable
+
+
 def initialize(root: Path, wheelhouse: Path, *, repair: bool = False) -> Path:
     if sys.version_info[:2] not in ((3, 11), (3, 12)) or platform.python_implementation() != 'CPython':
         raise ValueError('CPython 3.11 or 3.12 is required')
@@ -436,10 +493,7 @@ def initialize(root: Path, wheelhouse: Path, *, repair: bool = False) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         # Create at the final path: moving a venv would break embedded scripts.
-        venv.EnvBuilder(with_pip=True).create(destination)
-        _owned_directory(destination)
-        _validate_interpreter_configuration(executable, destination)
-        _environment_inventory(destination)
+        _create_environment(destination)
         snapshot = destination / 'requirements.verified.txt'
         with snapshot.open('xb') as stream:
             stream.write(data)

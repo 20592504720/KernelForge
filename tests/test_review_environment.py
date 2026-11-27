@@ -7,13 +7,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
-import venv
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
 from kernelforge.python_environment import (
     _check_windows_dacl,
+    _create_environment,
     _integrity_directory,
     _owned_directory,
     _write_integrity_record,
@@ -108,10 +108,31 @@ class EnvironmentReviewTests(unittest.TestCase):
         cls.lock = b'fixture identity used only by the controlled tests'
         key = hashlib.sha256(cls.lock).hexdigest()[:16]
         cls.destination = cls.base / 'cache/python' / f'{platform.system().lower()}-{sys.version_info.major}{sys.version_info.minor}-{key}'
-        venv.EnvBuilder(with_pip=True).create(cls.destination)
-        cls.executable = cls.destination / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+        cls.executable = _create_environment(cls.destination)
         _write_integrity_record(cls.destination, lock_sha256=hashlib.sha256(cls.lock).hexdigest(),
                                 wheel_sha256=[])
+
+    def test_bootstrap_environment_has_no_startup_hooks(self):
+        self.assertFalse(any(self.destination.rglob('*.pth')))
+        result = validate_environment(self.executable, self.destination, {})
+        self.assertTrue(Path(result['pip_file']).is_relative_to(self.destination))
+        if sys.version_info[:2] == (3, 11):
+            site_packages = self.destination / ('Lib/site-packages' if os.name == 'nt'
+                                                  else 'lib/python3.11/site-packages')
+            self.assertFalse((site_packages / 'setuptools').exists())
+
+    def test_arbitrary_pth_is_still_rejected_before_execution(self):
+        site_packages = self.destination / ('Lib/site-packages' if os.name == 'nt'
+                                              else f'lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages')
+        startup = site_packages / 'unreviewed.pth'
+        startup.write_text('import os\n', encoding='utf-8')
+        try:
+            with patch('kernelforge.python_environment.subprocess.run') as run, \
+                    self.assertRaisesRegex(ValueError, 'startup configuration'):
+                validate_environment(self.executable, self.destination, {})
+            run.assert_not_called()
+        finally:
+            startup.unlink()
 
     def test_real_interpreter_and_import_probe(self):
         result = validate_environment(self.executable, self.destination, {})
