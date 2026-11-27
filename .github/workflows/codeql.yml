@@ -2,6 +2,8 @@ name: CodeQL Python analysis
 on:
   push:
     branches: [audit/stage7-4-t09]
+    paths-ignore:
+      - '.github/workflows/**'
 
 permissions:
   contents: read
