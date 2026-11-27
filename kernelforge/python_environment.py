@@ -72,7 +72,7 @@ def _check_windows_dacl(descriptor: str, user_sid: str) -> None:
     """
     if 'D:' not in descriptor or 'NO_ACCESS_CONTROL' in descriptor:
         raise ValueError('environment cache must have a non-null ACL')
-    trusted = {user_sid, 'SY', 'BA', 'OW', 'S-1-5-18', 'S-1-5-32-544'}
+    trusted = {user_sid, 'SY', 'BA', 'OW', 'S-1-5-18', 'S-1-5-32-544', 'S-1-3-4'}
     write_mask = 0x500D0156
     for ace in re.findall(r'\(([^()]*)\)', descriptor):
         fields = ace.split(';')
@@ -94,6 +94,93 @@ def _check_windows_dacl(descriptor: str, user_sid: str) -> None:
             writable = any(token in {'GA', 'GW', 'FA', 'FW', 'WD', 'WO', 'DC', 'SD', 'CC', 'WP'} for token in tokens)
         if writable:
             raise ValueError('environment cache ACL grants write access to unrelated users')
+
+
+def _windows_sid_string(sid, security, kernel) -> str:
+    """Convert a native SID to its canonical numeric representation."""
+    import ctypes
+    from ctypes import wintypes
+
+    security.ConvertSidToStringSidW.argtypes = [wintypes.LPVOID, ctypes.POINTER(wintypes.LPWSTR)]
+    security.ConvertSidToStringSidW.restype = wintypes.BOOL
+    kernel.LocalFree.argtypes = [wintypes.LPVOID]
+    kernel.LocalFree.restype = wintypes.LPVOID
+    text = wintypes.LPWSTR()
+    if not security.ConvertSidToStringSidW(sid, ctypes.byref(text)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        if not text.value or not re.fullmatch(r'S-\d+(?:-\d+)+', text.value):
+            raise ValueError('environment cache ACL contains an invalid SID')
+        return text.value
+    finally:
+        kernel.LocalFree(text)
+
+
+def _canonical_windows_dacl(buffer, security, kernel) -> str:
+    """Inspect actual ACE SIDs/masks, not ambiguous SDDL trustee aliases.
+
+    Return only canonical simple allow ACEs for the existing strict policy.
+    Unrelated write grants, null ACLs and unsupported active ACEs fail closed.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    class AclSizeInformation(ctypes.Structure):
+        _fields_ = [('count', wintypes.DWORD), ('used', wintypes.DWORD),
+                    ('free', wintypes.DWORD)]
+
+    security.GetSecurityDescriptorDacl.argtypes = [wintypes.LPVOID, ctypes.POINTER(wintypes.BOOL),
+                                                   ctypes.POINTER(wintypes.LPVOID), ctypes.POINTER(wintypes.BOOL)]
+    security.GetSecurityDescriptorDacl.restype = wintypes.BOOL
+    security.IsValidAcl.argtypes = [wintypes.LPVOID]
+    security.IsValidAcl.restype = wintypes.BOOL
+    security.GetAclInformation.argtypes = [wintypes.LPVOID, wintypes.LPVOID, wintypes.DWORD, ctypes.c_int]
+    security.GetAclInformation.restype = wintypes.BOOL
+    security.GetAce.argtypes = [wintypes.LPVOID, wintypes.DWORD, ctypes.POINTER(wintypes.LPVOID)]
+    security.GetAce.restype = wintypes.BOOL
+    security.IsValidSid.argtypes = [wintypes.LPVOID]
+    security.IsValidSid.restype = wintypes.BOOL
+    present, defaulted, acl = wintypes.BOOL(), wintypes.BOOL(), wintypes.LPVOID()
+    if not security.GetSecurityDescriptorDacl(buffer, ctypes.byref(present), ctypes.byref(acl), ctypes.byref(defaulted)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not present.value or not acl.value:
+        raise ValueError('environment cache must have a non-null ACL')
+    start, end = ctypes.addressof(buffer), ctypes.addressof(buffer) + ctypes.sizeof(buffer)
+    if not start <= acl.value <= end - 8:
+        raise ValueError('environment cache ACL is outside its security descriptor')
+    acl_size = ctypes.c_ushort.from_address(acl.value + 2).value
+    if acl_size < 8 or acl.value + acl_size > end or not security.IsValidAcl(acl):
+        raise ValueError('environment cache ACL is invalid')
+    info = AclSizeInformation()
+    if not security.GetAclInformation(acl, ctypes.byref(info), ctypes.sizeof(info), 2):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not 8 <= info.used <= acl_size or info.count > (info.used - 8) // 4:
+        raise ValueError('environment cache ACL size is invalid')
+    rows = ['D:']
+    for index in range(info.count):
+        ace = wintypes.LPVOID()
+        if not security.GetAce(acl, index, ctypes.byref(ace)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        if not ace.value or not acl.value + 8 <= ace.value <= acl.value + info.used - 4:
+            raise ValueError('environment cache ACL contains an invalid ACE')
+        kind = ctypes.c_ubyte.from_address(ace.value).value
+        flags = ctypes.c_ubyte.from_address(ace.value + 1).value
+        size = ctypes.c_ushort.from_address(ace.value + 2).value
+        if size < 4 or ace.value + size > acl.value + info.used:
+            raise ValueError('environment cache ACL contains an invalid ACE size')
+        if flags & 0x08 or kind == 1:  # INHERIT_ONLY_ACE or ACCESS_DENIED_ACE
+            continue
+        if kind != 0 or size < 16:  # ACCESS_ALLOWED_ACE only
+            raise ValueError('environment cache ACL contains an unsupported ACE')
+        mask = ctypes.c_uint32.from_address(ace.value + 4).value
+        address = ace.value + 8
+        subauthorities = ctypes.c_ubyte.from_address(address + 1).value
+        sid = wintypes.LPVOID(address)
+        if subauthorities > 15 or size != 16 + 4 * subauthorities or not security.IsValidSid(sid):
+            raise ValueError('environment cache ACL contains an invalid SID')
+        trustee = _windows_sid_string(sid, security, kernel)
+        rows.append(f'(A;;0x{mask:x};;;{trustee})')
+    return ''.join(rows)
 
 
 def _owned_directory(path: Path, *, create: bool = False) -> None:
@@ -120,53 +207,39 @@ def _owned_directory(path: Path, *, create: bool = False) -> None:
             buffer = ctypes.create_string_buffer(needed.value)
             if not security.GetFileSecurityW(str(path), 5, buffer, needed.value, ctypes.byref(needed)):
                 raise ctypes.WinError(ctypes.get_last_error())
-            # Convert SDDL locally; never include user SIDs in diagnostics.
-            security.ConvertSecurityDescriptorToStringSecurityDescriptorW.argtypes = [wintypes.LPVOID, wintypes.DWORD, wintypes.DWORD, ctypes.POINTER(wintypes.LPWSTR), ctypes.POINTER(wintypes.DWORD)]
-            security.ConvertSecurityDescriptorToStringSecurityDescriptorW.restype = wintypes.BOOL
-            text = wintypes.LPWSTR()
-            if not security.ConvertSecurityDescriptorToStringSecurityDescriptorW(buffer, 1, 5, ctypes.byref(text), None):
-                raise ctypes.WinError(ctypes.get_last_error())
             kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-            kernel.LocalFree.argtypes = [wintypes.LPVOID]
-            kernel.LocalFree.restype = wintypes.LPVOID
+            security.GetSecurityDescriptorOwner.argtypes = [wintypes.LPVOID, ctypes.POINTER(wintypes.LPVOID), ctypes.POINTER(wintypes.BOOL)]
+            security.GetSecurityDescriptorOwner.restype = wintypes.BOOL
+            security.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+            security.OpenProcessToken.restype = wintypes.BOOL
+            security.GetTokenInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)]
+            security.GetTokenInformation.restype = wintypes.BOOL
+            security.EqualSid.argtypes = [wintypes.LPVOID, wintypes.LPVOID]
+            security.EqualSid.restype = wintypes.BOOL
+            kernel.GetCurrentProcess.restype = wintypes.HANDLE
+            kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+            kernel.CloseHandle.restype = wintypes.BOOL
+            owner_sid, defaulted, token = wintypes.LPVOID(), wintypes.BOOL(), wintypes.HANDLE()
+            if not security.GetSecurityDescriptorOwner(buffer, ctypes.byref(owner_sid), ctypes.byref(defaulted)):
+                raise ctypes.WinError(ctypes.get_last_error())
+            if not security.OpenProcessToken(kernel.GetCurrentProcess(), 8, ctypes.byref(token)):
+                raise ctypes.WinError(ctypes.get_last_error())
             try:
-                security.GetSecurityDescriptorOwner.argtypes = [wintypes.LPVOID, ctypes.POINTER(wintypes.LPVOID), ctypes.POINTER(wintypes.BOOL)]
-                security.GetSecurityDescriptorOwner.restype = wintypes.BOOL
-                security.OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
-                security.OpenProcessToken.restype = wintypes.BOOL
-                security.GetTokenInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)]
-                security.GetTokenInformation.restype = wintypes.BOOL
-                security.EqualSid.argtypes = [wintypes.LPVOID, wintypes.LPVOID]
-                security.EqualSid.restype = wintypes.BOOL
-                kernel.GetCurrentProcess.restype = wintypes.HANDLE
-                kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-                owner_sid, defaulted, token = wintypes.LPVOID(), wintypes.BOOL(), wintypes.HANDLE()
-                if not security.GetSecurityDescriptorOwner(buffer, ctypes.byref(owner_sid), ctypes.byref(defaulted)):
+                token_bytes = wintypes.DWORD()
+                security.GetTokenInformation(token, 1, None, 0, ctypes.byref(token_bytes))
+                if not 0 < token_bytes.value <= 65536:
+                    raise OSError('cannot inspect the invoking user SID')
+                token_user = ctypes.create_string_buffer(token_bytes.value)
+                if not security.GetTokenInformation(token, 1, token_user, token_bytes, ctypes.byref(token_bytes)):
                     raise ctypes.WinError(ctypes.get_last_error())
-                if not security.OpenProcessToken(kernel.GetCurrentProcess(), 8, ctypes.byref(token)):
-                    raise ctypes.WinError(ctypes.get_last_error())
-                try:
-                    token_bytes = wintypes.DWORD()
-                    security.GetTokenInformation(token, 1, None, 0, ctypes.byref(token_bytes))
-                    token_user = ctypes.create_string_buffer(token_bytes.value)
-                    if not security.GetTokenInformation(token, 1, token_user, token_bytes, ctypes.byref(token_bytes)):
-                        raise ctypes.WinError(ctypes.get_last_error())
-                    user_sid = ctypes.cast(token_user, ctypes.POINTER(wintypes.LPVOID))[0]
-                    if not security.EqualSid(owner_sid, user_sid):
-                        raise ValueError('environment cache must be owned by the invoking user')
-                    security.ConvertSidToStringSidW.argtypes = [wintypes.LPVOID, ctypes.POINTER(wintypes.LPWSTR)]
-                    security.ConvertSidToStringSidW.restype = wintypes.BOOL
-                    user_text = wintypes.LPWSTR()
-                    if not security.ConvertSidToStringSidW(user_sid, ctypes.byref(user_text)):
-                        raise ctypes.WinError(ctypes.get_last_error())
-                    try:
-                        _check_windows_dacl(text.value or '', user_text.value or '')
-                    finally:
-                        kernel.LocalFree(user_text)
-                finally:
-                    kernel.CloseHandle(token)
+                user_sid = ctypes.cast(token_user, ctypes.POINTER(wintypes.LPVOID))[0]
+                if not owner_sid.value or not user_sid or not security.EqualSid(owner_sid, user_sid):
+                    raise ValueError('environment cache must be owned by the invoking user')
+                # Trust identities only after native numeric SID conversion.
+                _check_windows_dacl(_canonical_windows_dacl(buffer, security, kernel),
+                                    _windows_sid_string(user_sid, security, kernel))
             finally:
-                kernel.LocalFree(text)
+                kernel.CloseHandle(token)
 
 
 _INTEGRITY_SCHEMA = 'kernelforge-python-environment-integrity-v1'
