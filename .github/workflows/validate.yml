@@ -53,6 +53,34 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m compileall -q kernelforge scripts tests
       - run: python -m kernelforge validate
+      - name: Diagnose rejected Git configuration without exposing values
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import subprocess
+          from pathlib import Path
+          import kernelforge.git_policy as policy
+          from scripts.check_repository_text_policy import verify_repo, verify_checkout_matrix
+          public = subprocess.run(["git", "help", "--config"], capture_output=True, text=True, check=True, timeout=30)
+          known = {k.strip().lower() for k in public.stdout.splitlines()}
+          known.update({"extensions.refstorage", "extensions.refstoragepayload", "extensions.relativeworktrees", "extensions.worktreeconfig", "gc.auto", "maintenance.auto", "core.untrackedcache", "core.hookspath", "core.fsmonitor", "core.sparsecheckout", "core.sparsecheckoutcone", "index.version", "index.skiphash", "fetch.recurseSubmodules".lower()})
+          original = policy._config
+          def inspect(path, env):
+              rows = original(path, env)
+              for key, value in rows:
+                  if not policy._PASSIVE_CONFIG.fullmatch(key):
+                      name = key if key in known else "sha256:" + hashlib.sha256(key.encode()).hexdigest()
+                      print("T09_REJECTED_KEY", name, "scope", "root" if Path(path).is_relative_to(Path.cwd()) else "fixture", flush=True)
+              return rows
+          policy._config = inspect
+          for name, operation in (("repository", verify_repo), ("checkout_matrix", verify_checkout_matrix)):
+              try:
+                  operation()
+                  print("T09_DIAGNOSTIC", name, "PASS", flush=True)
+              except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as exc:
+                  print("T09_DIAGNOSTIC", name, "BLOCKED", type(exc).__name__, flush=True)
+          PY
       - name: Check repository text and digest-lock bytes
         run: python scripts/check_repository_text_policy.py
       - run: python -c "import yaml; from pathlib import Path; [yaml.safe_load(p.read_text(encoding='utf-8')) for p in Path('.github/workflows').glob('*.yml')]"
