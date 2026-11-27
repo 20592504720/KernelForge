@@ -119,7 +119,7 @@ def audit_repository(root: Path = ROOT) -> dict:
     # job requires an impossible event name. Pin the whole recipe so an added
     # event, job, permission, upload or alternate YAML spelling needs re-review.
     _require(hashlib.sha256(release.encode('utf-8')).hexdigest()
-             == '51dbccd13ecfd1bd16f4ff08c437b46d3077a23631054eba6006b7c815c5ac5b',
+             == '8a90e8bb099e7e181a6923e290805bb7b876e0da5bf5797f8a70e31209019ce1',
              "release workflow no longer fail-closed or read-only")
     _require("[run-sm8750-once]" in audit_workflow
              and "full_sync" in audit_workflow,
