@@ -155,9 +155,9 @@
 | 优先级 | 待办 | 状态 |
 | --- | --- | --- |
 | P0 | T09 剩余独立113文件语义审计、残余风险/权限边界及验收证据归档 | 软件回归已过；审计未全完，不能伪造通过 |
-| P0 | 生成仓库集中静态审计已完成；审查是否单独授权指定仓库离线物化例外 | BLOCKED_NO_ADMISSIBLE_INITIALIZATION_COMMAND_UNDER_UNCHANGED_NOFETCH（§15）；原根因未解除 |
-| P0 | 7.5 五项有界 nofetch Bazel 查询、实际 action graph、资源与时间传递 | 最新 query-definitions exit 7、后四项未执行；累计3次尝试、0成功；不放宽门禁（§14） |
-| P0 | 7.5 一次获批准的真实 pinned Image/vmlinux、真实性能与独立产物验收 | 未执行 |
+| P0 | 核验此前生成仓库物化与五查询原始证据 | §16.1 执行端报告已通过并进入真实构建；独立收据待验，不再将§15旧阻塞当当前唯一问题 |
+| P0 | 7.5 五项有界 nofetch Bazel 查询、实际 action graph、资源与时间传递 | 执行端报告五查询通过；原始图/收据及时间链待独立验收（§16.1）；保留§14历史失败 |
+| P0 | 7.5 解除BTF容量及Windows提交余量阻塞，重新准入后真实构建、产物及最终验收 | 首次Make2/Bazel1基线运行3049.913秒后MEM_AVAILABLE_LOW受控停止，清理PASS，无完整产物；当前无新构建（§16.3） |
 | P0 | 最新中文交付、默认主页/仓库简介状态核验和经授权同步 | 部分已实施；持续必做 |
 | P1 | Stage8 十项设备功能与完整官方 OKI 验收 | 未实施 |
 | P1 | Stage9 统一 Actions 自动化、产物签名、恢复和发布安全门禁 | 未实施 |
@@ -477,3 +477,15 @@ Stage8 条件启动：仅在Stage7.5全部强制门禁通过、真实证据完�
 ### 16.2 并发构建策略调整（用户新增要求，2026-11-27）
 
 用户原文：“改为多进程并发构建”。记录为本轮及后续构建的并发优化要求。当前运行中的 Stage7.5 基线据截图使用 Make 2、Bazel 1，本身已有 Make 层有限并行，不能将其称为全串行；运行中的构建参数不能由 ChatGPT 远程热修改。建议优先让已有基线自然结束，保留真实冷构建性能证据；如果需要立即切换，须由本地执行端确认当前进度、受控停止并验证进程树完全退出、保留日志/输出与缓存、重新准入后才启动单个新构建，禁止同时启动第二个重型构建。后续采用资源感知的多进程：在实测 CPU/cgroup、可用内存/swap、Windows提交余量及磁盘门槛均符合原合同且有证据支持时，Make 4/Bazel 1 为优先候选；资源不足回退 Make 2，不默认-j8，也不同时扩大两层并发。实际 Bazel local resource 参数应与选定配置及守卫一致，不能仅改线程参数而绕过内存/资源限制。保持源码/工具链/配置/时间戳身份、网络隔离、ccache OFF（Stage7.5）、原安全选项与阶段门禁。任何提速结论须有真实对照，不将并发候选视为已生效或已验收。本次仅记录用户要求和建议，不代表本地构建已修改、停止或重新运行；待执行端实际报告更新。
+
+
+### 16.3 资源感知策略交付与真实基线容量阻塞（2026-11-27）
+
+来源：用户上传 RESOURCE_AWARE_BUILD_POLICY.md（实物SHA256 deffa7a193b37c2ba4a163aa273abb19b872afc6d4a643568b88ef47d29a526b）与 FINAL_REPORT.md（196662dfb97029473ac075885cce72b042794716db38ee42bcf53ca328edfdb5）。本次ChatGPT读取并计算两份附件摘要，接受报告所述软件策略限定范围通过；原始补丁、测试日志、完整采样及封存清单未随本次上传，不能声称独立复跑36测试或逐文件核验。
+
+- 当前真实构建BLOCKED，先前§16.1运行中观察更新为：Make2/Bazel1基线运行3049.913秒（50分50秒），MEM_AVAILABLE_LOW受控停止、清理PASS，Image/vmlinux未完成。pahole BTF阶段实际-j1，VmHWM 2221944832字节（约2.07GiB），构建进程RSS合计峰值3142443008（约2.93GiB，可能重复共享页），WSL最低MemAvailable378163200（约361MiB），Windows最低提交余量561614848（约536MiB），接近512MiB硬阈值。守卫子进程exit130、Windows监督器exit2；Bazel独立退出回执未完整落盘，不冒称Bazel退出码。直接触发点为BTF阶段内存不足，不足以确认所有分配成因或实际内核OOM事件。旧基线CPU/I/O样本不完整，禁止补造。
+- 用户要求的资源感知并发策略据报告已实现：Bazel1，Make4优先、Make2回退、两档不足则BLOCKED，Stage7.5/8/9统一使用。kernelforge/resource_policy.py、resource_sampling.py、host_resources.py、resource_monitor.py及本轮独立监督器入口更新；Windows/WSL2 Python3.12各18/18通过、0跳过，真实计数器读及模拟回退控制通过，初版模拟失败保留。未真实执行Make4，性能UNVALIDATED。当前约3.77GiB WSL环境未通过Make4，Make2同容量失败尚未重新准入，无新内核任务。
+- 启动至少7连续有效样本覆盖30秒、间隔<=10秒、最后样本距派发<=10秒，双平台真实指标齐全。Make2最低MemAvailable2560MiB、SwapFree512MiB、Windows提交余量1536MiB；Make4额外WSL总RAM>=8GiB、可用>=6GiB、Windows提交余量>=4GiB、有效CPU>=4、WSL/Windows忙碌率<=75/80%、iowait<15%、磁盘忙碌<85%、IO PSI avg10<10%、E盘平均队列<2且延迟<30ms；两档E/ext4启动70/40GiB、inode1000000。硬停止MemAvailable512MiB、SwapFree256MiB、Windows提交余量512MiB、E/ext4 55/25GiB、inode100000。Make4连续3样本压力触发STOP_THEN_READMIT_MAKE_2：MemAvailable<1536、SwapFree<512、Windows提交余量<1536MiB，或IO iowait>=25%、busy>=95%、PSI>=20%、Windows队列>=4/延迟>=50ms。运行约每5秒采样、boot/PID/start ticks身份绑定、单构建锁、原守卫及Landlock、network/PID namespace、nofetch、官方配置/BTF、ccache OFF均保留。CPU高本身不触发回退。无热切换；清理PASS、身份复验及新鲜准入后才接续。原生Linux CI须实现真实主机容量适配，不能伪造Windows指标。
+- 性能合同：当前策略文档要求每档至少2个完整成功样本，历史O5已要求至少3次对照，正式O5性能验收保留较严格的历史合同，不因策略文档最低值自动降低；Stage7.5一次成功基线与后续性能对照是不同门禁，不为测速度无意义重跑。缓存有效性按实际Kleaf/Bazel action判定，不保证无损断点续编。
+- 证据根 E:/内核构建/reports/stage7_5_final_acceptance_20261127/resource-aware-concurrency；final-report.json、baseline-resource-analysis-v2.json（1513资源样本、7585进程树样本）、admission-window.jsonl、policy-selection.json、final-build-state.json、verification/、resource-policy-only.patch、full-worktree.patch、prior-runner-sources/、final-runner-sources/、evidence-manifest-v2.json、checkpoint.json。初版封存摘要含写入中stdout，原件保留，v2替代。Stage8/9未启动。
+- 下一步先确认宿主机物理RAM、真实提交限额/已提交/余量、分页文件、.wslconfig现状、WSL实际cgroup限额、内存占用与磁盘，再评估容量调整。若宿主机有足够物理内存与提交空间，优先考虑为WSL分配至少8GiB并保证宿主机余量；若容量不足，降低并发或增Swap本身不能保证BTF成功，不盲重试。系统配置修改、扩容Swap、WSL shutdown或额外硬件/云构建需要相应用户授权，先形成最小变更及恢复方案；不禁BTF、不降低原阈值、不清缓存、不重放旧任务。通过新准入才启动下一次单构建。保留Stage7.5最后一轮目标及Stage8条件启动，当前不得标完成。
