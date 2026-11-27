@@ -79,9 +79,9 @@
 
 按合同完成：本地源码/BUILD/wrapper 核验、真实 Kleaf labels 和 DFR 依赖图、资源受控的离线 nofetch 查询及 action/output groups、实际编译器和时间 action 传递、一次获准单 variant 构建、日志与产物独立核验、软件回归和验收。内核 Image 必须真实且非 ELF 冒充；vmlinux 为 AArch64 ELF64 little-endian，保留最终 .config、build.log、build-time.json、SHA256、大小、进程退出码、目标、实际资源耗用、源锁及编译器身份。离线 receipt 只能证明 ARTIFACT_BYTES_CHECKED_BUILD_UNATTESTED。
 
-最新历史交接（2026-11-27）：LOCAL_PREPARATION_COMPLETE_REAL_BUILD_BLOCKED 后，出现 BLOCKED_WSL_RUNTIME_BEFORE_BAZEL_QUERIES；WSL 两次约90秒退出，18个审计文件零字节，五项 Bazel 查询均未启动，真实编译未执行，perf 命令只是未经授权、未经验证草案。Android repo 链接修复为候选，不自动写官方源。--make_jobs=2、Bazel --jobs=1、ccache OFF；优先 perf common base，不能代替完整 SM8750 OKI。静态宏追踪提示 core sun_perf/sun_consolidate 不选择独立 DFR external DDK，仍需真实本地 Bazel 图确认，外部 DFR include 缺失状态 BLOCKED_UNDETERMINED 不变。build_eligible=false，device_release_eligible=false。真实性能 INCONCLUSIVE/未验证。
+较早历史交接（2026-11-27，已被下述 §12.1 最新检查点取代）：LOCAL_PREPARATION_COMPLETE_REAL_BUILD_BLOCKED 后，出现 BLOCKED_WSL_RUNTIME_BEFORE_BAZEL_QUERIES；WSL 两次约90秒退出，18个审计文件零字节，五项 Bazel 查询均未启动，真实编译未执行，perf 命令只是未经授权、未经验证草案。Android repo 链接修复为候选，不自动写官方源。--make_jobs=2、Bazel --jobs=1、ccache OFF；优先 perf common base，不能代替完整 SM8750 OKI。静态宏追踪提示 core sun_perf/sun_consolidate 不选择独立 DFR external DDK，仍需真实本地 Bazel 图确认，外部 DFR include 缺失状态 BLOCKED_UNDETERMINED 不变。build_eligible=false，device_release_eligible=false。真实性能 INCONCLUSIVE/未验证。
 
-下一步：先诊断 WSL 运行时、无损重新采集资源和准入；读取最新本地执行报告。不得无条件重试同一故障、运行未经审核 repo sync、下载新二进制、修改 DFR 或源码锁。取得单独授权后才执行有界 nofetch 查询，核对结果及完整安全合同后才启动真实构建。用户规定 Stage 7.5 整阶段最多两轮；内部步骤非额外执行轮次，重大风险仍须批准。
+下一步：以 §12.1 为当前状态，先审查离线仓库缺失及生成条件；读取最新本地执行报告。旧 WSL 运行时故障及无损恢复记录保留，不重复已经通过的准入。不得无条件重试同一故障、运行未经审核 repo sync、下载新二进制、修改 DFR 或源码锁。取得单独授权后才执行有界 nofetch 查询，核对结果及完整安全合同后才启动真实构建。用户规定 Stage 7.5 整阶段最多两轮；内部步骤非额外执行轮次，重大风险仍须批准。
 
 参考：[7.5 快速构建合同](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_FAST_IMAGE_PLAN.md)、[Antigravity 交接](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_ANTIGRAVITY_HANDOFF.md)、[DFR 静态补充](https://github.com/20592504720/KernelForge/blob/stage1/initial-foundation/docs/STAGE7_5_DFR_STATIC_REACHABILITY_ADDENDUM.md)。
 
@@ -155,8 +155,8 @@
 | 优先级 | 待办 | 状态 |
 | --- | --- | --- |
 | P0 | T09 剩余独立113文件语义审计、残余风险/权限边界及验收证据归档 | 软件回归已过；审计未全完，不能伪造通过 |
-| P0 | 读取最新 WSL 日志，诊断运行时故障、无损恢复准入 | BLOCKED_WSL_RUNTIME_BEFORE_BAZEL_QUERIES |
-| P0 | 7.5 五项有界 nofetch Bazel 查询、实际 action graph、资源与时间传递 | 未执行；须独立授权 |
+| P0 | 审核 WSL 恢复证据与缺失离线仓库 @@local_config_platform 的安全准备条件 | BLOCKED_OFFLINE_REPOSITORY_NOT_PREPARED（§12.1）；本轮源码准入35/35通过 |
+| P0 | 7.5 五项有界 nofetch Bazel 查询、实际 action graph、资源与时间传递 | 1项执行失败（exit 37），4项未执行；0项成功；不放宽门禁 |
 | P0 | 7.5 一次获批准的真实 pinned Image/vmlinux、真实性能与独立产物验收 | 未执行 |
 | P0 | 最新中文交付、默认主页/仓库简介状态核验和经授权同步 | 部分已实施；持续必做 |
 | P1 | Stage8 十项设备功能与完整官方 OKI 验收 | 未实施 |
@@ -172,11 +172,73 @@
 - 2026-11-23：接受 Stage5 限定范围结果，不重复验收；Stage6 能完成的先做，其余交本地执行端；Stage7.4 保留失败与设备门禁；7.5 后续交 Antigravity、单轮单模型、首次权限验收。
 - 2026-11-24：Stage8 精简至 S01–S10、其他 D01–D14 暂缓；新增构建时间自定义默认当前实际时间；安全加固与 Stage1–7.4 全量回归、最终安全报告之后中文化，后续项目主页默认中文。
 - 2026-11-24 至 27：要求全面代码、漏洞和语法检查，逐轮安全整改、全量回归，不以局部检查代替；T09 收尾，保留历史失败。性能复审以真实证据为准。
-- 2026-11-27：Stage7.5/8/9 整阶段集中执行，每阶段原则上最多两轮；T09 为 7.4 收尾，无 T10。确认 Stage9 正式规划；重申主页中文化和待实现功能是正式必做任务。最新 WSL 阻塞保留，真实查询/编译未执行。
+- 2026-11-27：Stage7.5/8/9 整阶段集中执行，每阶段原则上最多两轮；T09 为 7.4 收尾，无 T10。确认 Stage9 正式规划；重申主页中文化和待实现功能是正式必做任务。较早 WSL 阻塞保留；后续首条查询失败，见 §12.1；真实编译未执行。
 - 2026-11-27：用户要求在 GitHub 建立可长期读取和更新的项目云端记忆文档，记录全阶段规划、用户指令、变更与要求；本文件初建。选择独立文档分支以不移动原开发 PR、main 或 T09 证据分支，不是代码分支迁移。
 
 ## 11. 记录模板（后续追加）
 
 日期/时区 | 用户确认或报告来源 | 影响阶段及任务ID | 新要求或状态 | 原要求（如被替代） | 验收标准/证据 Commit、Tree、Run及路径 | 未完成和阻塞 | 授权边界。历史记录保留，当前任务总账同步更新。无证据填“待核实”，不要补造。
 
-**本初版已尽可能整合可恢复历史与仓库合同，但不声称恢复了所有聊天逐字全文。精确缺失项：部分 Stage1–6 早期子任务原文、Stage7.4 各 T/O 项逐项原报告、Stage7.5 最新本地终端原始日志、Stage9 完整参数合同及仓库简介实时状态。后续获得相应原始证据时增量补充。**
+**本初版已尽可能整合可恢复历史与仓库合同，但不声称恢复了所有聊天逐字全文。精确缺失项：部分 Stage1–6 早期子任务原文、Stage7.4 T01–T08 原始合同与部分原始日志、Stage7.5 完整终端原始日志、Stage9 完整历史参数合同及仓库简介实时状态。O1–O8 逐项报告及更新的 Stage7.5 检查点已在 §12 补充。后续获得相应原始证据时增量补充。**
+
+
+## 12. 第二次历史恢复与纠错（2026-11-27，增量补遗）
+
+本节来源于第二次历史会话检索及用户文件库原报告；不把检索摘要当逐字原文，不把文件库附件假称已上传到 GitHub。历史证据按原文件名、Commit/Tree、日志和摘要标识，原始报告与本总账分开保管。仓库为公开项目，本次不公开原始个人聊天全集、凭据、完整本地进程环境或无关个人信息。引用的报告内容为必要工程事实。
+
+### 12.1 最新 Stage7.5 检查点：取代“查询尚未启动”的旧状态
+
+来源：用户文件 checkpoint(4).json（created 2026-11-27T09:37:25.962434+00:00）、revised_commands.json（2026-11-27T09:25:56.244070+00:00）、PENDING_COMMANDS.md（历史待授权命令）；历史用户报告更新于 09:43 UTC。状态 STOPPED_ON_FIRST_QUERY_FAILURE；当前阻塞 BLOCKED_OFFLINE_REPOSITORY_NOT_PREPARED。
+
+- 已有明确五项离线查询授权，范围为 AUTHORIZED_FIVE_OFFLINE_QUERIES_ONLY，不包含真实编译、下载或发布。早期两次 WSL 约91–92秒退出1、18个零字节文件为历史故障。
+- 续接源码35项 PASS；107份源码命令收据验证通过，未重复源码审计。补充准入通过；清理最终 PASS。不能据此声称 WSL 永久稳定。
+- query-definitions：QUERY_BLOCKED_OR_FAILED，Bazel exit 37、guard exit 1，缺 @@local_config_platform，原文错误：External repository @@local_config_platform not found and fetching repositories is disabled.
+- query-deps、cquery-perf-files、cquery-consolidate-files、aquery-core-actions：NOT_RUN。1项开始并结束、0项成功、其余4项未启动；没有 action graph 或 output paths，真实构建未执行。
+- 证据路径（对应报告包）：runtime-validation-v2/result.json、admission-completion/result.json、sequence-resume/result.json、observations/query-definitions/query_receipt.json、query-definitions/query.log、handoff-resume-20261127/checkpoint.json。
+- 保留 nofetch、no_internet、禁下载、网络隔离、进程与资源守卫、隔离缓存；下一步先审查 local_config_platform 缺失是本地生成配置还是外部依赖，核对真实 Bazel 版本/规则与离线准备合同。不得擅自打开网络、取消 nofetch、伪造仓库、改源码或重新运行已停止序列。任何超出五项既有授权的准备或构建须独立批准。perf 命令仍为未获构建授权的候选。
+
+### 12.2 Stage7.4-O 原始报告恢复（R2 → O-Final → T09）
+
+A. 用户文件 R2_FINAL_REPORT.md（执行11月25日，整理11月26日）：R2 定向安全修复及 Windows/WSL 回归完成；整体 IN_PROGRESS。原始中文 r2-final-report.md 曾损坏为问号，交付整理版依据原始 JSON/日志/Git 报告，不是重新执行测试。基线 da2ed84a185b88ffd782e564c740de893bb173f8；修复 d91712df2daf1f63e313c5b4d68ef2446d916e78；最终 HEAD 781c1102ddeac0d859837c583ed2bfeabcb15dac，Tree 28a17ee6961d41cb161abc2156da6ebc8e2a2f2f。20文件、790新增/42删除。Windows Python3.12 137项（116通过、21跳过），WSL 137项（136通过、1跳过），均0失败/exit0；七个定向模块，非全量。Windows 原始日志 SHA256 8364c535cc1650297a98fcedd11c173544d08feda8fdc5c1f16160a55be3534e；WSL d210419235e2e88f1bc7a0aceaed3b1fdaf4ba3d97b1af0c48645e45bd24f321。同步322文件、0摘要差异。Git 环境隔离、URL userinfo拒绝、junction元字符防护、行尾策略及证据记录；保留正式工作区和历史源锁，不启动正式编译。用户曾取消自动关机，不应恢复。
+
+B. 用户文件 REPORT.md（标题 Stage 7.4-O-Final 独立复审交付报告，生成 2026-11-26T02:21:51.761617+00:00）：最终 Commit 03ed5571da39d498f9fdcfe8a94f5bf740aeed8b、Tree 139092d089d569dedc1bf8ccd89fe1cbb5202a8a，41文件922新增/89删除，Windows正式/隔离/WSL同身份；完整补丁139073字节 SHA256 174e6ac581b024b0b19bbae6813f5fe0c9f78ab0056f1b715137ec9a79bfb600，隔离恢复249文件一致。34测试模块，双平台 Python3.12 各517测试方法：Windows Ran517、OK(skipped=49)、291.720秒（子测试跳过计数不能简单相减推导方法通过）；WSL 513通过/4跳过、42.084秒；两平台exit0。Python3.11运行时未发现，静态通过不能代替。Ruff exit1（217条，208基线对应、9新增/变化）；actionlint/ShellCheck exit1（release.yml常量false禁用提示，保留门禁），Pyright 3.11/3.12静态0错误，Gitleaks 0。整体 PARTIAL_BLOCKED，不等于所有检查通过。Git裸库/common config/worktree审计、进程隔离、Win32 junction、原子不可覆盖证据、行尾和长路径整改；TOCTOU状态 MITIGATED，同用户并发写入与可信PATH/Git/SSH仍为边界。历史5项Windows失败/错误复验通过，不覆盖原失败。
+
+| O项 | O-Final 报告中恢复的任务和结论（2026-11-26） | 剩余真实验收 |
+| --- | --- | --- |
+| O1 | 计时与失败路径软件PASS | 真实构建计时未验 |
+| O2 | CI触发/去重与required checks/Rulesets审查；REST 200、Rulesets=[]、保护接口404，保留策略 PARTIAL_BLOCKED | 不以无规则返回推断允许删减CI；管理员只读核验 |
+| O3 | Git checkout 优化对照；SHA-1/SHA-256 × commit/branch/tag ×3，Commit/Tree一致及fsck通过 | 未采纳生产算法；真实远端、大仓及任意SHA拒绝边界未验 |
+| O4 | 工具链缓存校验；单次读取双格式证明、独立复解压和篡改测试通过；可信锁内Clang已核验 | 无可信大型压缩包完整冷下载/校验/解压/热缓存对照 |
+| O5 | 并发与资源：轻量AArch64 C负载1/2/4 workers各3次，摘要一致 | 真实内核吞吐BLOCKED；保留-j2，比较同源/配置/工具链/时间戳至少3次，记录中位数、离散度、RAM/CPU/I/O/swap/磁盘 |
+| O6 | ccache未发现、未安装、未启用，BLOCKED | 可信二进制、编译器拦截、关闭/首次填充/热构建/单文件变更/不匹配拒绝对照；命中、耗时及产物一致性 |
+| O7 | 证据流式哈希、原始字节、UTF-8、原子不可覆盖JSON、恢复归档本地PASS | 外部持久存储、访问与到期策略PARTIAL |
+| O8 | 正式双平台3.12各517项软件回归PASS | 当时3.11运行BLOCKED；T09后来四环境软件通过，但必须按对应Tree认定，真实构建仍未验 |
+
+O4/O5/O6 原始实验合同还见用户文件 KernelForge_T09_cloud_verified_complete.patch（其中 O4/O5/O6 性能后续清单）及对应 GitHub 交付分支。每次真实实验保存原始命令、环境、退出码、资源采样、产物哈希、失败；不从小程序/微基准外推实际内核收益。
+
+C. T09 已在 §3.1 记录；补充用户文件 KernelForge_T09_cloud_acceptance.json：候选259文件独立ZIP blob匹配；Python3.11 AST 102文件、YAML 14工作流、diff check PASS；81修改32新增、4208新增行/560删除行。完整patch SHA256 d7d6513fa2f7299b35b742fcda0feab2d212bdf75ce9adbe3ffb2e316eaca246，代码ZIP SHA256 8e15f4385c267ca45e3367222d44216e300007eb7d333ed3db748ef393ebb967。交付文档 Commit 14467ced92092c564a56d6b5936f7049eb56b62c、Tree a754947495d0e39992d3eb0a430bb2fbc601c9a4（仅 README/ROADMAP/STATUS/T09报告更新，不重跑程序）。结论 SOFTWARE_ACCEPTANCE_PASS; FULL_STAGE_CLOSURE_NOT_CLAIMED; BUILD_NOT_AUTHORIZED。T01–T08 精确任务名/逐字合同仍未恢复，不把 O1–O8 强行映射为 T01–T08。
+
+### 12.3 更早回归及用户指令的原文/摘要分离
+
+用户文件 KernelForge_Stage1-7_4_Audit_Evidence_2026-11-24.json：Commit afe8fb7121680a089e5b11a1c505bdbcdffa7fad、Tree dfa99a2ad5e46a559847bb6afb97128b6880dc89；Validate 45278671842 attempt2 4/4，1672项次、1596通过/76跳过、0失败错误；独立 7.1 45278691030、7.2 45278686273、7.3 45278686100、SM8750 45278687515；历史 Stage1–6 一次性验收45184293290五组GKI成功（本轮未重跑）。初始安全发现 F1 symlink输出覆盖、F2 patch schema路径穿越、F3工具链归档资源限制、F4诊断脱敏、F5 7.5设备构建准入未集成、F6开发依赖图未固定。后续整改和11月24/27最终证据须分层对照，非同一轮结果。
+
+可见历史用户原句（来自本次会话可见的历史摘要中保存的直接引文，按现有文本引用，不声称拥有完整原始聊天导出）：
+
+- “对了，我希望行动里再加上内核构建时间的自定义，默认是当前时间”
+- “运行一次全量的代码检查与全量的第一阶段到7.4的回归性测试，注意尽可能是全面性的，因为我想筛查一下有没有错误，为后续做好准备，同时排查一下是否有漏洞，代码语法等是否正确，此回答不设定限限定的回答时间，直到本次安排的任务全部完成为止”
+- “ OK，进入第四轮。第四轮完成后，进行全量化的第一阶段到7.4回归运行测试，注意是全量，主要确保全阶段未出现修复漏洞或隐患产生的冲突”
+- “请将 KernelForge 第八阶段规划按以下选择精简，并保留没有选择的项目作为明确的暂缓清单。保留项目：一加 13 完整官方 OKI 基线、BakaSU + SUSFS、原生风驰 HMBIRD、ccache 安全构建缓存、BBR + Westwood + 必需网络配置、ZRAM + 适配过的压缩算法、Droidspaces 支持、Mountify 兼容、ADIOS I/O 调度器、Re:Kernel / Freezer / NoActive。请先检查最新开发分支，安全更新功能矩阵、路线图和验收条件；不要启动内核编译或修改 main。”（历史记录中的用户侧指令文本）
+- 2026-11-27T01:33:16Z 历史检索明确标为用户接受：Stage7.5/8/9每阶段最多两轮，第一轮整阶段、第二轮集中修复最终验收；不再拆 7.5-1/2、O1-O2、T01-T09 等交接批次；普通错误授权范围内自主修复，重大阻塞未经批准不增轮。此条是恢复的摘要，不是逐字引文。
+- 本次用户明确长期授权维护本文件，要求新对话优先调用链接，保留所有重要历史决策、用户指令与任务调整，主动帮助纠正潜在错误；文档长期维护权限不等于全仓库、真实编译或发布授权。跨对话自动记忆写入/召回不可保证；如未能自动恢复，按仓库和固定路径定位。
+
+### 12.4 Stage9 参数合同恢复程度与待核验项
+
+已确认 Stage9 为正式阶段；统一 Actions 构建和安全交付需求见 §6。再次检索未找到逐字段已批准的 workflow_dispatch 原始合同，不能虚构字段名、选项枚举、默认值、必填性、签名策略或矩阵规则。以下为现有合同可追溯语义，不是新增决策：设备/固件匹配、内核版本/源码模式、Root与SUSFS兼容、增强功能、四种版本策略（已有框架键）、工具链模式（已有三种）、安全缓存、时间、报告、产物与发布。现有框架字段不自动等同未来 Actions 输入。
+
+时间语义有真实冲突待复审：仓库 Stage7.5 合同/README 写实际构建开始UTC；用户文件 PENDING_COMMANDS.md 的后续 Stage7.5 命令说明为默认 dispatch 时采样，参数 --build-timestamp、自定义示例 2026-11-24T17:30:00+08:00。须同时保存 dispatch 与实际构建开始时间及最终 action 环境证据；Stage9 的最终默认语义以最新明确批准合同为准，不擅自选定。Stage7.5 默认-j2、ccache OFF、不自动下载/刷写/打包不是已经批准的 Stage9 全部默认参数。
+
+恢复缺口保持 OPEN：Stage9 原始参数表及逐字用户确认、T01–T08 精确原始合同、早期阶段完整聊天逐字文本；本次没有足够证据将其标记已恢复。
+
+### 12.5 持续维护授权与变更记录
+
+2026-11-27 用户再次授权对固定文档长期增量维护，要求每次新会话恢复项目时先查此文件、在当次授权交互中追加新规划/调整/要求/证据/错误修正，历史记录保留；不另造替代总账。第二次补遗修正最新7.5阻塞、补齐O1–O8报告与早期安全证据、区分逐字可见引文与历史检索摘要、登记Stage9时间语义冲突及精确缺口。文档更新不触发真实构建、改变原代码分支、main、PR或发布。
