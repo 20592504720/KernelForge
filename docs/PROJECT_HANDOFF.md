@@ -545,3 +545,7 @@ Stage8 条件启动：仅在Stage7.5全部强制门禁通过、真实证据完�
 ### 16.11 远程主机CPU与WSL安装回执（2026-11-28，用户截图）
 
 截图确认Intel Xeon E5-2696 v3 @ 2.30GHz，18核36线程，VirtualizationFirmwareEnabled=True、SecondLevelAddressTranslationExtensions=True。结合§16.10的63.84GiB RAM及Samsung 860 EVO 500GB SSD，主要规格与套餐6一致；独享性、持续负载及磁盘实际性能仍未验证。wsl --install --no-distribution --web-download 已报告成功并明确要求重启才能生效；wsl --version显示3.0.5.0，WSL内核6.18.58.1-1（与待构建Android内核不同），Windows 10.0.19045.4412。重启前wsl --status及wsl -l -v 返回WSL_E_WSL_OPTIONAL_COMPONENT_REQUIRED，优先按安装提示重启，不重复安装或修改BIOS。须先确认商家允许重启及ToDesk无人值守重连，保存工作后执行；重连后复查两项可选组件及WSL状态，待核对原Ubuntu版本和实际迁移包类型再将发行版放入D盘。尚未验证WSL2实际运行、恢复迁移包或执行构建。Stage7.5状态及三轮上限不变。
+
+### 16.12 WSL重启后基础状态验证（2026-11-28，用户截图）
+
+重启后ToDesk已重新连接；wsl --version显示3.0.5.0、内核6.18.58.1-1，wsl --status成功返回默认版本2，wsl -l -v正常返回无已安装发行版。此前WSL_E_WSL_OPTIONAL_COMPONENT_REQUIRED不再出现。仅证明WSL基础软件与命令状态正常，尚未启动实际Linux虚拟机。下一步核对原Ubuntu版本和迁移包类型：若是项目文件归档，则使用与原环境一致的发行版，在D盘指定安装位置（wsl --install -d Ubuntu-24.04 --location D:\WSL\KernelForge --web-download 为24.04候选，须先核实版本、帮助与目录不存在/为空）；若为完整可信发行版导出则优先审查后导入D盘，不重复安装。候选.wslconfig memory=40GB、processors=24、swap=8GB、swapFile=D:\\WSL\\swap.vhdx，先检查已有配置并保留其他设置，实际启动后核验RAM/CPU/Swap和存储。源码放于ext4，不直接置于/mnt/d；实际安装和迁移尚未执行或验证，Stage7.5未验收。参考 https://learn.microsoft.com/en-us/windows/wsl/basic-commands 与 https://learn.microsoft.com/en-us/windows/wsl/wsl-config 。
