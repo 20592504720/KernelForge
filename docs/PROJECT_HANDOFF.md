@@ -549,3 +549,7 @@ Stage8 条件启动：仅在Stage7.5全部强制门禁通过、真实证据完�
 ### 16.12 WSL重启后基础状态验证（2026-11-28，用户截图）
 
 重启后ToDesk已重新连接；wsl --version显示3.0.5.0、内核6.18.58.1-1，wsl --status成功返回默认版本2，wsl -l -v正常返回无已安装发行版。此前WSL_E_WSL_OPTIONAL_COMPONENT_REQUIRED不再出现。仅证明WSL基础软件与命令状态正常，尚未启动实际Linux虚拟机。下一步核对原Ubuntu版本和迁移包类型：若是项目文件归档，则使用与原环境一致的发行版，在D盘指定安装位置（wsl --install -d Ubuntu-24.04 --location D:\WSL\KernelForge --web-download 为24.04候选，须先核实版本、帮助与目录不存在/为空）；若为完整可信发行版导出则优先审查后导入D盘，不重复安装。候选.wslconfig memory=40GB、processors=24、swap=8GB、swapFile=D:\\WSL\\swap.vhdx，先检查已有配置并保留其他设置，实际启动后核验RAM/CPU/Swap和存储。源码放于ext4，不直接置于/mnt/d；实际安装和迁移尚未执行或验证，Stage7.5未验收。参考 https://learn.microsoft.com/en-us/windows/wsl/basic-commands 与 https://learn.microsoft.com/en-us/windows/wsl/wsl-config 。
+
+### 16.13 远程主机本地OpenCode集中部署决定（2026-11-28）
+
+用户决定直接在租用远程Windows主机安装、接入OpenCode，由该机本地执行端完成部署和构建，不再逐条手动执行命令。此处“本地”指租用主机，不是原8GB电脑。当前已核实E5-2696 v3/18核36线程、63.84GiB RAM、D盘约370GiB可用及WSL默认2；无Linux发行版的状态仍待处理。OpenCode安装、XingChi脱敏Provider恢复、模型/工具及最小权限检查后，先核对总账和真实迁移包、原Ubuntu版本及存储峰值；D盘恢复、40GB/24线程/8GB Swap候选按实测调整；仅在管理员授权、路径及资源准入通过后执行必要部署。用户不必手工逐项安装，不代表授权绕过系统安全、无限下载或不受限管理员操作。保留旧源锁、源码、历史证据及单构建锁、官方安全配置、BTF、ccache OFF、初始Make4/Bazel1、真实五查询/Action Graph及产物证明；跨主机缓存、绝对路径及签名密钥须复验，不上传长期凭据，重要产物回传可信主机独立审查。遗留任务最多三轮，争取一轮集中完成；第三轮未通过停止，无第四轮；Stage8仅在7.5实际通过后启动，Stage8/9原各最多两轮制度不变。OpenCode必须输出真实命令、日志、版本/差异、资源采样、产物哈希、安全验收、恢复检查点及中文报告。当前只记录部署执行端选择，未实际安装OpenCode、恢复迁移包或开始构建。
